@@ -51,7 +51,7 @@ Electron-builder 26.18.0 is pinned. Windows packages are unsigned; Mac apps use 
 | --- | --- |
 | windows-2025 | Windows x64 portable EXE |
 | macos-15-intel | Intel Mac DMG / ZIP |
-| macos-15 | Apple Silicon Mac DMG / ZIP |
+| macos-14 | Apple Silicon Mac DMG / ZIP |
 | ubuntu-24.04 | Linux x64 AppImage / DEB |
 | ubuntu-24.04-arm | Linux ARM64 AppImage / DEB |
 

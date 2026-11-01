@@ -42,7 +42,7 @@ jobs:
         include:
           - {runner: windows-2025, platform: windows, target: win, arch: x64}
           - {runner: macos-15-intel, platform: mac, target: mac, arch: x64}
-          - {runner: macos-15, platform: mac, target: mac, arch: arm64}
+          - {runner: macos-14, platform: mac, target: mac, arch: arm64}
           - {runner: ubuntu-24.04, platform: linux, target: linux, arch: x64}
           - {runner: ubuntu-24.04-arm, platform: linux, target: linux, arch: arm64}
     defaults:
