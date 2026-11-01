@@ -98,7 +98,8 @@
       "category": "public.app-category.graphics-design",
       "identity": "-",
       "hardenedRuntime": false,
-      "notarize": false
+      "notarize": false,
+      "minimumSystemVersion": "15.0"
     },
     "linux": {
       "target": [

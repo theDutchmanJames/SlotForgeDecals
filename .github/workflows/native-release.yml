@@ -42,7 +42,7 @@ jobs:
         include:
           - {runner: windows-2025, platform: windows, target: win, arch: x64}
           - {runner: macos-15-intel, platform: mac, target: mac, arch: x64}
-          - {runner: macos-14, platform: mac, target: mac, arch: arm64}
+          - {runner: macos-26, platform: mac, target: mac, arch: arm64}
           - {runner: ubuntu-24.04, platform: linux, target: linux, arch: x64}
           - {runner: ubuntu-24.04-arm, platform: linux, target: linux, arch: arm64}
     defaults:
@@ -64,6 +64,8 @@ jobs:
         run: echo "value=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
       - run: npm run check && npm test
       - name: Build bundled EPS converter
+        env:
+          MACOSX_DEPLOYMENT_TARGET: '15.0'
         run: npm run setup:converter
       - name: Linux desktop test dependencies
         if: runner.os == 'Linux'

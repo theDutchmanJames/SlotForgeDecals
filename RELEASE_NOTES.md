@@ -24,7 +24,7 @@ The first public GitHub release: an offline A4 decal studio for slotcar builders
 | Linux x64 | linux-amd64.deb or linux-x86_64.AppImage |
 | Linux ARM64 | linux-arm64.deb or linux-arm64.AppImage |
 
-Mac ZIPs are also provided. On Linux, install the DEB with your software installer, or mark the AppImage executable before opening it. Linux packages are built on Ubuntu 24.04 for compatible modern systems. No Node.js installation is needed.
+Mac ZIPs are also provided; Mac builds require macOS 15 or newer. On Linux, install the DEB with your software installer, or mark the AppImage executable before opening it. Linux packages are built on Ubuntu 24.04 for compatible modern systems. No Node.js installation is needed.
 
 Windows builds are unsigned. Mac builds are ad-hoc signed, not Apple-notarized, and may require per-app approval in Privacy & Security. The app keeps its sandbox enabled.
 

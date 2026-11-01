@@ -3,6 +3,7 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 root="$PWD"
+if [[ "$(uname -s)" == Darwin ]]; then export MACOSX_DEPLOYMENT_TARGET=15.0; fi
 node scripts/download-converter-source.cjs
 mkdir -p vendor/build vendor/ghostscript/bin vendor/ghostscript/doc
 build_dir="$(mktemp -d "$root/vendor/build/gs.XXXXXX")"

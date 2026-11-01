@@ -67,6 +67,8 @@ Download the portable `.exe`, put it in a folder you want to keep, and double-cl
 
 ### macOS
 
+Requires macOS 15 or newer.
+
 Open the `.dmg`, drag **SlotForge Decals** into **Applications**, then open it from Applications. You can eject the disk image afterwards. **Apple menu → About This Mac** shows whether you need Intel or Apple Silicon. A ZIP containing the app is also available.
 
 Mac releases are ad-hoc signed, **not Apple-notarized**. If macOS blocks the app, check its origin and use the per-app approval in **System Settings → Privacy & Security**, if offered. Keep system-wide security protections enabled.
