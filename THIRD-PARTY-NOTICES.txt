@@ -1,0 +1,57 @@
+SlotForge Decals — third-party notices
+
+First-party application: Copyright (c) 2026 theDutchmanJames and contributors.
+GNU Affero General Public License v3 or later. See LICENSE and NOTICE.
+
+Ghostscript 10.08.0, Copyright Artifex Software, Inc.
+GNU Affero General Public License version 3. COPYING is retained in
+resources/app/vendor/ghostscript/doc/COPYING. No source changes are applied.
+Windows binary originally obtained from the official gs10080w64.exe release:
+https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs10080
+Installer SHA256: 52a91b8bf09298788d7a57b9206127026c23eacd75405f0a131e26dc381dce50
+Corresponding source: Sources/ghostscript-10.08.0.tar.xz
+SHA256: c20492bc8ebb96c87fa2e52a0926e1cda8cde95d66145e018ac713fed5da38cf
+
+MuPDF 1.28.1 JavaScript/WASM, Copyright Artifex Software, Inc.
+GNU Affero General Public License v3 or later. The npm distribution is
+unmodified and its LICENSE is retained in resources/app/node_modules/mupdf.
+Upstream: https://github.com/ArtifexSoftware/mupdf/tree/1.28.1
+Commit: 20061bd45183f5a2bff8f43675e4da91e5ac2901
+Corresponding source: Sources/mupdf-1.28.1-complete-source.tar.gz
+SHA256: 421b6882db04c120dc8ec789fb830387b9434972bdebff421b6faa3917fc5c3f
+Recursive submodule sources and upstream build instructions are in the archive.
+The source archives were obtained from the user's SlotForge Livery v1.1.0
+release and verified against its published hashes.
+
+Electron 45.1.0 is MIT licensed. Runtime LICENSE and LICENSES.chromium.html
+retain notices for Electron, Chromium, Node.js and bundled components.
+Source: https://github.com/electron/electron/tree/v45.1.0
+
+pdf-lib 1.17.1, Copyright Andrew Dillon, MIT licensed.
+Unmodified UMD distribution is in resources/app/src/pdf-lib.cjs.
+Licence: resources/app/vendor/PDF-LIB-LICENSE.md
+Source: https://github.com/Hopding/pdf-lib/tree/v1.17.1
+The distribution also retains its bundled dependency notices.
+
+Playwright 1.56.1 (Apache-2.0) is used only during tests, not shipped as an
+application runtime dependency. Package integrity is recorded in the lockfile.
+
+ImageTracer.js 1.2.6, Andras Jankovics, released under the Unlicense/public
+domain dedication. Upstream source is bundled unchanged in vendor/imagetracer
+with its LICENSE. The application adds its own palette/transparency preparation
+and worker/UI integration in renderer/trace-*.js.
+Source: https://github.com/jankovicsandras/imagetracerjs
+JS SHA256: 7d777599650c15aa8c1f0ab98d1158749ed8d8b97b417b83e5c69ea246382f40
+
+Native macOS/Linux Ghostscript executables are built unmodified from the same
+source. Native installers keep the converter under resources/ghostscript and
+MuPDF under app.asar.unpacked/node_modules/mupdf. Corresponding source archives
+are provided alongside installers on the same GitHub release:
+https://github.com/theDutchmanJames/SlotForgeDecals/releases
+See docs/BUILDING.md in the application source for rebuilding instructions.
+Retain the included sources and applicable notices when redistributing.
+
+Build-only icon tools: Sharp 0.35.5 (Apache-2.0; bundled libvips and dependencies
+retain their licences), resedit 1.7.2 and pe-library (MIT). These tools are
+recorded in the dependency lockfile and are not bundled as app runtime code.
+electron-builder 26.18.0 (MIT) creates the native packages and is build-only.

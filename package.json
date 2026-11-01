@@ -1,0 +1,115 @@
+{
+  "name": "slotforge-decals",
+  "productName": "SlotForge Decals",
+  "version": "0.2.12",
+  "description": "An offline A4 decal studio for slotcar builders",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "author": "theDutchmanJames",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.cjs",
+    "check": "node scripts/check.cjs",
+    "build:icons": "node scripts/build-icon.cjs",
+    "pack": "npm run build:icons && node scripts/pack.cjs",
+    "setup:converter": "node scripts/setup-converter.cjs",
+    "dist:win": "electron-builder --win portable",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux",
+    "test:desktop": "node scripts/test-desktop.cjs",
+    "test:package": "node scripts/package-smoke.cjs"
+  },
+  "dependencies": {
+    "mupdf": "1.28.1"
+  },
+  "devDependencies": {
+    "electron": "45.1.0",
+    "electron-builder": "26.18.0",
+    "playwright": "1.56.1",
+    "resedit": "1.7.2",
+    "sharp": "0.35.5"
+  },
+  "homepage": "https://github.com/theDutchmanJames/SlotForgeDecals",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theDutchmanJames/SlotForgeDecals.git"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "build": {
+    "appId": "nl.slotforge.decals",
+    "productName": "SlotForge Decals",
+    "directories": {
+      "output": "dist/v${version}"
+    },
+    "files": [
+      "src/**/*",
+      "renderer/**/*",
+      "assets/**/*",
+      "vendor/imagetracer/**/*",
+      "vendor/PDF-LIB-LICENSE.md",
+      "package.json",
+      "LICENSE",
+      "NOTICE",
+      "THIRD-PARTY-NOTICES.txt"
+    ],
+    "asarUnpack": [
+      "node_modules/mupdf/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/ghostscript",
+        "to": "ghostscript",
+        "filter": [
+          "bin/gs",
+          "bin/gswin64c.exe",
+          "bin/gsdll64.dll",
+          "doc/COPYING"
+        ]
+      },
+      {
+        "from": "LICENSE",
+        "to": "LICENSE.txt"
+      },
+      {
+        "from": "NOTICE",
+        "to": "NOTICE.txt"
+      },
+      {
+        "from": "THIRD-PARTY-NOTICES.txt",
+        "to": "THIRD-PARTY-NOTICES.txt"
+      }
+    ],
+    "win": {
+      "target": "portable",
+      "artifactName": "SlotForgeDecals-${version}-windows-${arch}.${ext}",
+      "icon": "assets/icon.ico",
+      "signExecutable": false
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "artifactName": "SlotForgeDecals-${version}-mac-${arch}.${ext}",
+      "icon": "assets/icon.png",
+      "category": "public.app-category.graphics-design",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "notarize": false
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "artifactName": "SlotForgeDecals-${version}-linux-${arch}.${ext}",
+      "icon": "assets/icon.png",
+      "category": "Graphics",
+      "maintainer": "theDutchmanJames <thedutchmanjames@gmail.com>",
+      "synopsis": "A4 decal studio for slotcar builders"
+    }
+  }
+}

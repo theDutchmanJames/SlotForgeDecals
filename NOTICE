@@ -1,0 +1,14 @@
+SlotForge Decals
+Copyright (c) 2026 theDutchmanJames and contributors.
+Licensed under the GNU Affero General Public License, version 3 or later.
+
+This application uses an unmodified Ghostscript 10.08.0 binary and unmodified
+MuPDF 1.28.1 JavaScript/WASM distribution. Their corresponding source archives
+are provided alongside the native installers on the same GitHub release.
+Application source and build instructions are supplied there too. The local
+portable-folder builder also includes these files in its Sources directory.
+Source and releases: https://github.com/theDutchmanJames/SlotForgeDecals
+
+The interface follows the SlotForge application collection's visual direction.
+The included car illustrations were generated for this application and are
+generic illustrative references, not licensed manufacturer templates.

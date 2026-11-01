@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+ <title>SlotForge Decals — peeling decal sheet</title>
+ <rect x="8" y="8" width="240" height="240" rx="55" fill="#e5484d"/>
+ <g fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M144 198H78a20 20 0 0 1-20-20V78a20 20 0 0 1 20-20h100a20 20 0 0 1 20 20v66Z"/>
+  <path d="M144 198v-34a20 20 0 0 1 20-20h34"/>
+ </g>
+ <g fill="#fff">
+  <path d="M91 91h78l-10 16H81Z"/>
+  <path d="M91 122h50l-10 16H81Z"/>
+ </g>
+</svg>

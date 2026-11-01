@@ -1,0 +1,12 @@
+node_modules/
+dist/
+test-output/
+vendor/ghostscript/
+vendor/sources/
+*.log
+vendor/downloads/
+vendor/build/
+source-assets/
+release-assets/
+design-preview/
+.DS_Store

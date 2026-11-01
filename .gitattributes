@@ -1,0 +1,10 @@
+* text=auto
+*.sh text eol=lf
+*.command text eol=lf
+*.yml text eol=lf
+*.cjs text eol=lf
+*.js text eol=lf
+*.png binary
+*.ico binary
+vendor/imagetracer/* -text -whitespace
+src/pdf-lib.cjs -text -whitespace
