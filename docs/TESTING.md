@@ -6,6 +6,8 @@
 
 ## Earlier Windows verification
 
+The native ARM64 run exposed a delayed HTML-dialog close event cancelling a new import. A deterministic regression failed before the fix and passes afterward. The shared dialog now ignores stale close events after reopening; Escape still cancels the current import. This check runs in every packaged build.
+
 Verified on Windows x64, Node 24.21.0 and Electron 45.1.0 on 1 November 2026.
 
 The Circuit-style top-right Light/Dark control was checked in the packaged app for keyboard activation, settings synchronization, 1100 px layout, unchanged artwork and theme persistence after restart. The startup selector error found during that check was corrected before delivery.

@@ -12,6 +12,7 @@ The first public GitHub release: an offline A4 decal studio for slotcar builders
 - Save a local decal library and projects; share editable sheets and decal packs.
 - Export accurately sized PDFs, plain-paper sizing proofs and optional white-ink separations.
 - Includes all eight reliability fixes from the 0.2.11 review.
+- Fixes a delayed dialog-close event that could cancel a newly opened import on native platforms.
 
 ## Download and install
 
