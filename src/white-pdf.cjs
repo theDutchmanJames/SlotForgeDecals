@@ -1,5 +1,5 @@
 const {PDFDocument,PDFName}=require('./pdf-lib.cjs');
-async function exactA4(bytes,landscape=false){const pdf=await PDFDocument.load(bytes),w=(landscape?297:210)*72/25.4,h=(landscape?210:297)*72/25.4;for(const page of pdf.getPages()){page.setMediaBox(0,0,w,h);page.setCropBox(0,0,w,h);}pdf.setProducer('SlotForge Decals');return pdf.save();}
+async function exactPage(bytes,dimensions){const {number}=require('../renderer/model.js'),w=number(dimensions.w,50,1000,'Paper width')*72/25.4,h=number(dimensions.h,50,1000,'Paper height')*72/25.4,pdf=await PDFDocument.load(bytes);for(const page of pdf.getPages()){page.setMediaBox(0,0,w,h);page.setCropBox(0,0,w,h);}pdf.setProducer('SlotForge Decals');return pdf.save();}
 async function addWhitePlate(bytes,masks,spotName='RDG_WHITE'){
  const pdf=await PDFDocument.load(bytes);const ctx=pdf.context;
  if(!/^[A-Za-z][A-Za-z0-9_-]{0,40}$/.test(spotName))throw Error('Invalid white spot name.');
@@ -20,4 +20,5 @@ async function addWhitePlate(bytes,masks,spotName='RDG_WHITE'){
  }
  pdf.setProducer('SlotForge Decals');return pdf.save();
 }
-module.exports={addWhitePlate,exactA4};
+const exactA4=(bytes,landscape=false)=>exactPage(bytes,{w:landscape?297:210,h:landscape?210:297});
+module.exports={addWhitePlate,exactPage,exactA4};

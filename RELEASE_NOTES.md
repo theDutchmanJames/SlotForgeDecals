@@ -1,18 +1,14 @@
-# SlotForge Decals 0.2.12
+# SlotForge Decals 0.2.13
 
-The first public GitHub release: an offline A4 decal studio for slotcar builders, with native Windows, macOS and Linux applications.
+Choose A4, A5 or Photo 4×6-inch paper directly from the **Sheet size** picker beside your project name.
 
-## Create, scale and print
-
-- Import PNG, JPEG, WebP, SVG, EPS and PDF; set physical dimensions and model scale.
-- Prepare images, trace bitmaps to vectors, refine traced colours and add silhouette outlines.
-- Create editable text, curved lettering, shapes, stripes and racing-number plates.
-- Arrange fixed A4 pages with multi-selection, groups, alignment, repeating grids and print checks.
-- Review selected decals on side/top car references and resize them from the enlarged preview.
-- Save a local decal library and projects; share editable sheets and decal packs.
-- Export accurately sized PDFs, plain-paper sizing proofs and optional white-ink separations.
-- Includes all eight reliability fixes from the 0.2.11 review.
-- Fixes a delayed dialog-close event that could cancel a newly opened import on native platforms.
+- The header uses the same icon as the installed app, with the sheet-size label and dropdown aligned beside the project name.
+- A4: 210 × 297 mm; A5: 148 × 210 mm; Photo 4×6: 101.6 × 152.4 mm.
+- Portrait and landscape work for every size. All pages in a sheet use the same paper.
+- Switching paper preserves decal size and placement. Print checks flag artwork that no longer fits; Auto-arrange uses the selected paper.
+- PDF export, white-ink separations, rulers, layout previews and saved projects follow the selected size.
+- Sizing proofs use labelled 100 mm bars, with a 50 mm bar on the short side of photo paper.
+- Existing projects remain A4. Editable A5/Photo sheets and workspace backups require Decals 0.2.13 or newer; PDFs and decal packs remain easy to share.
 
 ## Download and install
 
@@ -32,9 +28,9 @@ Your existing workspace remains in Documents/SlotForge Decals, separately from t
 
 ## Printing and sources
 
-Print at **Actual size / 100%** and check the proof's 100 mm reference bars. The car preview is a flat sizing guide. White-ink PDF structure is tested, but physical white-ink printing has not been validated; confirm the required spot name and ink order with your print shop.
+Print at **Actual size / 100%** and check the proof's labelled 50/100 mm reference bars. The car preview is a flat sizing guide. White-ink PDF structure is tested, but physical white-ink printing has not been validated; confirm the required spot name and ink order with your print shop.
 
-All five native builds are checked in GitHub Actions before publication, including packaged EPS import, physical PDF dimensions, saving/reopening and the eight review regressions. SHA256SUMS files accompany the downloads.
+All five native builds are checked in GitHub Actions before publication, including packaged EPS import, physical PDF dimensions in all six size/orientation combinations, saving/reopening and the eight review regressions. SHA256SUMS files accompany the downloads.
 
 Licensed under AGPL-3.0-or-later. Corresponding application source, Ghostscript source, complete MuPDF source, revision records and build instructions are provided as separate assets on this release. These source downloads are for rebuilding and redistribution; they are not required to run the app.
 

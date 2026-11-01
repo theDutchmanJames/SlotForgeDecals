@@ -2,11 +2,11 @@
 
 <img src="assets/icon.png" alt="SlotForge Decals icon" width="96" align="right">
 
-**Design. Scale. Print. A4 decal sheets for your slotcars.**
+**Design. Scale. Print. Decal sheets for your slotcars.**
 
 Bring your own artwork, size it in millimetres, check it against a car reference and arrange a sheet ready for decal paper. Save reusable designs in your library, share editable files with other builders, and export a PDF for your home printer or print shop. Everything runs locally, without an account.
 
-**Current version: 0.2.12.** Native Windows, macOS and Linux downloads are built and tested by GitHub Actions. See the [latest release](https://github.com/theDutchmanJames/SlotForgeDecals/releases/latest) for downloads and [release notes](RELEASE_NOTES.md) for this version.
+**Current version: 0.2.13.** Native Windows, macOS and Linux downloads are built and tested by GitHub Actions. See the [latest release](https://github.com/theDutchmanJames/SlotForgeDecals/releases/latest) for downloads and [release notes](RELEASE_NOTES.md) for this version.
 
 **On this page:** [Features](#what-you-can-do) · [Installation](#install-and-open-decals) · [First sheet](#your-first-decal-sheet) · [Printing](#printing-at-the-right-size) · [Saving and sharing](#saving-and-sharing)
 
@@ -28,7 +28,7 @@ Bring your own artwork, size it in millimetres, check it against a car reference
 
 - Add editable text, custom fonts, curved lettering, shapes, lines and racing stripes.
 - Create racing-number roundels and plates, including matching pairs. Add silhouette outlines to imported artwork.
-- Work on fixed **A4 pages**, portrait or landscape, with millimetre rulers, margins and cutting gaps.
+- Choose **A4, A5 or Photo 4×6 in** from the **Sheet size** picker beside the project name. All support portrait and landscape, millimetre rulers, margins and cutting gaps.
 - Drag a selection rectangle or use Ctrl/Command/Shift-click to select several decals. Move, resize, rotate, mirror, group, lock and layer them.
 - Repeat selections in rows and columns, align edges, distribute equal gaps, move artwork between pages or use Auto-arrange.
 - Edit elements inside groups, including nested groups, with undo and redo.
@@ -36,9 +36,9 @@ Bring your own artwork, size it in millimetres, check it against a car reference
 
 ### Check the fit on your car
 
-All selected decals appear in the side or top car preview at their printed dimensions. Enter your model's measurements or import your own straight-on reference pictures. Drag decals on the car without moving them on the A4 sheet.
+All selected decals appear in the side or top car preview at their printed dimensions. Enter your model's measurements or import your own straight-on reference pictures. Drag decals on the car without moving them on the sheet.
 
-Open the enlarged preview to adjust a selected decal's width and height; the A4 sheet updates too. The supplied car is illustrative. This is a **2D sizing aid**, so confirm the final fit with a plain-paper proof.
+Open the enlarged preview to adjust a selected decal's width and height; the sheet updates too. The supplied car is illustrative. This is a **2D sizing aid**, so confirm the final fit with a plain-paper proof.
 
 ### Build a library and share your work
 
@@ -87,11 +87,11 @@ Export a backup, close Decals, then replace the portable executable or install t
 
 ## Your first decal sheet
 
-1. Open the example sheet to explore, or start with a blank A4 page.
+1. Open the example sheet to explore, or start a blank sheet. Choose **A4**, **A5** or **Photo 4×6 in** using **Sheet size** in the top bar.
 2. Choose **Import image or artwork**, select a file, then set its printed width and model scale.
 3. Add text, shapes or a racing-number template.
 4. Select decals and review them on the car. Set the model measurements to match your car.
-5. Arrange the A4 page, leaving cutting space. Review **Print checks** for overlaps, low resolution and artwork outside the margins.
+5. Arrange the page, leaving cutting space. Review **Print checks** for overlaps, low resolution and artwork outside the margins.
 6. Save useful designs to the library and save your editable sheet.
 7. Export a sizing proof, print it on ordinary paper at **100%**, and check the fit before using decal paper.
 
@@ -99,7 +99,17 @@ The [user guide](docs/USER-GUIDE.md) explains image preparation, tracing, outlin
 
 ## Printing at the right size
 
-PDF pages are exactly **210 × 297 mm**, or landscape. Print at **Actual size / 100%**, with **Fit to page** disabled. Measure the proof's 100 mm reference bars before printing on decal paper.
+PDF pages match your selected paper size, in portrait or landscape:
+
+| Sheet size | Portrait dimensions |
+| --- | --- |
+| A4 | 210 × 297 mm |
+| A5 | 148 × 210 mm |
+| Photo 4×6 in | 101.6 × 152.4 mm |
+
+All pages in a project share one paper size. Switching sizes keeps decal dimensions and positions unchanged; review **Print checks** and rearrange anything outside the smaller sheet. Existing projects default to A4.
+
+Choose matching paper in your printer settings and print at **Actual size / 100%**, with **Fit to page** disabled. Measure the proof's labelled reference bars before using decal paper. Bars are 100 mm, with a 50 mm bar on the short side of a 4×6-inch sheet.
 
 Supported vector artwork stays vector; bitmap artwork stays raster. Tracing creates an approximation and cannot recover detail missing from the image.
 
@@ -107,9 +117,11 @@ Optional white-ink output creates a named spot separation for compatible printer
 
 ## Saving and sharing
 
+Editable A5 and Photo 4×6 sheets and their workspace backups require **Decals 0.2.13 or newer**. PDFs can be viewed and printed without Decals; decal packs remain compatible.
+
 | Format | Use it for |
 | --- | --- |
-| **PDF** | Finished A4 sheets for printing and viewing |
+| **PDF** | Finished sheets for printing and viewing |
 | **SVG** | Exported decal artwork; embedded images remain raster |
 | **`.sfsheet`** | Editable sheets with artwork, fonts, sizes and car references |
 | **`.sfdecal`** | Saved decals that another Decals user can import |

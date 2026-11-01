@@ -1,8 +1,8 @@
 {
   "name": "slotforge-decals",
   "productName": "SlotForge Decals",
-  "version": "0.2.12",
-  "description": "An offline A4 decal studio for slotcar builders",
+  "version": "0.2.13",
+  "description": "An offline decal studio for slotcar builders",
   "private": true,
   "license": "AGPL-3.0-or-later",
   "author": "theDutchmanJames",
@@ -110,7 +110,7 @@
       "icon": "assets/icon.png",
       "category": "Graphics",
       "maintainer": "theDutchmanJames <thedutchmanjames@gmail.com>",
-      "synopsis": "A4 decal studio for slotcar builders"
+      "synopsis": "Decal studio for slotcar builders"
     }
   }
 }

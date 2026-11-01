@@ -1,5 +1,11 @@
 # Verification record
 
+## Paper sizes — 0.2.13
+
+51 unit tests, syntax checks and all 15 source desktop suites pass locally. The paper-size suite checks the top-bar picker at 1600 and 1100 pixels in both themes, aligned controls, unchanged artwork, undo/redo, print-bound warnings, editable-file import/export, white ink and persistence. All six paper/orientation combinations produce two-page PDFs with exact page boxes; an 18 × 10 mm vector decal measures within 0.001 mm of its intended dimensions. Photo proofs use labelled 50/100 mm rulers and have been rendered for visual inspection.
+
+Five model/storage/PDF tests cover legacy A4 defaults, invalid sizes, layout bounds, histories, workspace versions and white separations. The native Windows package passes all five packaged suites (paper sizes, dialog events, integration, review fixes and editor UI). Pointer tests explicitly scroll their targets into view before dragging. The paper-size desktop suite runs in every native packaged build before release publication.
+
 ## Native release — 0.2.12
 
 46 unit tests and JavaScript syntax checks pass locally. The native Windows package passes EPS/SVG/PNG import, physical PDF dimensions, named white separation, saving/reopening, all eight review regressions and the editor/export UI suite. GitHub Actions repeats the packaged checks on Windows x64, macOS x64/ARM64 and Linux x64/ARM64 before publication. See the successful workflow run attached to the release commit for platform results.

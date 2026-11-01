@@ -2,15 +2,23 @@
 
 See the [README](../README.md) for downloads and installation.
 
+## Choose your paper size
+
+Use **Sheet size** in the top bar, beside the project name. Choose **A4 (210 × 297 mm)**, **A5 (148 × 210 mm)** or **Photo 4×6 in (101.6 × 152.4 mm)**. Set portrait or landscape under **Paper & white ink → Orientation**. Every page in a project uses the same size.
+
+Changing paper keeps artwork at the same printed size and position. On a smaller sheet, review **Print checks** and reposition decals or use **Auto-arrange**. Undo restores the previous paper choice. Existing projects open as A4; new sheets start as A4.
+
+The paper choice is saved in projects, editable sheet files and workspace backups. A5/Photo editable files and backups need Decals 0.2.13 or newer; older versions reject them to prevent incorrect paper sizing. PDFs can be viewed and printed independently of Decals.
+
 ## Import your own picture
 
-Use **Import image or artwork** in the left-hand Add artwork panel, on the welcome screen, in the User Library window, or in Import & Export. You can also use **Import your own image** below the library or drop a file onto the A4 sheet. Choose your PNG/JPEG/WebP (or SVG/EPS/PDF), set the printed width and scale, and click **Add to sheet**. Pack import is a separate action for files shared by other users.
+Use **Import image or artwork** in the left-hand Add artwork panel, on the welcome screen, in the User Library window, or in Import & Export. You can also use **Import your own image** below the library or drop a file onto the sheet. Choose your PNG/JPEG/WebP (or SVG/EPS/PDF), set the printed width and scale, and click **Add to sheet**. Pack import is a separate action for files shared by other users.
 
 ## Racing-number templates
 
 Choose **Racing numbers…** in Add artwork. Pick a roundel, oval plate or rectangular number plate; set the number, typeface, colours, border and printed dimensions. Roundels keep a circular shape. The preview updates as you change settings.
 
-Choose **One decal** or **Matching pair**. Both copies in a pair have readable, identical numbers and can be edited independently. Pairs use the sheet’s cutting gap; if necessary they are placed vertically or on another A4 page. Existing artwork stays in place, so review Print checks or use Auto-arrange if decals overlap.
+Choose **One decal** or **Matching pair**. Both copies in a pair have readable, identical numbers and can be edited independently. Pairs use the sheet’s cutting gap; if necessary they are placed vertically or on another page. Existing artwork stays in place, so review Print checks or use Auto-arrange if decals overlap.
 
 Templates are regular groups of vector shapes and editable text. Select one, choose **Edit group**, then save the finished design to your library when ready.
 
@@ -20,7 +28,7 @@ Select a grouped decal and choose **Edit group** in the inspector. Choose an ele
 
 Use **Edit nested group** to go deeper and the breadcrumb buttons to return. The upright preview shows the group’s original design coordinates. A resized group can have different design and printed dimensions; the note below the preview shows both. Changing the contents keeps the complete group’s sheet size, rotation, mirroring, ink treatment and car placement. Text edits preserve letter proportions and centre the new text at its previous position; review the fit after changing a number.
 
-**Undo / Redo** work within this editing session. **Cancel** discards the session. **Apply changes** updates the A4 sheet as one undoable edit. Sheet copies and saved library masters remain independent; explicitly save or update a library decal to keep a reusable version. Editable contents travel with saved sheets and decal packs.
+**Undo / Redo** work within this editing session. **Cancel** discards the session. **Apply changes** updates the sheet as one undoable edit. Sheet copies and saved library masters remain independent; explicitly save or update a library decal to keep a reusable version. Editable contents travel with saved sheets and decal packs.
 
 ## Curved text
 
@@ -48,7 +56,7 @@ Select a PNG, JPEG or WebP and choose **Crop & remove background** in the inspec
 4. Switch between **Transparent**, **Light** and **Dark** preview backgrounds to check cut-outs. These backgrounds are never included in the artwork.
 5. Choose **Apply to decal** or **Add prepared copy**. Nothing changes on the sheet before applying. Settings changes disable Apply until an updated preview is ready.
 
-Cropping removes border space without enlarging the artwork: printed millimetres per pixel stay the same, and visible artwork stays at its A4/car-preview placement, including rotation and mirroring. The resulting bounding-box width and height therefore shrink. Original pixels are retained so **Adjust crop & background**, **Reset edits** and **Restore original image** remain available. Restoration respects any subsequent resizing. Undo also restores the preceding edit.
+Cropping removes border space without enlarging the artwork: printed millimetres per pixel stay the same, and visible artwork stays at its sheet/car-preview placement, including rotation and mirroring. The resulting bounding-box width and height therefore shrink. Original pixels are retained so **Adjust crop & background**, **Reset edits** and **Restore original image** remain available. Restoration respects any subsequent resizing. Undo also restores the preceding edit.
 
 Preparation runs locally in a cancellable worker at the original resolution, without downsampling, up to 16 megapixels and 20,000 pixels per edge. Outputs must fit the existing artwork data-size limit. It is intended for plain backgrounds, not automatic subject segmentation in photographs. Prepared artwork remains raster PNG; use tracing separately for vector paths. The retained original and preparation settings travel with saved projects and decal packs, including through tracing and restoring the prepared image.
 
@@ -58,7 +66,7 @@ Preparation runs locally in a cancellable worker at the original resolution, wit
 2. Compare the original with the vector preview. Set 1–16 colours, Smooth/Balanced/Fine detail, and the transparency threshold. Click **Re-trace image** after changing tracing settings.
 3. Optionally remove near-white background connected to the image edges. Enclosed white areas are preserved. Review the result before applying.
 4. Choose **Replace with vector** or **Add vector copy**. Printed dimensions, scale, ink treatment and rotation are retained. Replacing also keeps the original image inside the decal; **Refine traced vector** and **Restore image** remain available after saving, sharing and reopening.
-5. Save the result explicitly to your library, export it as SVG, or include it in an A4 PDF. Undo restores the previous sheet state.
+5. Save the result explicitly to your library, export it as SVG, or include it in a PDF. Undo restores the previous sheet state.
 
 Tracing runs offline in a cancellable background worker. It works best for logos, numbers and flat-colour graphics. Photographs, gradients and soft shadows are approximated with solid colours; lost detail cannot be recovered. Partial opacity becomes a solid/transparent edge at the selected threshold. Large images are processed at a maximum edge of 1,024 pixels (1,536 with Fine detail), while the full-resolution original is retained. Cancel or close the preview to leave the sheet unchanged. A trace cannot be applied until its preview matches the current settings.
 
@@ -73,23 +81,23 @@ Open **Trace image to vector** for a bitmap, or **Refine traced vector** for an 
 - **Replace with vector** applies the whole preview as one sheet undo step; **Add vector copy** keeps the source decal. Cancel keeps the sheet unchanged.
 - Reopening loads the saved edited SVG, so manual changes are preserved. **Re-trace image** explicitly generates new shapes from the retained original and replaces refinements in the preview; local undo can restore the preceding result.
 
-Refinements remain vector paths in SVG/PDF and travel with saved sheets and decal packs. Printed size, A4 placement, rotation, mirroring and car positions are preserved. The original image remains available for restoration. Manual refinement supports the solid-colour paths produced by this app's tracer; it is not a general SVG node editor.
+Refinements remain vector paths in SVG/PDF and travel with saved sheets and decal packs. Printed size, sheet placement, rotation, mirroring and car positions are preserved. The original image remains available for restoration. Manual refinement supports the solid-colour paths produced by this app's tracer; it is not a general SVG node editor.
 
 The inspector and library now label artwork **Raster**, **Vector**, **Traced vector**, **Vector + traced** or **Mixed raster / vector**, including grouped artwork. The library's Vector filter excludes artwork containing bitmaps; Images also includes mixed artwork.
 
 ## Your workshop
 
-- Fixed A4 pages, portrait or landscape, with millimetre rulers, printable margins and cutting gaps.
+- A4, A5 and Photo 4×6-inch pages, portrait or landscape, with millimetre rulers, printable margins and cutting gaps.
 - PNG, SVG, EPS and PDF imports; JPEG and WebP also work. Import physical dimensions or convert from an original model scale. PDF import lets you choose a page.
 - Editable text, imported fonts, rectangles, ellipses, triangles, lines and stripes. Move, resize, rotate, align, group, layer, lock and duplicate artwork; undo/redo and automatic arrangement preserve physical size.
 - Side and top car previews with individually draggable selected decals. Enter measured model dimensions or import your own straight-on reference pictures.
 - Explicit **Save decal to library**, reusable independent copies, names/tags and importable `.sfdecal` sharing packs.
-- Editable `.sfsheet` projects, complete `.sfbackup` backups, vector-preserving PDF output and a sizing proof with 100 mm reference bars.
+- Editable `.sfsheet` projects, complete `.sfbackup` backups, vector-preserving PDF output and a sizing proof with labelled 50/100 mm reference bars.
 - Optional named white-ink separation. See the printing limitations below.
 
 ## Projects and recovery
 
-Click **Projects** beside the sheet name to see your current sheet and saved projects, with first-page A4 thumbnails, page/decal counts and model scales. Search by name or sort by recent use, name or last save. Existing `.sfsheet` files in the workspace's Projects folder are discovered automatically. **Open sheet file…** imports a sheet saved elsewhere.
+Click **Projects** beside the sheet name to see your current sheet and saved projects, with first-page thumbnails, page/decal counts and model scales. Search by name or sort by recent use, name or last save. Existing `.sfsheet` files in the workspace's Projects folder are discovered automatically. **Open sheet file…** imports a sheet saved elsewhere.
 
 - **Save current** stores the current sheet in Projects without opening a file picker. Repeated saves update the same project; changed saved versions are retained in `Projects/History`. Renaming a sheet keeps its project identity.
 - **Open sheet** and **New sheet** save the outgoing sheet before switching. The app refuses to switch if that save fails. The blank default sheet is not archived automatically, but you can explicitly save it.
@@ -113,11 +121,11 @@ Drag from empty paper or canvas to select every decal touched by the rectangle. 
 
 Select your decals, then click **Arrange…** on the canvas toolbar.
 
-- **Rows & columns:** repeat a single decal or a whole selection. Rows and columns include the original cell. Set separate horizontal and vertical gaps in millimetres, inspect the A4 preview, then create copies. Each cell preserves internal placement, printed size and rotation. Copies extend right/down from the original selection and must fit inside the printable margins; existing artwork stays in place. Use print checks to review overlap with other decals.
+- **Rows & columns:** repeat a single decal or a whole selection. Rows and columns include the original cell. Set separate horizontal and vertical gaps in millimetres, inspect the sheet preview, then create copies. Each cell preserves internal placement, printed size and rotation. Copies extend right/down from the original selection and must fit inside the printable margins; existing artwork stays in place. Use print checks to review overlap with other decals.
 - **Align:** left, horizontal centre, right, top, vertical centre or bottom, measured using rotated artwork bounds.
 - **Equal gaps:** select three or more decals and distribute horizontally or vertically. Outer decals stay fixed; insufficient room produces an explanation.
 - **Mirror:** flip each decal left/right or top/bottom in place. Text is mirrored too. Duplicate first to keep both versions. Mirroring is retained in the library, shared files, car preview and PDF. The inspector marks mirrored artwork.
-- **Move to page:** send the selection to an existing or new A4 page, retaining size, position and rotation. The editor follows the selection to its destination.
+- **Move to page:** send the selection to an existing or new page, retaining size, position and rotation. The editor follows the selection to its destination.
 
 Each operation is one undo step. Locked decals must be unlocked before alignment, distribution, mirroring or page moves; grid copying keeps locked originals and creates unlocked copies.
 
@@ -127,15 +135,15 @@ Decal widths and heights are printed millimetres. A scale such as 1:32 alone can
 
 The target scale selected during import becomes the active car/library placement scale; existing decals keep their physical size. The main scale control can also resize selected or all decals by old scale ÷ new scale. Library copies convert from their saved reference scale.
 
-Every selected decal appears on the car at its physical size. New preview placements retain the selection’s sheet spacing, centred over the car; saved side/top placements are reused. Drag each decal independently on the car without changing the A4 layout. Preview placements are saved and support undo/redo. Large selections may extend beyond the car; artwork is never shrunk to fit.
+Every selected decal appears on the car at its physical size. New preview placements retain the selection’s sheet spacing, centred over the car; saved side/top placements are reused. Drag each decal independently on the car without changing the sheet layout. Preview placements are saved and support undo/redo. Large selections may extend beyond the car; artwork is never shrunk to fit.
 
-With one decal selected, open the enlarged car preview (⤢), then adjust **Decal width** or **Decal height** in millimetres. Valid changes immediately update the selected decal on the A4 sheet and both car views. **Keep proportions** links width and height; turn it off for independent sizing. The A4 position and rotation stay unchanged, while the decal stays centred on its existing car-preview position. Each field-editing session is one undo step. Locked decals must be unlocked in the editor first. Changes are saved automatically.
+With one decal selected, open the enlarged car preview (⤢), then adjust **Decal width** or **Decal height** in millimetres. Valid changes immediately update the selected decal on the sheet and both car views. **Keep proportions** links width and height; turn it off for independent sizing. The sheet position and rotation stay unchanged, while the decal stays centred on its existing car-preview position. Each field-editing session is one undo step. Locked decals must be unlocked in the editor first. Changes are saved automatically.
 
 The supplied car is an original illustrative GT reference, not a measured replica of a specific model. Its side and top views use the entered length, height and width. Use your own model measurements and tightly cropped orthographic reference images for a closer comparison. This is a flat sizing preview, not a 3D wrap or a prediction of stretching around body curvature. Confirm fit with a plain-paper proof.
 
 ## Printing and artwork fidelity
 
-Exported pages are exactly 210 × 297 mm (or landscape). Print at **Actual size / 100%**, with any “Fit to page” option disabled. Measure the proof's 100 mm bars before using decal paper.
+Exported pages match the selected sheet size and orientation. Choose matching paper in your printer settings and print at **Actual size / 100%**, with any “Fit to page” option disabled. Measure the proof's labelled bars before using decal paper: 100 mm, or 50 mm on the short side of a Photo 4×6 sheet.
 
 Native text, shapes and supported SVG artwork remain vectors. PNGs and embedded bitmap portions remain raster; placing them in a PDF does not make them infinitely scalable. Low-resolution raster artwork is flagged. Optional image tracing produces new vector paths; review the approximation before replacing a bitmap.
 
