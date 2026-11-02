@@ -3,7 +3,6 @@
   <img src="docs/images/slotforge-brand.png" alt="SlotForge — Slotcar App Collection" width="400">
 </p>
 <br clear="both">
-
 # SlotForge Decals
 
 **Create decals. Check the fit. Print at the right size.**
