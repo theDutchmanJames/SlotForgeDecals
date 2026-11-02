@@ -1,3 +1,7 @@
+<p align="left">
+  <img src="docs/images/slotforge-brand.png" alt="SlotForge — Slotcar App Collection" width="400">
+</p>
+
 # SlotForge Decals
 
 <img src="assets/icon.png" alt="SlotForge Decals icon" width="96" align="right">
