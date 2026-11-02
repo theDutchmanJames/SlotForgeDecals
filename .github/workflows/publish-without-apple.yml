@@ -1,0 +1,62 @@
+name: Publish tested release without Apple Silicon
+on:
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: Completed native release run with four passing platforms
+        type: string
+        required: true
+      source_sha:
+        description: Exact tested source commit
+        type: string
+        required: true
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: decals-native-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Verify the exact source run and four successful native builds
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_RUN: ${{ inputs.source_run }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: node --test tests/apple-recovery.test.cjs && node scripts/validate-apple-recovery.cjs
+      - name: Check out the tested application and release notes
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          path: release-source
+          persist-credentials: false
+      - name: Retrieve the original verified downloads
+        uses: actions/download-artifact@v6
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.source_run }}
+          pattern: release-*
+          path: release-source/release-assets
+          merge-multiple: true
+      - name: Verify checksums and publish with an explicit platform availability note
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          OMIT_APPLE_SILICON: 'true'
+        run: |
+          cd release-source/release-assets
+          for manifest in SHA256SUMS-*.txt; do sha256sum -c "$manifest"; done
+          cd ..
+          GITHUB_SHA="$SOURCE_SHA" node ../scripts/publish-release.cjs
