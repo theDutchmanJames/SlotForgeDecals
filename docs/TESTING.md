@@ -1,5 +1,9 @@
 # Verification record
 
+## Icon update — 0.2.14
+
+Syntax checks and all 51 unit tests pass. The packaged Windows editor smoke test passes, including PDF export, editable sheets and library packs. The Windows executable's seven embedded icon images match the generated ICO byte for byte. The packaged app reports 0.2.14 and loads the new header icon; dark and light previews were captured, and the README screenshot was refreshed. GitHub Actions runs the full native release checks before publication.
+
 ## Paper sizes — 0.2.13
 
 51 unit tests, syntax checks and all 15 source desktop suites pass locally. The paper-size suite checks the top-bar picker at 1600 and 1100 pixels in both themes, aligned controls, unchanged artwork, undo/redo, print-bound warnings, editable-file import/export, white ink and persistence. All six paper/orientation combinations produce two-page PDFs with exact page boxes; an 18 × 10 mm vector decal measures within 0.001 mm of its intended dimensions. Photo proofs use labelled 50/100 mm rulers and have been rendered for visual inspection.

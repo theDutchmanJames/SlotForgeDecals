@@ -1,14 +1,10 @@
-# SlotForge Decals 0.2.13
+# SlotForge Decals 0.2.14
 
-Choose A4, A5 or Photo 4×6-inch paper directly from the **Sheet size** picker beside your project name.
+A new decal-sheet icon, matching the SlotForge App Collection.
 
-- The header uses the same icon as the installed app, with the sheet-size label and dropdown aligned beside the project name.
-- A4: 210 × 297 mm; A5: 148 × 210 mm; Photo 4×6: 101.6 × 152.4 mm.
-- Portrait and landscape work for every size. All pages in a sheet use the same paper.
-- Switching paper preserves decal size and placement. Print checks flag artwork that no longer fits; Auto-arrange uses the selected paper.
-- PDF export, white-ink separations, rulers, layout previews and saved projects follow the selected size.
-- Sizing proofs use labelled 100 mm bars, with a 50 mm bar on the short side of photo paper.
-- Existing projects remain A4. Editable A5/Photo sheets and workspace backups require Decals 0.2.13 or newer; PDFs and decal packs remain easy to share.
+- Upright backing sheet with a plain circular decal and racing stripes.
+- Clear spacing around the peeled corner keeps the design readable at small sizes.
+- The app header, desktop packages and README use the same approved design.
 
 ## Download and install
 

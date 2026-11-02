@@ -4,7 +4,7 @@ The built-in image generation tool produced these original transparent PNG asset
 
 - `assets/car-side.png` — generic white GT car, orthographic side view.
 - `assets/car-top.png` — matching top view, using the side image as a visual reference.
-- `assets/icon.svg` / `assets/icon.png` / `assets/icon.ico` — the collection-style red tile and white peeling decal-sheet symbol. The 240 px tile, 55 px corner radius and #e5484d red match Livery; its white pictogram follows Livery and Timing. SVG is the editable source, PNG is 1024 px, and ICO contains 16/24/32/48/64/128/256 px images. This icon is drawn directly as vector artwork, without image generation.
+- `assets/icon.svg` / `assets/icon.png` / `assets/icon.ico` — the collection-style red tile and white upright decal sheet, with a plain circle, racing stripes and clear spacing around the peeled corner. The 240 px tile, 55 px corner radius and #e5484d red match Livery; its white pictogram follows Livery and Timing. SVG is the editable source, PNG is 1024 px, and ICO contains 16/24/32/48/64/128/256 px images. This icon is drawn directly as vector artwork, without image generation.
 
 `npm run build:icons` regenerates both raster formats. Packaging embeds and verifies the ICO in the Windows executable's icon resources; the app window uses the matching PNG.
 
