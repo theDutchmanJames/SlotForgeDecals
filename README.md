@@ -152,7 +152,7 @@ SlotForge Decals is part of the **SlotForge App Collection**, a family of tools 
 | [SlotForge Paddock](https://github.com/theDutchmanJames/SlotForgePaddock) | Organise your cars, parts, setups and maintenance. |
 | [SlotForge Telemetry](https://github.com/theDutchmanJames/SlotForgeTelemetry) | Technical calculations for your slotcars. |
 | [SlotForge Livery](https://github.com/theDutchmanJames/SlotForgeLivery) | Design car liveries, decals and racing stripes in a 2D studio. |
-| [SlotForge Circuit](https://github.com/theDutchmanJames/SlotForgeTrackBuilder) | Plan track layouts and check how they fit your available space. |
+| [SlotForge Circuit](https://github.com/theDutchmanJames/SlotForgeCircuit) | Plan track layouts and check how they fit your available space. |
 
 Use **Livery** to explore a car's appearance and **Decals** to prepare artwork for printing.
 
