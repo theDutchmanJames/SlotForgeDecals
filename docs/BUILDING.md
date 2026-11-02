@@ -51,7 +51,7 @@ Electron-builder 26.18.0 is pinned. Windows packages are unsigned; Mac apps use 
 | --- | --- |
 | windows-2025 | Windows x64 portable EXE |
 | macos-15-intel | Intel Mac DMG / ZIP |
-| macos-15 | Apple Silicon Mac DMG / ZIP |
+| macos-26 | Apple Silicon Mac DMG / ZIP |
 | ubuntu-24.04 | Linux x64 AppImage / DEB |
 | ubuntu-24.04-arm | Linux ARM64 AppImage / DEB |
 
@@ -60,6 +60,8 @@ Every platform runs syntax/unit tests. Windows also runs the full desktop regres
 Only after all native builds and corresponding sources pass does the publisher verify checksums, create a draft release, upload every expected download, verify the uploaded digests, and publish it. The version tag must point to the exact tested commit. Existing published versions are never overwritten; bump package.json and package-lock.json for another release. Update RELEASE_NOTES.md and the README version in the same commit. Manual runs publish only when requested and run from main.
 
 Pull requests run read-only syntax and unit checks. Publishing permissions are limited to the final job; build jobs have read-only repository access. No signing or publishing secrets are required beyond GitHub's scoped workflow token.
+
+If GitHub cannot allocate an Apple Silicon runner, [Recover Apple Silicon release](../.github/workflows/recover-apple-release.yml) can rebuild only that platform on macOS 26. First stop the stalled native workflow, then supply its run ID and full source commit SHA. Recovery requires successful source, Windows, Intel Mac and both Linux jobs, plus unexpired artifacts from that same commit. It checks out the original source, runs the normal Apple Silicon tests, verifies all download checksums, and publishes the original version and commit. It does not include later application changes.
 
 ## Corresponding source and licences
 
