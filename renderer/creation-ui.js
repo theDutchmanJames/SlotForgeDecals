@@ -44,7 +44,7 @@
    q('#group-size-note').textContent=`Upright design: ${parent.baseW.toFixed(1)} × ${parent.baseH.toFixed(1)} mm. Fields use this design’s coordinates. Sheet frame: ${draft.w.toFixed(1)} × ${draft.h.toFixed(1)} mm; artwork bounds: ${visible.w.toFixed(1)} × ${visible.h.toFixed(1)} mm. Print checks and previews include elements beyond the frame; sheet rotation, mirroring and car placement are kept.`;
    q('#group-elements').innerHTML=parent.children.map((c,n)=>`<button data-group-item="${n}" aria-pressed="${n===index}"><span>${E(c.name)}</span><small>${E(c.kind)}${c.locked?' · Locked':''}</small></button>`).join('');
    for(const el of document.querySelectorAll('[data-group-item]'))el.onclick=()=>{index=Number(el.dataset.groupItem);render();};
-   const paint=!['group','svg','image'].includes(item.kind),outline=paint&&!['line','stripe'].includes(item.kind);
+   const paint=!['group','svg','image','slice'].includes(item.kind),outline=paint&&!['line','stripe'].includes(item.kind);
    const field=(label,key,value,min=-10000,max=10000,step=.1)=>`<div class="field"><label for="group-${key}">${label}</label><input id="group-${key}" data-group-prop="${key}" type="number" value="${Number(value.toFixed(3))}" min="${min}" max="${max}" step="${step}"></div>`;
    q('#group-fields').innerHTML=`<div class="row group-element-heading"><strong>${E(item.name)}</strong><button id="group-lock">${item.locked?'Unlock':'Lock'}</button></div><fieldset class="group-edit-fields" ${item.locked?'disabled':''}>
    <div class="field"><label for="group-name">Element name</label><input id="group-name" value="${E(item.name)}" maxlength="160"></div>

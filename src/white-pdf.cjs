@@ -1,5 +1,14 @@
 const {PDFDocument,PDFName}=require('./pdf-lib.cjs');
-async function exactPage(bytes,dimensions){const {number}=require('../renderer/model.js'),w=number(dimensions.w,50,1000,'Paper width')*72/25.4,h=number(dimensions.h,50,1000,'Paper height')*72/25.4,pdf=await PDFDocument.load(bytes);for(const page of pdf.getPages()){page.setMediaBox(0,0,w,h);page.setCropBox(0,0,w,h);}pdf.setProducer('SlotForge Decals');return pdf.save();}
+async function exactPage(bytes,dimensions){
+ const {number}=require('../renderer/model.js'),w=number(dimensions.w,1,1000,'Paper width')*72/25.4,h=number(dimensions.h,1,1000,'Paper height')*72/25.4,pdf=await PDFDocument.load(bytes);
+ for(const page of pdf.getPages()){
+  // PDF coordinates start at the bottom. Keep the artwork at the top-left when
+  // correcting Chromium rounding or cropping a small slice from a full page.
+  const oldHeight=page.getHeight();page.translateContent(0,h-oldHeight);
+  page.setMediaBox(0,0,w,h);page.setCropBox(0,0,w,h);
+ }
+ pdf.setProducer('SlotForge Decals');return pdf.save();
+}
 async function addWhitePlate(bytes,masks,spotName='RDG_WHITE'){
  const pdf=await PDFDocument.load(bytes);const ctx=pdf.context;
  if(!/^[A-Za-z][A-Za-z0-9_-]{0,40}$/.test(spotName))throw Error('Invalid white spot name.');

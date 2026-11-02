@@ -112,6 +112,18 @@ Every page in a project uses the same paper size. Changing paper preserves decal
 
 Millimetre rulers, printable margins and cutting gaps help organise the sheet. **Print checks** flag artwork outside the margins, insufficient cutting space, low-resolution images and white-ink settings that need attention. Light and dark themes are available from the top-right controls.
 
+### Save or print part of a sheet
+
+Choose **Slice area…** above the canvas to draw a rectangle over the current page. Enter its left and top position, width and height in millimetres for precise control. Choose **Clip at boundary** to keep exactly that rectangle, or **Expand to include whole decals** to avoid cutting through artwork.
+
+- **Save to library** keeps the slice as one reusable decal, including its transparent background, relative positions, text, vectors, embedded images, fonts and individual white-ink settings. Give it a name and optional tags, then share it through a normal .sfdecal pack.
+- **Print this area…** previews a PDF with the original A4, A5 or Photo 4×6 paper size. Only the selected area prints, in its original position.
+- **Export cropped PDF…** previews a custom-sized PDF whose page matches the slice, with no rescaling of the artwork.
+
+The original sheet stays unchanged. Saved slices can be moved, rotated and resized as one decal; edit the original artwork before making a replacement slice. Library placement follows model scale, so use the same scale to retain the saved millimetre dimensions. Files containing slices need a version of SlotForge Decals that supports slicing.
+
+Print the PDF at **Actual size / 100%**. Custom paper sizes and physical offcuts depend on your printer’s supported sizes, feed direction and margins; slicing does not position or feed an offcut automatically.
+
 ### Export PDFs and check your print size
 
 **Export PDF** produces pages at the selected paper dimensions and orientation. Supported vector artwork, text and shapes remain vectors; imported bitmap content remains raster. Export individual decal artwork as SVG when you need a reusable graphic.

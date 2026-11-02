@@ -1,10 +1,23 @@
-# SlotForge Decals 0.2.14
+# SlotForge Decals 0.2.15
 
-A new decal-sheet icon, matching the SlotForge App Collection.
+Save, reuse and print just the part of a decal sheet you need.
 
-- Upright backing sheet with a plain circular decal and racing stripes.
-- Clear spacing around the peeled corner keeps the design readable at small sizes.
-- The app header, desktop packages and README use the same approved design.
+## Slice area
+
+- Open **Slice area…** above the canvas and draw a rectangle, or enter its position and dimensions in millimetres.
+- Clip exactly at the boundary, or expand the area to include whole decals.
+- Save a transparent slice to your library and share it in a .sfdecal pack. Text, vectors, embedded images, fonts and individual ink settings are retained.
+- **Print this area…** keeps the original A4, A5 or Photo 4×6 paper size and prints only the selected area in its original position.
+- **Export cropped PDF…** creates a PDF whose page matches the slice. Both export options include a preview and preserve the artwork's physical scale.
+- The original sheet stays unchanged. Saved slices move, rotate and resize as one decal; edit the original artwork before creating a replacement slice.
+
+## Printing and placement fixes
+
+- Full-width and full-height library slices stay inside the paper bounds without resizing.
+- Ungrouping retains white-only artwork and white backing, including nested slices, undo/redo and shared decal packs.
+- Cropped PDFs retain top-left alignment and artwork scale, including very small slices.
+
+Files containing slices require SlotForge Decals 0.2.15 or newer. Library placement follows model scale; use the same scale to keep the saved millimetre size. Custom paper sizes and physical offcuts depend on your printer's supported sizes, feed direction and margins.
 
 ## Download and install
 
@@ -26,7 +39,7 @@ Your existing workspace remains in Documents/SlotForge Decals, separately from t
 
 Print at **Actual size / 100%** and check the proof's labelled 50/100 mm reference bars. The car preview is a flat sizing guide. White-ink PDF structure is tested, but physical white-ink printing has not been validated; confirm the required spot name and ink order with your print shop.
 
-All five native builds are checked in GitHub Actions before publication, including packaged EPS import, physical PDF dimensions in all six size/orientation combinations, saving/reopening and the eight review regressions. SHA256SUMS files accompany the downloads.
+All five native builds are checked in GitHub Actions before publication, including packaged slice drawing and sharing, cropped PDF dimensions, white-mask fidelity, EPS import, all six standard paper size/orientation combinations, saving/reopening and review regressions. SHA256SUMS files accompany the downloads.
 
 Licensed under AGPL-3.0-or-later. Corresponding application source, Ghostscript source, complete MuPDF source, revision records and build instructions are provided as separate assets on this release. These source downloads are for rebuilding and redistribution; they are not required to run the app.
 

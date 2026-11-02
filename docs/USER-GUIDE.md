@@ -141,6 +141,16 @@ With one decal selected, open the enlarged car preview (⤢), then adjust **Deca
 
 The supplied car is an original illustrative GT reference, not a measured replica of a specific model. Its side and top views use the entered length, height and width. Use your own model measurements and tightly cropped orthographic reference images for a closer comparison. This is a flat sizing preview, not a 3D wrap or a prediction of stretching around body curvature. Confirm fit with a plain-paper proof.
 
+## Save or print a slice
+
+Choose **Slice area…** above the canvas. Draw a rectangle over the current page, or enter its left/top position and width/height in millimetres. **Clip at boundary** uses that exact rectangle; **Expand to include whole decals** grows it to avoid cutting through artwork.
+
+- **Save to library:** name the slice and optionally add tags. It becomes one reusable decal with a transparent background, retained artwork and individual ink treatments. Share it through a .sfdecal pack. Use the same model scale when placing it to keep its saved physical size.
+- **Print this area…:** preview and save a PDF on the original paper size, showing only the slice at its original position.
+- **Export cropped PDF…:** preview and save a custom-sized PDF matching the slice. Your printer must support that paper size.
+
+The original sheet stays unchanged. You can move, rotate and resize a saved slice as one decal; edit the original artwork to make a replacement. Files containing slices need version 0.2.15 or newer. Print at **Actual size / 100%**, and check your printer's margins and offcut feeding requirements.
+
 ## Printing and artwork fidelity
 
 Exported pages match the selected sheet size and orientation. Choose matching paper in your printer settings and print at **Actual size / 100%**, with any “Fit to page” option disabled. Measure the proof's labelled bars before using decal paper: 100 mm, or 50 mm on the short side of a Photo 4×6 sheet.

@@ -28,7 +28,7 @@ Run builds as your normal user.
 - macOS: `bash "Build macOS.command" --no-pause`
 - Linux: `bash "Build Linux.sh" --no-pause`
 
-These install locked dependencies, check syntax, run unit tests, build Ghostscript for the host architecture and produce native packages in `dist/v0.2.14/`. They accept `--arch x64` or `--arch arm64`, which must match the host. `--quick` reuses matching dependencies and skips checks; it is for local iteration, not official release verification.
+These install locked dependencies, check syntax, run unit tests, build Ghostscript for the host architecture and produce native packages in `dist/v0.2.15/`. They accept `--arch x64` or `--arch arm64`, which must match the host. `--quick` reuses matching dependencies and skips checks; it is for local iteration, not official release verification.
 
 The lower-level commands, after dependency/converter setup:
 

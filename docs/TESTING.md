@@ -1,5 +1,9 @@
 # Verification record
 
+## Slicing update — 0.2.15
+
+Syntax checks, all 57 unit tests and all 17 Windows desktop suites pass. The rebuilt Windows preview also passes the new slice regressions. Tests compare actual rendered PDF colour output and complete white masks before and after ungrouping, and check edge artwork in a reused full-width slice. GitHub Actions repeats all Windows desktop suites and seven packaged suites on each native target before publication.
+
 ## Icon update — 0.2.14
 
 Syntax checks and all 51 unit tests pass. The packaged Windows editor smoke test passes, including PDF export, editable sheets and library packs. The Windows executable's seven embedded icon images match the generated ICO byte for byte. The packaged app reports 0.2.14 and loads the new header icon; dark and light previews were captured, and the README screenshot was refreshed. GitHub Actions runs the full native release checks before publication.
@@ -95,3 +99,7 @@ The creation regression and core desktop smoke tests also pass after these addit
 Six additional tests cover pointer-resize size and outline constraints, nested overflow geometry through rotation/mirroring/nonuniform scales, safe auto-arrangement, effective opacity and refusal to change overlapping transparency, collection limits and export/import agreement, storage rejection without rotating backups, and recovery from semantically invalid primary JSON without modifying that file.
 
 `node tests/review-fixes.cjs` repeats all eight review scenarios in an isolated desktop workspace. A 40 × 1 mm line dragged toward 2 mm wide stops at 4 × 0.1 mm and survives restart. Width 0 followed by width 25 accepts the correction; locked inputs are disabled and their handlers also guard edits. Moving a group child beyond A4 triggers print warnings and an export-review dialog; its standalone preview contains the overflow (red pixel check), and Auto-arrange fits the entire group. Ungrouping multiplies safe opacity, while overlapping group transparency is protected. The 1,001st library save is refused, updating at 1,000 succeeds, and restart succeeds. A 500-decal export round-trips; 501 is blocked. With workspace writes deliberately failing, a backup still exports all 1,000 entries plus the current unsaved sheet name and validates for restoration. No renderer exceptions are allowed.
+
+## Slice placement and inherited ink
+
+`node tests/slice-regressions.cjs` checks full-width library placement and visible edge artwork in a real PDF. It changes group ink through the inspector, ungroups nested slices, and compares the entire white mask and rendered colour PDF before and after. White-only artwork remains off the colour plate, white backing is retained, and undo/redo and decal-pack sharing preserve the result. The suite runs in both desktop and packaged checks. Unit tests additionally cover full-height, rotated and oversized placements across every sheet size and orientation without resizing artwork.
