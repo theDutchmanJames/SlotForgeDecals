@@ -10,7 +10,7 @@
 
 Bring your own artwork, size it in millimetres, check it against a car reference and arrange a sheet ready for decal paper. Save reusable designs in your library, share editable files with other builders, and export a PDF for your home printer or print shop. Everything runs locally, without an account.
 
-**Current version: 0.2.13.** Native Windows, macOS and Linux downloads are built and tested by GitHub Actions. See the [latest release](https://github.com/theDutchmanJames/SlotForgeDecals/releases/latest) for downloads and [release notes](RELEASE_NOTES.md) for this version.
+**[Download for Windows, macOS and Linux](https://github.com/theDutchmanJames/SlotForgeDecals/releases/latest)**
 
 **On this page:** [Features](#what-you-can-do) · [Installation](#install-and-open-decals) · [First sheet](#your-first-decal-sheet) · [Printing](#printing-at-the-right-size) · [Saving and sharing](#saving-and-sharing) · [App Collection](#slotforge-app-collection)
 
@@ -87,7 +87,7 @@ Packages are built on Ubuntu 24.04 for compatible modern distributions. Run the 
 
 ### Updating
 
-Export a backup, close Decals, then replace the portable executable or install the newer package. Your workspace is separate from the app, so updating does not replace your artwork. Automatic in-app updating is not included.
+Export a backup, close Decals, then replace the portable executable or install the newer package. Your workspace is separate from the app, so updating does not replace your artwork. Automatic in-app updating is not included. See the [release notes](RELEASE_NOTES.md) for changes in the latest release.
 
 ## Your first decal sheet
 
