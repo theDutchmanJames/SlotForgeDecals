@@ -1,6 +1,22 @@
-# SlotForge Decals 0.2.15
+# SlotForge Decals 0.2.16
 
-Save, reuse and print just the part of a decal sheet you need.
+Save and share complete editable sheets, review raster artwork before printing, and zoom around the canvas with Ctrl + mousewheel. This release also includes the slicing update previously prepared for 0.2.15.
+
+## Sheet Library and editable sharing
+
+- **Sheet Library** now sits beside **Decal Library** in the main navigation.
+- **Save sheet / Ctrl+S** saves locally without opening a file export dialog.
+- **Export sheet…** creates a shareable .sfsheet containing every page, editable artwork and imported fonts. Export any saved sheet directly from its library card.
+- **Import sheet…** creates an independent copy, preserving existing sheets even when files share an internal ID.
+- Blank sheet templates are retained in the library, including later edits. An unreadable saved template blocks switching rather than silently skipping the save.
+
+## Clearer PDF exports and easier navigation
+
+- The PDF export review labels vector, traced vector, raster and mixed artwork, including elements inside groups and saved slices.
+- Raster-containing artwork is highlighted even at high resolution, with an optional tracing reminder. Retained originals of traced decals do not trigger a raster warning.
+- Slice PDF previews include the same artwork review. White-ink backing is identified separately as a 600 PPI raster mask.
+- **Ctrl + mousewheel over the canvas** zooms around the cursor. Normal scrolling and printed dimensions stay unchanged.
+- Theme-matched SlotForge logos replace the header wordmark and add a small 120 × 22 px footer signature.
 
 ## Slice area
 
@@ -31,7 +47,7 @@ Files containing slices require SlotForge Decals 0.2.15 or newer. Library placem
 
 Mac ZIPs are also provided; Mac builds require macOS 15 or newer. On Linux, install the DEB with your software installer, or mark the AppImage executable before opening it. Linux packages are built on Ubuntu 24.04 for compatible modern systems. No Node.js installation is needed.
 
-Windows builds are unsigned. Mac builds are ad-hoc signed, not Apple-notarized, and may require per-app approval in Privacy & Security. The app keeps its sandbox enabled.
+Windows builds are unsigned; Smart App Control may block them. Code signing is not included in this release. Mac builds are ad-hoc signed, not Apple-notarized, and may require per-app approval in Privacy & Security. The app keeps its sandbox enabled.
 
 Your existing workspace remains in Documents/SlotForge Decals, separately from the application. Export a backup before updating. There is no automatic in-app updater.
 

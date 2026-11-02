@@ -12,7 +12,7 @@ The paper choice is saved in projects, editable sheet files and workspace backup
 
 ## Import your own picture
 
-Use **Import image or artwork** in the left-hand Add artwork panel, on the welcome screen, in the User Library window, or in Import & Export. You can also use **Import your own image** below the library or drop a file onto the sheet. Choose your PNG/JPEG/WebP (or SVG/EPS/PDF), set the printed width and scale, and click **Add to sheet**. Pack import is a separate action for files shared by other users.
+Use **Import image or artwork** in the left-hand Add artwork panel, on the welcome screen, in the Decal Library window, or in Import & Export. You can also use **Import your own image** below the library or drop a file onto the sheet. Choose your PNG/JPEG/WebP (or SVG/EPS/PDF), set the printed width and scale, and click **Add to sheet**. Pack import is a separate action for files shared by other users.
 
 ## Racing-number templates
 
@@ -95,15 +95,15 @@ The inspector and library now label artwork **Raster**, **Vector**, **Traced vec
 - Editable `.sfsheet` projects, complete `.sfbackup` backups, vector-preserving PDF output and a sizing proof with labelled 50/100 mm reference bars.
 - Optional named white-ink separation. See the printing limitations below.
 
-## Projects and recovery
+## Sheet Library and sharing
 
-Click **Projects** beside the sheet name to see your current sheet and saved projects, with first-page thumbnails, page/decal counts and model scales. Search by name or sort by recent use, name or last save. Existing `.sfsheet` files in the workspace's Projects folder are discovered automatically. **Open sheet file…** imports a sheet saved elsewhere.
+Click **Sheet Library** beside **Decal Library** in the top navigation to see your current sheet and saved projects, with first-page thumbnails, page/decal counts and model scales. Search by name or sort by recent use, name or last save. Existing `.sfsheet` files in the workspace's Projects folder are discovered automatically. **Import sheet…** adds a shared .sfsheet as an independent copy, preserving existing saved sheets.
 
-- **Save current** stores the current sheet in Projects without opening a file picker. Repeated saves update the same project; changed saved versions are retained in `Projects/History`. Renaming a sheet keeps its project identity.
+- **Save sheet / Ctrl+S** stores the current sheet in Sheet Library without opening a file picker. Repeated saves update the same project; changed saved versions are retained in `Projects/History`. Renaming a sheet keeps its project identity.
 - **Open sheet** and **New sheet** save the outgoing sheet before switching. The app refuses to switch if that save fails. The blank default sheet is not archived automatically, but you can explicitly save it.
 - **Versions** shows earlier saved versions of that project. **Workspace recovery** shows sheets from the last three automatic workspace backups.
 - **Preview & recover** lets you review a version, then opens a separate recovered copy. The original project, library and preferences are kept. This recovers a sheet, not an entire earlier library; full-workspace backup import remains available through Import & Export.
-- **Save sheet / Ctrl+S** also saves to Projects, then offers the existing file picker for a portable editable copy.
+- **Export sheet…** creates a portable editable .sfsheet file. Use the editor toolbar for the current sheet, or Export sheet… on any Sheet Library card without opening that sheet. The current sheet is saved locally before exporting.
 
 Project files contain the artwork, fonts, sizes and car-reference settings. Saved histories are local and are not automatically purged. Full `.sfbackup` files include the current workspace/library; separately copy the Projects folder if you also want to back up all saved sheets and their histories.
 
@@ -118,6 +118,8 @@ The default persistent folder is **Documents/SlotForge Decals**, resolved throug
 Drag from empty paper or canvas to select every decal touched by the rectangle. Ctrl/Shift-click toggles decals on the sheet or in Sheet layers; Ctrl/Shift-drag adds a rectangle to your selection. Ctrl+A selects the current page. Drag selected artwork to move it together; locked artwork stays put. Escape cancels a drag or clears a selection. Selection alone does not change your sheet or undo history.
 
 ## Faster arrangement
+
+Hold **Ctrl** and use the **mousewheel over the canvas** to zoom around the pointer. Normal mousewheel scrolling still pans the sheet. Zoom only changes your view; decal dimensions and PDF output stay the same. Click the zoom percentage below the canvas to fit the page again.
 
 Select your decals, then click **Arrange…** on the canvas toolbar.
 
@@ -152,6 +154,8 @@ Choose **Slice area…** above the canvas. Draw a rectangle over the current pag
 The original sheet stays unchanged. You can move, rotate and resize a saved slice as one decal; edit the original artwork to make a replacement. Files containing slices need version 0.2.15 or newer. Print at **Actual size / 100%**, and check your printer's margins and offcut feeding requirements.
 
 ## Printing and artwork fidelity
+
+**Export PDF** opens an artwork review before saving. Each element is labelled **Vector**, **Traced vector**, **Raster**, or **Mixed raster / vector**, with its page number and group/slice path. Raster-containing entries are highlighted even when their resolution is high. Return to the editor to trace a logo if needed, or continue with raster artwork intentionally. Retained originals of traced decals do not count as printed raster images. Slice PDF previews include the same review for the selected decals.
 
 Exported pages match the selected sheet size and orientation. Choose matching paper in your printer settings and print at **Actual size / 100%**, with any “Fit to page” option disabled. Measure the proof's labelled bars before using decal paper: 100 mm, or 50 mm on the short side of a Photo 4×6 sheet.
 

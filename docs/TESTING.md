@@ -1,5 +1,13 @@
 # Verification record
 
+## Local review — 2 November 2026
+
+Reviewed changes since the slicing review: theme-aware branding, the PDF artwork review, Ctrl+mousewheel zoom, Sheet Library saving/sharing, and Apple Silicon release recovery. Fixed an imported blank `Untitled sheet` template not being stored in the library. Later edits to saved blank templates are now preserved on switching; an unreadable saved blank blocks switching instead of silently skipping its save.
+
+JavaScript syntax checks, all 61 unit tests and all 19 Windows desktop suites pass. A newly built Windows package also passes sheet-sharing and PDF-review/zoom suites, including cancelled/failed exports, independent imports into another workspace, embedded fonts, groups, slices, multiple pages, restart persistence, mixed SVG artwork, white-mask notices, and unchanged print dimensions. Both themes, bundled logos, the 120 × 22 px footer and long-title layouts were checked at seven widths (1100–1600 px), including the responsive breakpoint. Test workspaces are isolated from real user data.
+
+Release-recovery validation tests pass; the workflow still requires all five tested platforms and matching source/artifact commits. These local changes have not been published, and macOS/Linux package checks have not been rerun for them.
+
 ## Slicing update — 0.2.15
 
 Syntax checks, all 57 unit tests and all 17 Windows desktop suites pass. The rebuilt Windows preview also passes the new slice regressions. Tests compare actual rendered PDF colour output and complete white masks before and after ungrouping, and check edge artwork in a reused full-width slice. GitHub Actions repeats all Windows desktop suites and seven packaged suites on each native target before publication.

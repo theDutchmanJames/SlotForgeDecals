@@ -5,11 +5,11 @@ async function main(){
  const launch=()=>electron.launch({executablePath:process.env.SLOTFORGE_TEST_EXE||require('electron'),args:process.env.SLOTFORGE_TEST_EXE?[]:[root],env});
  let app=await launch(),page=await app.firstWindow();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  const done=()=>page.locator('#dialog [data-action="close"]').first().click();
- const browser=async()=>{await page.locator('.projectbar [data-action="projects"]').click();await page.waitForSelector('.project-card');};
+ const browser=async()=>{await page.locator('nav [data-action="projects"]').click();await page.waitForSelector('.project-card');};
  const state=()=>page.evaluate(()=>JSON.parse(JSON.stringify(Studio.project)));
  const entries=()=>page.evaluate(()=>desktop.listProjects());
  const card=name=>page.locator('.project-card').filter({has:page.locator('h3',{hasText:new RegExp('^'+name+'$')})});
- const saveCurrent=async()=>{await page.locator('#project-save-current').click();await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Saved to Projects')&&!projectTask);await page.waitForSelector('.project-card');};
+ const saveCurrent=async()=>{await page.locator('#project-save-current').click();await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Saved to Sheet Library')&&!projectTask);await page.waitForSelector('.project-card');};
  const open=name=>card(name).locator('[data-project-open]').click();
  try{
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].showInactive());await page.waitForFunction(()=>window.Studio?.ready);await done();

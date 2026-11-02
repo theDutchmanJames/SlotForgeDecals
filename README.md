@@ -160,9 +160,9 @@ The library supports **1,000 decals**, and a sharing pack can contain up to **50
 
 Sharing is currently file-based. Online galleries and direct Livery integration are not included.
 
-### Save projects and recover earlier work
+### Save, share and recover complete sheets
 
-The current workspace saves automatically. Use **Projects** to browse saved sheets with thumbnails, search by name, and sort by recent use, name or last save. **Save sheet** also creates a portable editable file.
+The current workspace saves automatically. Open **Sheet Library**, beside **Decal Library** in the top navigation, to browse complete sheets with thumbnails, search by name, and sort by recent use, name or last save. **Save sheet / Ctrl+S** saves locally. **Export sheet…** creates a shareable `.sfsheet` containing all pages, editable artwork and imported fonts. Export the current sheet from the toolbar, or any saved sheet directly from its library card. **Import sheet…** adds an independent editable copy, preserving existing saved sheets.
 
 Earlier saved project versions and recent workspace backups can be previewed and recovered as separate sheet copies. Opening another project or starting a new sheet preserves the outgoing project first.
 
@@ -188,7 +188,7 @@ Open the **[latest GitHub release](https://github.com/theDutchmanJames/SlotForge
 
 Save the portable `.exe` in a folder you want to keep, then double-click it. It extracts its runtime automatically; no separate installation is required.
 
-Windows releases are unsigned and may show an unknown-publisher warning. Check that the download came from this repository before deciding to open it.
+Windows releases are unsigned and may show an unknown-publisher warning. Smart App Control can block unsigned downloads entirely; it has no per-app exception. Check that the download came from this repository. Trusted Windows signing is not available in this release.
 
 ### macOS
 

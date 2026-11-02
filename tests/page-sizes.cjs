@@ -31,7 +31,7 @@ async function main(){
   }
   await page.evaluate(()=>{Studio.project.name='Photo white';Studio.project.whiteInk=true;Studio.project.items[0].ink='colour-white';});await page.evaluate(()=>Studio.exportPDF(false,true));
   const white=await PDFDocument.load(await fs.readFile(path.join(run,'exports','Photo white.pdf')));assert.equal(white.getPage(0).node.Resources().lookup(PDFName.of('ColorSpace')).lookup(PDFName.of('SFWhite')).get(1).toString(),'/RDG_WHITE');assert(Math.abs(white.getPage(0).getWidth()-432)<.001);
-  await page.locator('.projectbar [data-action="save-sheet"]').click();await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Editable sheet saved'));
+  await page.locator('.projectbar [data-action="export-sheet"]').click();await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Editable sheet exported'));
   const saved=path.join(run,'exports','Photo white.sfsheet'),data=JSON.parse(await fs.readFile(saved));assert.equal(data.version,2);assert.equal(data.project.pageSize,'photo4x6');
   await picker.selectOption('a4');await page.locator('#pack-file').setInputFiles(saved);await page.locator('#confirm').click();await page.waitForFunction(()=>!document.querySelector('#dialog').open);assert.equal(await picker.inputValue(),'photo4x6');
   for(const [width,height,theme] of [[1600,1050,'dark'],[1100,720,'dark'],[1100,720,'light']]){

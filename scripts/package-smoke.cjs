@@ -6,7 +6,7 @@ const candidates=process.platform==='win32'?['win-unpacked/SlotForge Decals.exe'
 const executable=candidates.map(p=>path.join(dist,p)).find(p=>fs.existsSync(p));
 assert(executable,'The native unpacked application must exist');
 const env={...process.env,SLOTFORGE_TEST_EXE:executable};
-for(const suite of ['slicing','slice-regressions','page-sizes','dialog','integration','review-fixes','ui']){
+for(const suite of ['sheet-sharing','pdf-review-zoom','slicing','slice-regressions','page-sizes','dialog','integration','review-fixes','ui']){
   console.log(`Packaged ${process.platform}/${process.arch}: ${suite}`);
   const result=spawnSync(process.execPath,[`tests/${suite}.cjs`],{cwd:root,stdio:'inherit',env});
   if(result.error)throw result.error;

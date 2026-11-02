@@ -32,3 +32,19 @@
 
 .sheet-size-picker{display:flex;align-items:center;gap:8px;margin-inline:4px;flex-shrink:0}.sheet-size-picker>span{font-size:11px;font-weight:650;color:var(--ink);white-space:nowrap}.sheet-size-picker select{width:235px;height:32px;font-size:11px;border-color:var(--blue);padding:6px 9px}.projectbar .project-title{min-width:0;flex-shrink:1}.projectbar>.badge{flex-shrink:0}@media(max-width:1300px){.projectbar #page-badge,.projectbar .save-status{display:none}.sheet-size-picker select{width:225px}.projectbar .project-title{max-width:130px}}
 .slice-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px}.slice-stage{height:min(53vh,550px);display:flex;align-items:center;justify-content:center;background:var(--bg);padding:12px;border:1px solid var(--line);border-radius:8px}.slice-stage>svg{width:100%;height:100%;touch-action:none;cursor:crosshair;user-select:none}.slice-layout section{min-width:0}.slice-print-preview{height:45vh;display:flex;justify-content:center;background:var(--bg);padding:12px;border:1px solid var(--line);border-radius:8px;margin-bottom:15px}.slice-print-preview img{max-height:100%;max-width:100%;background:white;object-fit:contain}.toolbar{flex-wrap:wrap}dialog:has(.slice-layout) .dialog-foot{flex-wrap:wrap;position:sticky;bottom:0;background:var(--panel)}@media(max-width:750px){.slice-layout{grid-template-columns:1fr}.slice-stage{height:35vh}}
+
+/* Theme-aware collection wordmarks; reserve the original header text space. */
+.brand-wordmark{display:inline-block;position:relative;vertical-align:baseline}
+.brand-wordmark-size{visibility:hidden}
+.brand-wordmark img{position:absolute;left:0;top:50%;transform:translateY(-50%);display:block;width:100%;height:auto}
+.footer-wordmark{display:block;width:120px;height:22px;flex-shrink:0}
+.footer-wordmark img{display:block;width:100%;height:100%;object-fit:contain}
+.brand-wordmark .wordmark-light,.footer-wordmark .wordmark-light{display:none}
+[data-theme=light] .wordmark-light{display:block}
+[data-theme=light] .wordmark-dark{display:none}
+
+/* PDF review identifies bitmap content without blocking intentional raster artwork. */
+.pdf-artwork-review h3{font-size:14px;margin:0 0 7px}.pdf-artwork-counts{color:var(--muted);font-size:12px}.pdf-artwork-list{max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:6px;scrollbar-width:thin}.pdf-artwork-list table{width:100%;border-collapse:collapse;font-size:11px}.pdf-artwork-list th{text-align:left;background:var(--head);position:sticky;top:0;z-index:1}.pdf-artwork-list th,.pdf-artwork-list td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}.pdf-artwork-list td:first-child{overflow-wrap:anywhere}.pdf-artwork-list td:last-child{min-width:110px}.pdf-artwork-list tr:last-child td{border-bottom:0}.pdf-artwork-list .contains-raster{background:color-mix(in srgb,#ffb84d 9%,var(--panel))}.contains-raster .artwork-type{font-weight:650}.pdf-white-note{margin:10px 0 0}.sheet-scroll{overflow-anchor:none}
+
+/* Sheet actions remain reachable on compact windows and long-named project cards. */
+.project-card .row{flex-wrap:wrap;gap:6px}.project-card .row button{font-size:11px;padding:6px 8px}.projectbar>[data-action="export-sheet"]{flex-shrink:0}
