@@ -18,7 +18,7 @@ test('Proof rulers fit every sheet and name their actual lengths',()=>{
  assert.deepEqual(DM.proofBars({pageSize:'photo4x6'}),{x:50,y:100});assert.deepEqual(DM.proofBars({pageSize:'photo4x6',orientation:'landscape'}),{x:100,y:50});
 });
 test('Projects, histories and workspace reload retain sheet size and use compatible file versions',async t=>{
- const dir=await fs.mkdtemp(path.join(path.resolve('test-output'),'page-size-'));t.after(()=>fs.rm(dir,{recursive:true,force:true,maxRetries:5,retryDelay:100}));
+ const parent=path.resolve(__dirname,'../test-output');await fs.mkdir(parent,{recursive:true});const dir=await fs.mkdtemp(path.join(parent,'page-size-'));t.after(()=>fs.rm(dir,{recursive:true,force:true,maxRetries:5,retryDelay:100}));
  const store=new Projects(dir),p=DM.project('Small sheet');p.pageSize='a5';p.items=[DM.item('rect')];await store.save({project:p});p.pageSize='photo4x6';await store.save({project:p});
  const list=await new Projects(dir).list();assert.equal(list.entries[0].pageSize,'photo4x6');assert.equal((await store.read(list.entries[0])).project.pageSize,'photo4x6');
  const raw=JSON.parse(await fs.readFile(path.join(dir,'Projects',list.entries[0].file),'utf8'));assert.equal(raw.version,2);
