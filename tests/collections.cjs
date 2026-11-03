@@ -32,7 +32,7 @@ async function main(){
   await page.screenshot({path:path.join(run,'sheet-library-grid.png')});
   assert.deepEqual(await page.locator('.collection-name h3').allTextContents(),['Alfa Sprint','Bravo Endurance','Zulu Current']);assert(await page.locator('#library-export-selected').isDisabled());
   await card('Alfa Sprint').locator('.collection-name').click();await card('Zulu Current').locator('.collection-name').click({modifiers:['Shift']});assert.match(await page.locator('#collection-count').textContent(),/^3 selected/);
-  await card('Bravo Endurance').locator('.collection-name').click({modifiers:['Control']});assert.match(await page.locator('#collection-count').textContent(),/^2 selected/);assert.deepEqual(await state(),original);
+  await card('Bravo Endurance').locator('.collection-name').click({modifiers:[process.platform==='darwin'?'Meta':'Control']});assert.match(await page.locator('#collection-count').textContent(),/^2 selected/);assert.deepEqual(await state(),original);
   await page.locator('[data-view="list"]').click();await page.locator('#project-search').fill('Alfa');assert.match(await page.locator('#collection-count').textContent(),/1 hidden/);await page.locator('#project-search').fill('');
   await page.screenshot({path:path.join(run,'sheet-library-list.png')});await page.locator('#library-export-selected').click();await page.waitForSelector('#collection-confirm');assert.equal(await page.locator('[data-select]:checked').count(),2);
   await card('Zulu Current').locator('[data-pages]').click();await card('Zulu Current').locator('[data-page-index="0"]').uncheck();await card('Zulu Current').locator('[data-page-index="1"]').uncheck();
