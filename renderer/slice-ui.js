@@ -35,8 +35,7 @@ function sliceDialog(state){
  $('#slice-save').onclick=async()=>{
   try{
    remember();const art=Slice.artwork(result,state.name),entry={id:DM.uid(),name:state.name,tags:state.tags,scale:state.snapshot.scale,art,updated:new Date().toISOString()};
-   const fonts=[...new Map([...libraryFonts,...DM.fontsFor([art],state.snapshot.fonts)].map(f=>[f.family,f])).values()],valid=DM.validateLibrary([...library,entry],fonts);
-   library=valid.library;libraryFonts=valid.libraryFonts;revision++;scheduleSave();closeDialog();renderLibrary();await flush();toast('Slice saved to your library. Your original sheet is unchanged.');
+   await Library.save(entry,DM.fontsFor([art],state.snapshot.fonts));closeDialog();renderLibrary();toast('Slice saved to your library. Your original sheet is unchanged.');
   }catch(e){if($('#dialog').open)$('#dialog-error').textContent=e.message;else fail(e);}
  };
  for(const [id,cropped] of [['slice-print',false],['slice-crop',true]])$('#'+id).onclick=()=>{try{remember();slicePrintPreview(state,result,cropped);}catch(e){$('#dialog-error').textContent=e.message;}};

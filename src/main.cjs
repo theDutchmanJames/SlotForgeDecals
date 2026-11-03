@@ -14,7 +14,12 @@ app.whenReady().then(async()=>{
  win.setMenu(null);win.webContents.setWindowOpenHandler(()=>({action:'deny'}));win.webContents.on('will-navigate',e=>e.preventDefault());
  const handle=(name,fn)=>ipcMain.handle(name,async(e,arg)=>{if(e.sender!==win.webContents||e.senderFrame!==win.webContents.mainFrame)throw Error('Invalid request.');return fn(arg);});
  handle('load',async()=>({...await workspace.read(),root,version:app.getVersion()}));
- handle('save',data=>workspace.save(data));
+ handle('save',data=>{if(data?.libraryMode!=='external')throw Error('Invalid editor snapshot.');return workspace.save(data);});
+ for(const [channel,method]of [['library-query','query'],['decal-read','read'],['decal-save','save'],['decal-import','import'],['decal-delete','delete']])handle(channel,args=>workspace.catalog(method,args));
+ handle('workspace-restore',data=>workspace.restoreLegacy(data));
+ async function exportStored(type,name,build){let file;if(process.env.SLOTFORGE_EXPORT_DIR){await fs.mkdir(process.env.SLOTFORGE_EXPORT_DIR,{recursive:true});file=path.join(process.env.SLOTFORGE_EXPORT_DIR,safeName(name)+'.'+type);}else{const result=await dialog.showSaveDialog(win,{defaultPath:path.join(root,type==='sfbackup'?'Backups':'Exports',safeName(name)+'.'+type),filters:[{name:'SlotForge file',extensions:[type]}]});if(result.canceled)return null;file=result.filePath;}const text=await build();await writeExport(root,file,type,text);return file;}
+ handle('library-export',args=>exportStored(args?.kind==='decals'?'sfdecal':'sfsheet',args?.name,()=>workspace.catalog('export',args)));
+ handle('workspace-export',data=>exportStored('sfbackup','SlotForge-Decals-backup',()=>workspace.exportLegacy(data)));
  const projects=new Projects(root);
  handle('projects-list',options=>projects.list(options));
  handle('projects-read',({entry,remember})=>projects.read(entry,{remember:remember===true}));

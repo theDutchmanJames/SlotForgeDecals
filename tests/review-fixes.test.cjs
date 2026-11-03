@@ -17,8 +17,8 @@ test('ungroup preserves effective opacity and rejects unsafe overlapping transpa
  g.children[1].x=5;assert.throws(()=>DM.ungroup(g),/share.*transparency/);g.opacity=1;assert.equal(DM.ungroup(g).length,2);g.locked=true;assert.throws(()=>DM.ungroup(g),/Unlock/);
 });
 test('library and pack limits are enforced before publishing invalid state',()=>{
- const art=DM.item('rect'),entries=Array.from({length:1001},(_,n)=>({id:String(n),name:'Decal '+n,scale:32,art}));
- assert.equal(DM.validateLibrary(entries.slice(0,1000)).library.length,1000);assert.throws(()=>DM.validateLibrary(entries),/1,000/);
+ const art=DM.item('rect'),entries=Array.from({length:10001},(_,n)=>({id:String(n),name:'Decal '+n,scale:32,art}));
+ assert.equal(DM.validateLibrary(entries.slice(0,10000)).library.length,10000);assert.throws(()=>DM.validateLibrary(entries),/10,000/);
  assert.throws(()=>DM.pack(entries.slice(0,501)),/1–500/);assert.equal(DM.readPack(DM.pack(entries.slice(0,500))).decals.length,500);
  const fonts=Array.from({length:31},(_,n)=>({family:'sf-font-'+n,data:'data:font/ttf;base64,AAAA'}));assert.throws(()=>DM.validateLibrary([],fonts),/fonts/);
  const text=DM.item('text',{font:fonts[0].family,text:'27'}),pack=DM.pack([{name:'Number',scale:32,art:text}],fonts);assert.equal(pack.fonts.length,1);assert.equal(DM.readPack(pack).fonts.length,1);
@@ -26,7 +26,7 @@ test('library and pack limits are enforced before publishing invalid state',()=>
 test('invalid workspace saves cannot replace the current file or rotate backups',async t=>{
  const parent=path.resolve(__dirname,'../test-output');await fs.mkdir(parent,{recursive:true});const dir=await fs.mkdtemp(path.join(parent,'safe-save-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));const store=new Workspace(dir),p=DM.project('Valid');p.items=[DM.item('line')];const data={format:'slotforge-decals-workspace',version:1,project:p,library:[]};await store.save(data);await store.save({...data,project:{...p,name:'Current'}});
  const before=await fs.readFile(path.join(dir,'decals.sqlite'));const invalid=DM.clone(data);invalid.project.items[0].h=.05;await assert.rejects(store.save(invalid),/h must/);assert.deepEqual(await fs.readFile(path.join(dir,'decals.sqlite')),before);
- invalid.project=p;invalid.library=Array.from({length:1001},()=>({art:DM.item('rect')}));await assert.rejects(store.save(invalid),/1,000/);assert.deepEqual(await fs.readFile(path.join(dir,'decals.sqlite')),before);
+ invalid.project=p;invalid.library=Array.from({length:1001},()=>({art:DM.item('rect')}));await assert.rejects(store.save(invalid),/Autosave/);assert.deepEqual(await fs.readFile(path.join(dir,'decals.sqlite')),before);
 });
 test('workspace recovery skips semantically invalid primary data and retains it on disk',async t=>{
  const parent=path.resolve(__dirname,'../test-output');await fs.mkdir(parent,{recursive:true});const dir=await fs.mkdtemp(path.join(parent,'safe-recovery-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));const store=new Workspace(dir),data={format:'slotforge-decals-workspace',version:1,project:DM.project('Known good'),library:[]};await fs.mkdir(path.join(dir,'Backups'));await fs.writeFile(path.join(dir,'Backups/workspace-1.json'),JSON.stringify(data));

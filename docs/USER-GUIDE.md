@@ -146,20 +146,20 @@ The inspector and library now label artwork **Raster**, **Vector**, **Traced vec
 
 Open **Sheet Library** or **Decal Library** in the top navigation. Both have **Grid / List** views, search and sorting: **Name A–Z**, **Name Z–A**, **Newest added** and **Recently updated**. View and sort preferences are remembered. Existing entries use their recorded date when an original added date is unavailable.
 
-Click a checkbox to toggle selection. Click a name or preview to select one item, **Ctrl-click** (or Command-click) to add/remove an item, and **Shift-click** to select a range in the displayed order. **Select all shown** applies to the search results; **Clear selection** clears everything. The count identifies selected entries hidden by a search. Selection alone does not open or place artwork.
+Click a checkbox to toggle selection. Click a name or preview to select one item, **Ctrl-click** (or Command-click) to add/remove an item, and **Shift-click** to select a range in the displayed order. Saved libraries show 48 items per page. **Previous / Next** move between pages; search and sorting cover the entire library. **Select this page** selects the visible page, while **Select all shown** applies to bounded import files. **Clear selection** clears everything. The count identifies selected entries on other pages or hidden by search. Selection alone does not open or place artwork.
 
 - **Save sheet / Ctrl+S** stores your current sheet locally. Repeated saves keep its identity and retain earlier changed versions in the local database.
 - **Open Sheet / Continue editing** opens a saved sheet or returns to the current one. The outgoing sheet is saved first. **Add to Sheet** places an independent decal copy at the current model scale.
 - **Import Sheet(s)** reads an editable .sfsheet file. Select which saved sheets to import; expand **Choose pages…** to import specific pages. Imported sheets receive new identities in Sheet Library, and the current sheet stays open.
 - **Export Sheet(s)** starts with the selected library entries checked. The editor toolbar preselects the current sheet. Choose the sheets and optional pages, then export one .sfsheet file. Multiple sheets retain their individual settings and fonts. There is a maximum of 100 saved sheets per file and 160 MB per import/export. Single-sheet exports remain in the existing format; multi-sheet collections require collection support in the receiving app.
-- **Import Decals / Export Decals** use the same selection browser. Packs contain up to 500 saved decals, including the fonts needed by the selected artwork. Your library supports 1,000 decals.
+- **Import Decals / Export Decals** use the same selection browser. Packs contain up to 500 saved decals, including the fonts needed by the selected artwork. Your library supports 10,000 decals.
 - **Versions** shows earlier saved versions. **Recovery** offers the last three workspace backups. Recovering a sheet opens a separate copy.
 
 **Import & Export** groups sheets separately from images and decals. Imports are always on the left; exports are on the right, with red titles on white buttons. **Import an Image** still imports artwork to the canvas. **Export PDF** still reviews the current sheet before producing its print PDF.
 
 Use **Settings → Backup & Recovery → Export Complete Backup** for a verified `.sfdbbackup` containing every saved sheet, saved version, decal, artwork asset, custom font and preference. **Restore Complete Backup** replaces this complete collection after confirmation and keeps a recovery backup of the current database in `Backups` first. The startup recovery screen also offers this option if the database cannot load.
 
-**Export/Restore Workspace Backup** remains available for legacy `.sfbackup` files. These contain only the current sheet, decals, fonts and preferences; restoring one does not replace your other saved sheets. Saved sheet histories are not automatically purged. Only redistribute artwork and fonts you have permission to share.
+**Export/Restore Workspace Backup** remains available for legacy `.sfbackup` files. These support up to 1,000 decals, 30 embedded library fonts and 160 MB. Use a complete backup for larger libraries or conflicting font names. They contain only the current sheet, decals, fonts and preferences; restoring one does not replace your other saved sheets. Saved sheet histories are not automatically purged. Only redistribute artwork and fonts you have permission to share.
 
 ## Local saving
 
@@ -173,7 +173,11 @@ After migration, these legacy files are **migration-time copies**, not current s
 
 Migration needs free space for both the originals and new database, and a local filesystem supporting hard links (such as NTFS). If publication is unsupported, the app stops safely and leaves the originals intact. Backup and restore also need room for staging and recovery copies. Keep an independent complete backup of valuable artwork.
 
-The existing limits remain: 1,000 library decals, 500 decals per sharing pack, 100 sheets per collection import/export and approximately 160 MB per workspace or portable file. SQLite reduces duplicated storage and avoids loading every saved sheet to list the library. The current sheet and decal library still load into editor memory, so this update does not claim unlimited library size.
+The library supports **10,000 decals**. Sharing limits remain **500 decals per pack**, **100 sheets per collection**, and approximately **160 MB per portable file or current workspace**. The complete library database can grow beyond that file limit. The sidebar shows 24 decals per page; full library windows show 48. Only page metadata and a bounded thumbnail cache stay loaded. Full artwork loads when needed for previews, editing, placement or export. Autosave sends the current sheet and preferences, without the library. Large individual sheets and images still need memory to open.
+
+The on-demand library upgrade first writes a verified `before-library-upgrade-….sfdbbackup` in `Backups`, then separates existing decals into independent database records in one transaction. A failed upgrade rolls back. Existing sheets, versions, originals and embedded artwork are retained. Older complete backups can be restored and upgraded; older app versions cannot open this upgraded database or its new complete backups. Use portable sheet/decal files for compatible sharing.
+
+If saving fails when closing, **Export Unsaved Sheet** rescues the current editable sheet without loading or replacing your library.
 
 ## Selecting artwork
 

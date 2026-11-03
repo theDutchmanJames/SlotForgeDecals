@@ -8,7 +8,7 @@ async function main(){
   const page=await app.firstWindow(),errors=[];page.on('pageerror',e=>errors.push(e.message));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].showInactive());await page.waitForFunction(()=>window.Studio?.ready);
   await page.locator('#dialog [data-action="close"]').first().click();
   await page.evaluate(()=>{Studio.project.items=[DM.item('rect',{name:'Left edge marker',x:1,y:10,w:3,h:10,fill:'#00ff00'})];Studio.select([]);});
-  await page.locator('[data-action="slice"]').click();await page.locator('#slice-save').click();await page.waitForFunction(()=>!document.querySelector('#dialog').open);await page.locator('#library-grid [data-lib]').first().click();
+  await page.locator('[data-action="slice"]').click();await page.locator('#slice-save').click();await page.waitForFunction(()=>!document.querySelector('#dialog').open);await page.locator('#library-grid [data-lib]').first().click();await page.waitForFunction(()=>Studio.project.items.at(-1).kind==='slice');
   const placement=await page.evaluate(()=>{const i=Studio.project.items.at(-1);return{x:i.x,y:i.y,w:i.w,h:i.h};});assert.equal(placement.x,0);assert.equal(placement.w,210);assert.equal(placement.h,80);
   await page.evaluate(async()=>{Studio.project.items=[Studio.project.items.at(-1)];Studio.project.name='Full-width library slice';await Studio.exportPDF(false,true);});
   const m=await import('mupdf');

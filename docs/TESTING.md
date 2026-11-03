@@ -1,5 +1,19 @@
 # Verification record
 
+## On-demand libraries — 3 November 2026
+
+Saved decals are independent SQLite records. Startup and autosave carry only the current sheet and preferences, plus a count on load. Database queries search and sort metadata, returning 48 entries per library page and 24 per sidebar page; previews load near the visible area through a shared cache capped at 64 entries / 8 million string characters. Selected exports hydrate only the requested records in the worker. The library limit is 10,000 decals; portable files retain their 500-decal / 100-sheet and 160 MB limits.
+
+The v1-to-v2 upgrade writes a verified pre-upgrade complete backup, splits decals in one transaction, verifies each stored decal against its validated original, preserves duplicate-ID entries with independent identities, retains legacy fonts and leaves old source files intact. Tests inject a failure halfway through migration and confirm full rollback. Older complete backups restore and upgrade; older applications cannot open the new database. Legacy workspace backups remain limited to 1,000 decals and 30 library fonts, and complete backups cover larger collections. An unsaved-sheet rescue export remains available when autosaving fails.
+
+Review fixes cover stale update/delete stamps, hidden selections across pages, font-name collisions, bounded font registration, restoring through the in-app Settings path, recovery of legacy sheet fonts, unique selection identities for saved versions, closing/reopening the sidebar during a pending query, and asynchronous artwork placement. Existing import/export tests now explicitly select saved decals and wait for query completion.
+
+Validation: **97 unit tests**, syntax checks and **23 desktop suites** pass. The new desktop suite checks 155 decals and 110 saved sheets, SQL search/sorting, cross-page selection/export, rapid search changes, on-demand placement, font conflicts, in-app backup restore, restart and compact layouts in both themes. The large-library desktop regression verifies the 10,001st save is refused, an existing master can be updated at the limit, 500 selected decals round-trip, and an unsaved sheet can be rescued during a save failure. All workspaces are isolated under test-output.
+
+The repeated-artwork benchmark migrates 1,000 sheets and grows the library through 100, 1,000, 5,000 and 10,000 decals. At 10,000, this Windows run measured about 8 ms for workspace load, 85 ms for a placement save and 23 ms for a 48-row sheet query. Startup stayed around 22.8 KB including the current sheet's image. The database was about 22.1 MiB. These are backend timings with one shared 16 KiB synthetic asset, not a guarantee for unique large images or UI latency. Individual artwork and the active sheet still require memory; backup verification, indexing, garbage collection and retained history still scale with the database. Asset base64 overhead remains.
+
+All **13 acceptance suites pass in a freshly built Windows x64 package**, including the 10,000-decal limit, on-demand libraries, original migration and complete backup/restore. Both theme screenshots were inspected at a compact window size. macOS and Linux are not run locally. No version bump, push or release is included in this phase.
+
 ## SQLite migration — 3 November 2026
 
 Local storage now uses a worker-owned SQLite database with transactions, content-addressed artwork and item documents, three rotating workspace snapshots and retained saved-sheet history. Migration stages and verifies the database before publication; all legacy files remain untouched. Portable sheet, decal and workspace formats remain compatible. Complete .sfdbbackup export/restore includes all saved records and assets, with a recovery copy before replacing an existing database.
@@ -12,7 +26,7 @@ Validation: all **88 unit tests**, syntax checks, all **22 desktop suites**, and
 
 The synthetic repeated-artwork scale fixture migrates 1,000 saved sheets and exercises 100, 500 and 1,000 library decals. On this Windows machine, migration took about 2.4 seconds; at 1,000 decals, a placement save took about 268 ms, a workspace load 302 ms and a 1,000-sheet metadata listing 108 ms. The final database was about 4.1 MiB with one shared artwork asset, compared with 21.5 MiB of original sheet files alone. These are backend measurements for repeated 16 KiB synthetic artwork, not a general guarantee for unique large images or end-to-end UI latency.
 
-The renderer still hydrates the current sheet and decal library and sends a complete workspace snapshot when saving. SQL storage reuses unchanged documents and assets, but serialization, validation and metadata work still scale with collection size. Existing limits remain; unbounded libraries and fully paginated renderer storage are not claimed. Saved histories are retained and therefore still consume space. Original assets remain exact UTF-8 data URI/SVG strings in BLOBs; base64 overhead has not been removed.
+At this earlier phase, the renderer still hydrated the current sheet and decal library and sent a complete workspace snapshot when saving. SQL storage reuses unchanged documents and assets, but serialization, validation and metadata work still scale with collection size. Existing limits remain; unbounded libraries and fully paginated renderer storage are not claimed. Saved histories are retained and therefore still consume space. Original assets remain exact UTF-8 data URI/SVG strings in BLOBs; base64 overhead has not been removed.
 
 All tests use isolated folders under test-output; the user's normal workspace is not opened. macOS and Linux migration have not been run locally. No version bump, push or release is part of this update.
 

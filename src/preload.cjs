@@ -1,5 +1,6 @@
 const {contextBridge,ipcRenderer}=require('electron');
 contextBridge.exposeInMainWorld('desktop',{
+  queryLibrary:args=>ipcRenderer.invoke('library-query',args),readDecal:entry=>ipcRenderer.invoke('decal-read',entry),saveDecal:data=>ipcRenderer.invoke('decal-save',data),importDecals:data=>ipcRenderer.invoke('decal-import',data),deleteDecal:entry=>ipcRenderer.invoke('decal-delete',entry),exportLibrary:data=>ipcRenderer.invoke('library-export',data),exportWorkspace:data=>ipcRenderer.invoke('workspace-export',data),restoreWorkspace:data=>ipcRenderer.invoke('workspace-restore',data),
   load:()=>ipcRenderer.invoke('load'),save:data=>ipcRenderer.invoke('save',data),
   listProjects:options=>ipcRenderer.invoke('projects-list',options),readProject:(entry,remember=false)=>ipcRenderer.invoke('projects-read',{entry,remember}),
   saveProject:data=>ipcRenderer.invoke('projects-save',data),

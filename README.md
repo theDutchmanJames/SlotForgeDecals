@@ -162,7 +162,7 @@ Files containing these editable paths need a Decals version with path support.
 
 ### Keep a library and share editable designs
 
-Explicitly **Save decal to library** to keep a reusable design with a name and tags. **Decal Library** and **Sheet Library** share grid/list views, search, alphabetical sorting, newest-added and recently-updated sorting. Select items with checkboxes, Ctrl-click or Shift-click; use **Add to Sheet** or **Open Sheet** when you want to edit. Your view and sorting choices are remembered. Editing a sheet copy does not change its library master.
+Explicitly **Save decal to library** to keep a reusable design with a name and tags. **Decal Library** and **Sheet Library** share grid/list views, search, alphabetical sorting, newest-added and recently-updated sorting. Select items with checkboxes, Ctrl-click or Shift-click; use **Add to Sheet** or **Open Sheet** when you want to edit. Your view and sorting choices are remembered. Editing a sheet copy does not change its library master. Libraries load in pages, with previews fetched as you scroll; opening the app and autosaving no longer load or resend your whole decal collection. Search covers the entire library, and selections stay checked across pages.
 
 | Format | Use it for |
 | --- | --- |
@@ -173,7 +173,7 @@ Explicitly **Save decal to library** to keep a reusable design with a name and t
 | **`.sfbackup`** | The current workspace, library, custom fonts and preferences (legacy format). |
 | **`.sfdbbackup`** | A complete SQLite backup: all saved sheets, history, decals, artwork and settings. |
 
-The library supports **1,000 decals**, and a sharing pack can contain up to **500**. Send the files yourself; sharing works without an online account. Editable A5 and Photo sheets need Decals 0.2.13 or newer. PDFs can be viewed independently of the app. Only redistribute artwork and fonts you have permission to share.
+The library supports **10,000 decals**, and a sharing pack can contain up to **500**. Send the files yourself; sharing works without an online account. Editable A5 and Photo sheets need Decals 0.2.13 or newer. PDFs can be viewed independently of the app. Only redistribute artwork and fonts you have permission to share.
 
 **Import & Export** puts imports on the left and exports on the right. **Import an Image** adds artwork to the canvas; **Import Decals** and **Export Decals** let you choose saved decals. **Export PDF** keeps the existing print-review workflow. Multi-sheet collection files require a Decals version with collection support; older single-sheet files remain importable. Up to 100 saved sheets can travel in one collection.
 
@@ -189,7 +189,7 @@ Your files live in **Documents/SlotForge Decals**, separate from the installed a
 
 Sheets, decals, fonts and history now live in **`decals.sqlite`**. Repeated artwork is stored once and reused across saved sheets and versions. On first launch, Decals checks and migrates existing workspace, sheet and history files; the original files stay unchanged as recovery copies.
 
-Use **Settings → Backup & Recovery → Export Complete Backup** to save a verified `.sfdbbackup` containing the whole database. **Restore Complete Backup** keeps a recovery copy before replacing the workspace. The older `.sfbackup` option still works for the current sheet and decal library; it does not contain every saved sheet. Keep an independent backup of valuable artwork.
+Use **Settings → Backup & Recovery → Export Complete Backup** to save a verified `.sfdbbackup` containing the whole database. **Restore Complete Backup** keeps a recovery copy before replacing the workspace. The older `.sfbackup` option supports the current sheet and up to 1,000 decals, within its file-size and font limits; it does not contain every saved sheet. Use a complete backup for larger libraries. The on-demand library upgrade keeps a verified pre-upgrade database backup; older app versions cannot open the upgraded database. Keep an independent backup of valuable artwork.
 
 For step-by-step instructions, see the [user guide](docs/USER-GUIDE.md). The [testing notes](docs/TESTING.md) describe what has been checked and the remaining practical limits.
 
