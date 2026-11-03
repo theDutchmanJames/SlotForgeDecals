@@ -71,7 +71,13 @@ function collectionBrowser(options){
  $('#project-search').oninput=()=>{anchor=null;render();};
  for(const b of host.querySelectorAll('[data-view]'))b.onclick=()=>{view=b.dataset.view;savePrefs();render();};
  $('#collection-all').onclick=()=>{shown().forEach(e=>chosen.add(e.id));update();};$('#collection-clear').onclick=()=>{chosen.clear();update();};
- const session={selected:selectedEntries,pageChoices,render,alive,thumbnail:e=>{
+ let previewObserver=null,previewMutations=null;
+ const session={selected:selectedEntries,pageChoices,render,alive,watchPreviews:loader=>{
+  previewObserver?.disconnect();previewMutations?.disconnect();const pending=new Set();let chain=Promise.resolve();
+  previewObserver=new IntersectionObserver(changes=>{for(const hit of changes){if(!hit.isIntersecting||!alive())continue;const e=entries[Number(hit.target.dataset.entry)];if(!e||e.thumbnail||pending.has(e))continue;pending.add(e);previewObserver.unobserve(hit.target);chain=chain.then(async()=>{if(!alive())return;try{e.thumbnail=await loader(e);session.thumbnail(e);}catch{}finally{pending.delete(e);}});}}, {root:container,rootMargin:'80px'});
+  const observe=()=>{for(const card of container.querySelectorAll('[data-entry]'))previewObserver.observe(card);};previewMutations=new MutationObserver(observe);previewMutations.observe(container,{childList:true});observe();
+  $('#dialog').addEventListener('close',()=>{previewObserver?.disconnect();previewMutations?.disconnect();},{once:true});
+ },thumbnail:e=>{
   if(!alive()||!e.thumbnail)return;const preview=container.querySelector(`[data-select-card="${entries.indexOf(e)}"]`);
   if(preview)preview.innerHTML=`<img src="${E(e.thumbnail)}" alt="">`;
  }};
@@ -81,12 +87,17 @@ function collectionBrowser(options){
   try{const completed=await task;if(completed!==false&&alive())closeDialog();}
   catch(e){error(e);}finally{if(collectionTask===task)collectionTask=null;working=false;content.inert=false;dialog.removeEventListener('cancel',prevent);if(alive())update();}
  };
- render();return session;
+ render();if(entries.some(e=>e.preview))session.watchPreviews(e=>e.preview());return session;
 }
 
+const decalThumbnailCache=new WeakMap();
+async function decalThumbnail(art,fonts){
+ if(decalThumbnailCache.has(art))return decalThumbnailCache.get(art);
+ const task=(async()=>{await Art.loadFonts(fonts);const img=new Image();img.src=Art.url(Art.standalone(art,fonts));await img.decode();const size=200,k=size/Math.max(img.naturalWidth,img.naturalHeight),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*k));canvas.height=Math.max(1,Math.round(img.naturalHeight*k));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);return canvas.toDataURL('image/png');})();decalThumbnailCache.set(art,task);try{return await task;}catch(e){decalThumbnailCache.delete(art);throw e;}
+}
 function decalRows(decals=library,fonts=activeFonts()){
  return decals.map(d=>({id:d.id,name:d.name,source:d,search:`${d.tags||''} ${d.creator||''}`,added:d.added||d.updated,updated:d.updated,
-  meta:`${DM.artworkType(d.art)} · 1:${d.scale} · ${d.art.w.toFixed(1)} × ${d.art.h.toFixed(1)} mm`,thumbnail:Art.url(Art.standalone(d.art,fonts))}));
+  meta:`${DM.artworkType(d.art)} · 1:${d.scale} · ${d.art.w.toFixed(1)} × ${d.art.h.toFixed(1)} mm`,preview:()=>decalThumbnail(d.art,fonts)}));
 }
 function decalBrowser(){
  const entries=decalRows(),session=collectionBrowser({title:'Decal Library',subtitle:'Select decals to export. Add a saved decal to your current sheet.',kind:'decals',entries,

@@ -1,7 +1,8 @@
 (function(root,factory){const api=factory();if(typeof module==='object')module.exports=api;else root.DM=api;})(globalThis,()=>{
   'use strict';
   const uid=()=>globalThis.crypto.randomUUID();
-  const clone=o=>JSON.parse(JSON.stringify(o));
+  // Copy editable containers without serializing immutable image/font strings.
+  function clone(value){if(value===null||typeof value!=='object')return typeof value==='number'&&!Number.isFinite(value)?null:value;if(Array.isArray(value))return value.map(v=>v===undefined?null:clone(v));const out={};for(const [key,v]of Object.entries(value))if(v!==undefined)Object.defineProperty(out,key,{value:clone(v),enumerable:true,writable:true,configurable:true});return out;}
   const timestamp=value=>typeof value==='string'&&Number.isFinite(Date.parse(value))?new Date(value).toISOString():null;
   const number=(v,min,max,label='Number')=>{const n=Number(v);if(!Number.isFinite(n)||n<min||n>max)throw Error(`${label} must be between ${min} and ${max}.`);return n;};
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

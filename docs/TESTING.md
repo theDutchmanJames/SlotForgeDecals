@@ -1,5 +1,22 @@
 # Verification record
 
+## SQLite migration — 3 November 2026
+
+Local storage now uses a worker-owned SQLite database with transactions, content-addressed artwork and item documents, three rotating workspace snapshots and retained saved-sheet history. Migration stages and verifies the database before publication; all legacy files remain untouched. Portable sheet, decal and workspace formats remain compatible. Complete .sfdbbackup export/restore includes all saved records and assets, with a recovery copy before replacing an existing database.
+
+The storage tests cover exact migration round trips, unreadable originals, migration publication failure, stale writers, no-op saves, rollback between dependent writes, all-or-nothing imports, reference-index and asset corruption, bounded workspace snapshots, saved-history retention, failed backup output, restoring damaged databases, recovery before legacy migration can succeed, and protection against exports overwriting live or retained files. The desktop migration fixture uses real PNG artwork and an embedded font, 50 sheets and 50 decals, history and an unreadable original. It checks visible-only previews, undo/redo, backup through Settings, restore to another workspace, restart and recovery through the startup error screen.
+
+Review fixes include preventing edits during startup, declaring readiness only after car assets load, reloading recovered workspaces through the desktop process, rejecting damaged reference indexes in backups, retaining original transaction errors, migrating last-opened order and preventing partial exports. Raw pointer tests wait for layout frames before calculating coordinates.
+
+Validation: all **88 unit tests**, syntax checks, all **22 desktop suites**, and all **12 packaged Windows acceptance suites** pass. The packaged tests include the SQLite worker, real-image/font migration, complete backup and startup recovery, library sharing, canvas paths and patterns, slicing, paper sizes, PDF export and persistence. Migration-library screenshots were inspected; dark-theme layout and scrolling remain intact.
+
+The synthetic repeated-artwork scale fixture migrates 1,000 saved sheets and exercises 100, 500 and 1,000 library decals. On this Windows machine, migration took about 2.4 seconds; at 1,000 decals, a placement save took about 268 ms, a workspace load 302 ms and a 1,000-sheet metadata listing 108 ms. The final database was about 4.1 MiB with one shared artwork asset, compared with 21.5 MiB of original sheet files alone. These are backend measurements for repeated 16 KiB synthetic artwork, not a general guarantee for unique large images or end-to-end UI latency.
+
+The renderer still hydrates the current sheet and decal library and sends a complete workspace snapshot when saving. SQL storage reuses unchanged documents and assets, but serialization, validation and metadata work still scale with collection size. Existing limits remain; unbounded libraries and fully paginated renderer storage are not claimed. Saved histories are retained and therefore still consume space. Original assets remain exact UTF-8 data URI/SVG strings in BLOBs; base64 overhead has not been removed.
+
+All tests use isolated folders under test-output; the user's normal workspace is not opened. macOS and Linux migration have not been run locally. No version bump, push or release is part of this update.
+
+
 ## Full review of pattern sizing and canvas tools — 3 November 2026
 
 Reviewed changes since the previous full library/creation review: physical checkerboard and stripe sizing, header alignment, editable paths, boolean geometry, main-canvas tools, persistence/sharing and PDF output.

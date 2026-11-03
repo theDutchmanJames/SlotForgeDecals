@@ -3,10 +3,10 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const {spawnSync}=require('node:child_process');
 const version=require('../package.json').version,root=path.resolve(__dirname,'..'),dist=path.join(root,'dist',`v${version}`);
 const candidates=process.platform==='win32'?['win-unpacked/SlotForge Decals.exe']:process.platform==='darwin'?['mac-arm64/SlotForge Decals.app/Contents/MacOS/SlotForge Decals','mac/SlotForge Decals.app/Contents/MacOS/SlotForge Decals']:['linux-unpacked/slotforge-decals','linux-arm64-unpacked/slotforge-decals'];
-const executable=candidates.map(p=>path.join(dist,p)).find(p=>fs.existsSync(p));
+const executable=process.env.SLOTFORGE_TEST_EXE||candidates.map(p=>path.join(dist,p)).find(p=>fs.existsSync(p));
 assert(executable,'The native unpacked application must exist');
 const env={...process.env,SLOTFORGE_TEST_EXE:executable};
-for(const suite of ['paths','editor-controls','sheet-sharing','pdf-review-zoom','slicing','slice-regressions','page-sizes','dialog','integration','review-fixes','ui']){
+for(const suite of ['sqlite-desktop','paths','editor-controls','sheet-sharing','pdf-review-zoom','slicing','slice-regressions','page-sizes','dialog','integration','review-fixes','ui']){
   console.log(`Packaged ${process.platform}/${process.arch}: ${suite}`);
   const result=spawnSync(process.execPath,[`tests/${suite}.cjs`],{cwd:root,stdio:'inherit',env});
   if(result.error)throw result.error;

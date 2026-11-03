@@ -7,7 +7,7 @@ async function main(){
  const done=()=>page.locator('#dialog [data-action="close"]').last().click();
  const state=()=>page.evaluate(()=>JSON.parse(JSON.stringify(Studio.project.items)));
  const selected=()=>page.locator('#paper [data-id]:has(.selection)').evaluateAll(es=>es.map(e=>e.dataset.id).sort());
- const point=(x,y,selector='#paper')=>page.locator(selector).evaluate((svg,p)=>{const q=new DOMPoint(p.x,p.y).matrixTransform(svg.getScreenCTM());return{x:q.x,y:q.y};},{x,y});
+ const point=(x,y,selector='#paper')=>page.locator(selector).evaluate(async(svg,p)=>{await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const q=new DOMPoint(p.x,p.y).matrixTransform(svg.getScreenCTM());return{x:q.x,y:q.y};},{x,y});
  const click=async(x,y,modifier)=>{const p=await point(x,y);if(modifier)await page.keyboard.down(modifier);await page.mouse.click(p.x,p.y);if(modifier)await page.keyboard.up(modifier);};
  const box=async(x1,y1,x2,y2,modifier,cancel=false)=>{const p=await point(x1,y1),q=await point(x2,y2);if(modifier)await page.keyboard.down(modifier);await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(q.x,q.y,{steps:8});if(cancel)await page.keyboard.press('Escape');await page.mouse.up();if(modifier)await page.keyboard.up(modifier);};
  try{
@@ -43,7 +43,7 @@ async function main(){
   // Escape rolls back a car drag without closing the enlarged preview.
   const p2=await point(art[0].carPositions.side.x+5,art[0].carPositions.side.y+5,'#expanded-car > svg');
   await page.mouse.move(p2.x,p2.y);await page.mouse.down();await page.mouse.move(p2.x+30,p2.y+10,{steps:5});
-  await page.evaluate(()=>Studio.flush());const duringDrag=JSON.parse(await fs.readFile(path.join(run,'workspace','workspace.json'),'utf8'));assert.deepEqual(duringDrag.project.items,saved,'Autosave keeps the last committed placement while a drag is cancellable');
+  await page.evaluate(()=>Studio.flush());const duringDrag=(await new (require('../src/storage.cjs').Workspace)(path.join(run,'workspace')).read()).data;assert.deepEqual(duringDrag.project.items,saved,'Autosave keeps the last committed placement while a drag is cancellable');
   await page.keyboard.press('Escape');await page.mouse.up();assert.deepEqual(await state(),saved);assert.ok(await page.locator('#dialog').evaluate(d=>d.open));
   await page.screenshot({path:path.join(run,'multi-car-preview.png')});await done();await page.keyboard.press('Control+z');assert.deepEqual(await state(),original);await page.keyboard.press('Control+Shift+z');assert.deepEqual(await state(),saved);
   await page.evaluate(()=>Studio.select(['a']));await page.locator('[data-action="expand-car"]').click();assert.ok(await page.locator('#preview-w').isEnabled());await done();

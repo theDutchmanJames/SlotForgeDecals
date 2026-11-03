@@ -57,12 +57,8 @@ async function loadSheetRow(e){
  const p=e.current?DM.validateProject(project):e.project?DM.validateProject(e.project):DM.validateProject((await desktop.readProject(e)).project);
  Art.inspectItems(p.items);return p;
 }
-async function sheetPreviews(session,entries){
- for(const e of entries){
-  if(!session.alive())break;if(e.thumbnail)continue;
-  try{e.thumbnail=await projectThumbnail(await loadSheetRow(e));session.thumbnail(e);}catch{e.thumbnail=null;}
- }
-}
+async function sheetPreviews(session,entries){session.watchPreviews(async e=>projectThumbnail(await loadSheetRow(e)));}
+
 async function projectBrowser(){
  const generation=++projectBrowserGeneration;
  showDialog('Sheet Library','Loading saved sheets…','<p class="hint">Reading your local library.</p>','',true);

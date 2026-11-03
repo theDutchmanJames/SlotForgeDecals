@@ -21,7 +21,7 @@ test('Projects, histories and workspace reload retain sheet size and use compati
  const parent=path.resolve(__dirname,'../test-output');await fs.mkdir(parent,{recursive:true});const dir=await fs.mkdtemp(path.join(parent,'page-size-'));t.after(()=>fs.rm(dir,{recursive:true,force:true,maxRetries:5,retryDelay:100}));
  const store=new Projects(dir),p=DM.project('Small sheet');p.pageSize='a5';p.items=[DM.item('rect')];await store.save({project:p});p.pageSize='photo4x6';await store.save({project:p});
  const list=await new Projects(dir).list();assert.equal(list.entries[0].pageSize,'photo4x6');assert.equal((await store.read(list.entries[0])).project.pageSize,'photo4x6');
- const raw=JSON.parse(await fs.readFile(path.join(dir,'Projects',list.entries[0].file),'utf8'));assert.equal(raw.version,2);
+ const raw=await store.read(list.entries[0]);assert.equal(DM.fileVersion(raw.project),2);
  const history=await store.list({scope:'history',projectId:p.id});assert.equal(history.entries[0].pageSize,'a5');
  const ws=new Workspace(dir);await ws.save({format:'slotforge-decals-workspace',version:1,project:p,library:[]});const saved=(await new Workspace(dir).read()).data;assert.equal(saved.version,2);assert.equal(saved.project.pageSize,'photo4x6');assert.equal(DM.fileVersion(DM.project()),1);
 });

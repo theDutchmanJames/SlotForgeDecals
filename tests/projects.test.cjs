@@ -12,8 +12,8 @@ test('legacy files and duplicate IDs are handled without overwriting unreadable 
  const {dir,store}=await setup(t);await store.init();const p=DM.project('Legacy file');await fs.writeFile(path.join(dir,'Projects','old.sfsheet'),JSON.stringify({format:'slotforge-decals-sheet',version:1,project:p}));
  await fs.writeFile(path.join(dir,'Projects','bad.sfsheet'),'{broken');
  let list=await store.list();assert.equal(list.entries.length,1);assert.equal(list.unreadable,1);await store.save({project:p});list=await store.list();assert.equal(list.entries.length,1);
- const saved=await store.save({project:p}),file=path.join(dir,'Projects',saved.file);await fs.writeFile(file,'{broken');
- await assert.rejects(store.save({project:p}));assert.equal(await fs.readFile(file,'utf8'),'{broken');assert.ok(await fs.stat(path.join(dir,'Projects','old.sfsheet')));
+ const saved=await store.save({project:p}),db=require('../src/sqlite-store.cjs').connection(path.join(dir,'decals.sqlite'));const row=db.prepare("SELECT document FROM records WHERE scope='projects' AND key=?").get(saved.file);db.prepare("UPDATE documents SET json='{broken' WHERE hash=?").run(row.document);db.close();
+ await assert.rejects(store.save({project:p}));assert.ok(await fs.stat(path.join(dir,'Projects','old.sfsheet')));
 });
 test('stale snapshots, traversal and missing files cannot open another project',async t=>{
  const {store}=await setup(t),p=DM.project('Safe');p.id='../outside';await store.save({project:p});const entry=(await store.list()).entries[0];

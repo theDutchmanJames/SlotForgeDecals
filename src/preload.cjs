@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('desktop',{
   exportFile:(type,name,data)=>ipcRenderer.invoke('export-file',{type,name,data}),
   exportPDF:payload=>ipcRenderer.invoke('export-pdf',payload),
   convert:payload=>ipcRenderer.invoke('convert',payload),
+  reloadWorkspace:()=>ipcRenderer.send('reload-workspace'),storageStats:()=>ipcRenderer.invoke('storage-stats'),completeBackup:()=>ipcRenderer.invoke('complete-backup'),completeRestore:()=>ipcRenderer.invoke('complete-restore'),
   folder:()=>ipcRenderer.invoke('folder'),onClose:callback=>ipcRenderer.on('close-request',callback),closeReady:()=>ipcRenderer.send('close-ready')
 });

@@ -4,7 +4,7 @@ async function main(){
  const launch=()=>electron.launch({executablePath:process.env.SLOTFORGE_TEST_EXE||require('electron'),args:process.env.SLOTFORGE_TEST_EXE?[]:[root],env});let app=await launch(),page=await app.firstWindow();const errors=[];
  const attach=async()=>{page.on('pageerror',e=>errors.push(e.message));await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.showInactive();w.setSize(1400,900);});await page.waitForFunction(()=>window.Studio?.ready);};
  const close=async()=>{if(await page.locator('#path-cancel').count())await page.locator('#path-cancel').click();else if(await page.locator('#combine-cancel').count())await page.locator('#combine-cancel').click();else await page.locator('#dialog [data-action="close"]').first().click();};
- const pos=async(x,y)=>page.locator('#paper').evaluate((el,[x,y])=>{const p=new DOMPoint(x,y).matrixTransform(el.getScreenCTM());return{x:p.x,y:p.y};},[x,y]);
+ const pos=async(x,y)=>page.locator('#paper').evaluate(async(el,[x,y])=>{await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const p=new DOMPoint(x,y).matrixTransform(el.getScreenCTM());return{x:p.x,y:p.y};},[x,y]);
  const click=async(x,y)=>{const p=await pos(x,y);await page.mouse.click(p.x,p.y);};
  const drag=async(a,b)=>{const p=await pos(...a),q=await pos(...b);await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(q.x,q.y,{steps:10});await page.mouse.up();};
  const newPath=async()=>{await page.locator('.creation-launchers [data-action="draw-path"]').click();assert(!await page.locator('#dialog').evaluate(d=>d.open));assert(await page.locator('#inspector #path-controls').isVisible());};

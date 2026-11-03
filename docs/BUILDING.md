@@ -21,6 +21,8 @@ sudo apt-get update
 sudo apt-get install build-essential xvfb libnss3 libatk-bridge2.0-0 libgtk-3-0 libasound2t64 libgbm1 fonts-dejavu-core
 ```
 
+Storage uses the bundled Node/Electron `node:sqlite` module in a worker; it does not add a native npm binding or require a system SQLite installation. Keep `src/sqlite-worker.cjs` in packaged files. Unit tests exercise migration and backup/restore; `node tests/sqlite-desktop.cjs` verifies the source or `SLOTFORGE_TEST_EXE` packaged app with an isolated workspace. `node tests/sqlite-scale.cjs` measures a repeated-artwork fixture with 1,000 saved sheets and up to 1,000 decals.
+
 Run builds as your normal user.
 
 ## Native builders
@@ -28,7 +30,7 @@ Run builds as your normal user.
 - macOS: `bash "Build macOS.command" --no-pause`
 - Linux: `bash "Build Linux.sh" --no-pause`
 
-These install locked dependencies, check syntax, run unit tests, build Ghostscript for the host architecture and produce native packages in `dist/v0.2.16/`. They accept `--arch x64` or `--arch arm64`, which must match the host. `--quick` reuses matching dependencies and skips checks; it is for local iteration, not official release verification.
+These install locked dependencies, check syntax, run unit tests, build Ghostscript for the host architecture and produce native packages in `dist/v0.2.18/`. They accept `--arch x64` or `--arch arm64`, which must match the host. `--quick` reuses matching dependencies and skips checks; it is for local iteration, not official release verification.
 
 The lower-level commands, after dependency/converter setup:
 
@@ -51,13 +53,14 @@ Electron-builder 26.18.0 is pinned. Windows packages are unsigned; Mac apps use 
 | --- | --- |
 | windows-2025 | Windows x64 portable EXE |
 | macos-15-intel | Intel Mac DMG / ZIP |
-| macos-26 | Apple Silicon Mac DMG / ZIP |
 | ubuntu-24.04 | Linux x64 AppImage / DEB |
 | ubuntu-24.04-arm | Linux ARM64 AppImage / DEB |
 
-Every platform runs syntax/unit tests. Windows also runs the full desktop regression suite. All five packaged apps run the import/PDF/persistence integration test, all eight review regressions, and the editor/export UI test. Linux GUI tests use Xvfb and configure the setuid sandbox helper only on the isolated unpacked CI copy.
+Apple Silicon remains excluded from the main release workflow following runner availability problems.
 
-Only after all native builds and corresponding sources pass does the publisher verify checksums, create a draft release, upload every expected download, verify the uploaded digests, and publish it. The version tag must point to the exact tested commit. Existing published versions are never overwritten; bump package.json and package-lock.json for another release. Update RELEASE_NOTES.md and the README version in the same commit. Manual runs publish only when requested and run from main.
+Every platform runs syntax/unit tests. Windows also runs the full desktop regression suite. All four included packaged apps run the import/PDF/persistence integration test, all eight review regressions, and the editor/export UI test. Linux GUI tests use Xvfb and configure the setuid sandbox helper only on the isolated unpacked CI copy.
+
+Only after all native builds and corresponding sources pass does the publisher verify checksums, create a draft release, upload every expected download, verify the uploaded digests, and publish it. The version tag must point to the exact tested commit. Existing published versions are never overwritten; bump package.json and package-lock.json for another release. Update RELEASE_NOTES.md in the same commit; keep release history out of the README introduction. Manual runs publish only when requested and run from main.
 
 Pull requests run read-only syntax and unit checks. Publishing permissions are limited to the final job; build jobs have read-only repository access. No signing or publishing secrets are required beyond GitHub's scoped workflow token.
 

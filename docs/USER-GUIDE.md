@@ -139,7 +139,7 @@ The inspector and library now label artwork **Raster**, **Vector**, **Traced vec
 - Editable text, imported fonts, rectangles, ellipses, triangles, lines and stripes. Move, resize, rotate, align, group, layer, lock and duplicate artwork; undo/redo and automatic arrangement preserve physical size.
 - Side and top car previews with individually draggable selected decals. Enter measured model dimensions or import your own straight-on reference pictures.
 - Explicit **Save decal to library**, reusable independent copies, names/tags and importable `.sfdecal` sharing packs.
-- Editable `.sfsheet` projects, complete `.sfbackup` backups, vector-preserving PDF output and a sizing proof with labelled 50/100 mm reference bars.
+- Editable `.sfsheet` projects, complete `.sfdbbackup` backups, vector-preserving PDF output and a sizing proof with labelled 50/100 mm reference bars.
 - Optional named white-ink separation. See the printing limitations below.
 
 ## Libraries, import and export
@@ -148,7 +148,7 @@ Open **Sheet Library** or **Decal Library** in the top navigation. Both have **G
 
 Click a checkbox to toggle selection. Click a name or preview to select one item, **Ctrl-click** (or Command-click) to add/remove an item, and **Shift-click** to select a range in the displayed order. **Select all shown** applies to the search results; **Clear selection** clears everything. The count identifies selected entries hidden by a search. Selection alone does not open or place artwork.
 
-- **Save sheet / Ctrl+S** stores your current sheet locally. Repeated saves keep its identity and retain earlier changed versions in Projects/History.
+- **Save sheet / Ctrl+S** stores your current sheet locally. Repeated saves keep its identity and retain earlier changed versions in the local database.
 - **Open Sheet / Continue editing** opens a saved sheet or returns to the current one. The outgoing sheet is saved first. **Add to Sheet** places an independent decal copy at the current model scale.
 - **Import Sheet(s)** reads an editable .sfsheet file. Select which saved sheets to import; expand **Choose pages…** to import specific pages. Imported sheets receive new identities in Sheet Library, and the current sheet stays open.
 - **Export Sheet(s)** starts with the selected library entries checked. The editor toolbar preselects the current sheet. Choose the sheets and optional pages, then export one .sfsheet file. Multiple sheets retain their individual settings and fonts. There is a maximum of 100 saved sheets per file and 160 MB per import/export. Single-sheet exports remain in the existing format; multi-sheet collections require collection support in the receiving app.
@@ -157,13 +157,23 @@ Click a checkbox to toggle selection. Click a name or preview to select one item
 
 **Import & Export** groups sheets separately from images and decals. Imports are always on the left; exports are on the right, with red titles on white buttons. **Import an Image** still imports artwork to the canvas. **Export PDF** still reviews the current sheet before producing its print PDF.
 
-Use **Settings → Backup & Recovery → Restore Workspace Backup** for a full-workspace restore. This is separate from importing decals because it replaces the current workspace and decal library. A .sfbackup contains that workspace, its decals, fonts and preferences; separately copy the Projects folder to retain all saved sheets and their histories. Saved histories are not automatically purged. Only redistribute artwork and fonts you have permission to share.
+Use **Settings → Backup & Recovery → Export Complete Backup** for a verified `.sfdbbackup` containing every saved sheet, saved version, decal, artwork asset, custom font and preference. **Restore Complete Backup** replaces this complete collection after confirmation and keeps a recovery backup of the current database in `Backups` first. The startup recovery screen also offers this option if the database cannot load.
+
+**Export/Restore Workspace Backup** remains available for legacy `.sfbackup` files. These contain only the current sheet, decals, fonts and preferences; restoring one does not replace your other saved sheets. Saved sheet histories are not automatically purged. Only redistribute artwork and fonts you have permission to share.
 
 ## Local saving
 
 The default persistent folder is **Documents/SlotForge Decals**, resolved through your operating system's Documents location (including redirected Documents folders). It is outside the app installation. Replacing the application does not replace your artwork.
 
-`workspace.json` holds the current sheet, saved library, custom fonts and preferences. Saves are automatic and atomic; `Backups` keeps the previous three readable versions. Saved sheets go to `Projects`, with older saved snapshots in `Projects/History`; exports go to `Exports`. Settings can open the folder and export a full backup. Keep an independent backup of valuable artwork.
+`decals.sqlite` holds the current sheet, saved sheets and their history, decal library, custom fonts and preferences. Automatic saves use transactions; the previous three workspace snapshots remain available through Recovery. Identical artwork is stored once and referenced by its sheets and versions. The database runs in a background worker, and library previews load as they approach the visible area. Exports default to `Exports`; complete backups default to `Backups`.
+
+On first launch after the SQLite update, the editor waits while existing `workspace.json`, its three backups, `Projects/*.sfsheet` and `Projects/History/*.sfsheet` are migrated and verified. All originals stay unchanged. Unreadable files are reported and retained; they are not silently discarded or included as usable records in a complete backup. Keep those originals separately if recovery is needed. If migration fails, it does not publish a partial database.
+
+After migration, these legacy files are **migration-time copies**, not current saves. Do not delete `decals.sqlite` to switch back to them: that would lose subsequent edits from view. Use editable sheet/decal exports for sharing with compatible earlier versions. Complete SQLite backups require this storage update or a compatible newer app.
+
+Migration needs free space for both the originals and new database, and a local filesystem supporting hard links (such as NTFS). If publication is unsupported, the app stops safely and leaves the originals intact. Backup and restore also need room for staging and recovery copies. Keep an independent complete backup of valuable artwork.
+
+The existing limits remain: 1,000 library decals, 500 decals per sharing pack, 100 sheets per collection import/export and approximately 160 MB per workspace or portable file. SQLite reduces duplicated storage and avoids loading every saved sheet to list the library. The current sheet and decal library still load into editor memory, so this update does not claim unlimited library size.
 
 ## Selecting artwork
 

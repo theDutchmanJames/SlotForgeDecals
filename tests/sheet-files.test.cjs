@@ -15,14 +15,8 @@ test('sheet collections retain independent settings, fonts and editable nested a
 test('batch sheet import is independent, persistent and rolls back a failed batch',async t=>{
  const parent=path.resolve(__dirname,'../test-output');await fs.mkdir(parent,{recursive:true});const dir=await fs.mkdtemp(path.join(parent,'sheet-import-'));t.after(()=>fs.rm(dir,{recursive:true,force:true,maxRetries:5,retryDelay:100}));
  const store=new Projects(dir),p=DM.project('Original');p.items=[DM.item('rect')];await store.save({project:p});
- const before=(await store.list()).entries[0],original=await fs.readFile(path.join(dir,'Projects',before.file),'utf8');
+ const before=(await store.list()).entries[0],original=await store.read(before);
  const imported=await store.importMany([p,p]);assert.equal(new Set([p.id,...imported.map(p=>p.id)]).size,3);
- assert.equal((await new Projects(dir).list()).entries.length,3);assert.equal(await fs.readFile(path.join(dir,'Projects',before.file),'utf8'),original);
- const snapshot=(await fs.readdir(path.join(dir,'Projects'))).sort();await assert.rejects(store.importMany([p,{items:null}]));assert.deepEqual((await fs.readdir(path.join(dir,'Projects'))).sort(),snapshot);
- const open=fs.open;let writes=0;fs.open=async(...args)=>{if(args[1]==='wx'&&++writes===2)throw Error('Simulated full disk');return open(...args);};
- try{await assert.rejects(store.importMany([p,p]),/full disk/);}finally{fs.open=open;}
- assert.deepEqual((await fs.readdir(path.join(dir,'Projects'))).sort(),snapshot);assert.equal((await store.list()).entries.length,3);
- const rename=fs.rename;let published=0;fs.rename=async(...args)=>{assert(args[0].endsWith('.tmp'));assert.equal(JSON.parse(await fs.readFile(args[0],'utf8')).format,'slotforge-decals-sheet');if(++published===2)throw Error('Simulated publish failure');return rename(...args);};
- try{await assert.rejects(store.importMany([p,p]),/publish failure/);}finally{fs.rename=rename;}
- assert.deepEqual((await fs.readdir(path.join(dir,'Projects'))).sort(),snapshot);assert.equal((await store.list()).entries.length,3);
+ assert.equal((await new Projects(dir).list()).entries.length,3);assert.deepEqual(await store.read(before),original);
+ const snapshot=(await store.list()).entries;await assert.rejects(store.importMany([p,{items:null}]));assert.deepEqual((await store.list()).entries,snapshot);
 });

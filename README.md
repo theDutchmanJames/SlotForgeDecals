@@ -170,7 +170,8 @@ Explicitly **Save decal to library** to keep a reusable design with a name and t
 | **SVG** | Individual decal artwork; embedded bitmap portions remain raster. |
 | **`.sfsheet`** | Editable sheets containing artwork, fonts, sizes and car-reference settings. |
 | **`.sfdecal`** | Packs of saved decals that another Decals user can import. |
-| **`.sfbackup`** | The current workspace, library, custom fonts and preferences. |
+| **`.sfbackup`** | The current workspace, library, custom fonts and preferences (legacy format). |
+| **`.sfdbbackup`** | A complete SQLite backup: all saved sheets, history, decals, artwork and settings. |
 
 The library supports **1,000 decals**, and a sharing pack can contain up to **500**. Send the files yourself; sharing works without an online account. Editable A5 and Photo sheets need Decals 0.2.13 or newer. PDFs can be viewed independently of the app. Only redistribute artwork and fonts you have permission to share.
 
@@ -186,7 +187,9 @@ Earlier saved project versions and recent workspace backups can be previewed and
 
 Your files live in **Documents/SlotForge Decals**, separate from the installed application. **Settings → Open workspace folder** shows the actual location, including redirected Documents folders. Updating the app does not replace that folder.
 
-Use **Settings → Backup & Recovery** to export or restore a `.sfbackup` containing the current workspace and library. **Separately copy the Projects folder to back up all saved sheets and their histories.** Keep an independent backup of valuable artwork.
+Sheets, decals, fonts and history now live in **`decals.sqlite`**. Repeated artwork is stored once and reused across saved sheets and versions. On first launch, Decals checks and migrates existing workspace, sheet and history files; the original files stay unchanged as recovery copies.
+
+Use **Settings → Backup & Recovery → Export Complete Backup** to save a verified `.sfdbbackup` containing the whole database. **Restore Complete Backup** keeps a recovery copy before replacing the workspace. The older `.sfbackup` option still works for the current sheet and decal library; it does not contain every saved sheet. Keep an independent backup of valuable artwork.
 
 For step-by-step instructions, see the [user guide](docs/USER-GUIDE.md). The [testing notes](docs/TESTING.md) describe what has been checked and the remaining practical limits.
 

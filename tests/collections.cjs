@@ -48,8 +48,8 @@ async function main(){
   const blank=await page.evaluate(()=>({...DM.project(),pageSize:'a5',scale:43,margin:8}));await page.locator('#project-file').setInputFiles({name:'blank.sfsheet',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({format:'slotforge-decals-sheet',version:2,project:blank}))});await confirm();
   const blankEntry=(await page.evaluate(()=>desktop.listProjects())).entries.find(e=>e.name==='Untitled sheet');assert(blankEntry);assert.deepEqual(await state(),original);
   await page.evaluate(e=>openProjectEntry(e),blankEntry);await page.evaluate(()=>{Studio.project.margin=11;});
-  const blankFile=path.join(run,'workspace','Projects',blankEntry.file),blankBytes=await fs.readFile(blankFile),beforeFailure=await state();await fs.writeFile(blankFile,'{broken');
-  await page.locator('.projectbar [data-action="new"]').click();await page.waitForFunction(()=>!projectTask&&document.querySelector('#toast').classList.contains('error'));assert.deepEqual(await state(),beforeFailure);await fs.writeFile(blankFile,blankBytes);
+  const corrupt=require('./sqlite-fixture.cjs').corruptSheet(path.join(run,'workspace'),blankEntry.file),beforeFailure=await state();
+  await page.locator('.projectbar [data-action="new"]').click();await page.waitForFunction(()=>!projectTask&&document.querySelector('#toast').classList.contains('error'));assert.deepEqual(await state(),beforeFailure);corrupt.restore();
   await page.locator('.projectbar [data-action="new"]').click();await page.waitForFunction(()=>!projectTask);
   const refreshed=(await page.evaluate(()=>desktop.listProjects())).entries.find(e=>e.id===blankEntry.id);assert.equal((await page.evaluate(e=>desktop.readProject(e),refreshed)).project.margin,11);
   // Decal selections use the same controls; only selected decals travel.
