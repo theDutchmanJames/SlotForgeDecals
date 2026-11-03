@@ -1,12 +1,62 @@
 # Verification record
 
+## Full review of pattern sizing and canvas tools — 3 November 2026
+
+Reviewed changes since the previous full library/creation review: physical checkerboard and stripe sizing, header alignment, editable paths, boolean geometry, main-canvas tools, persistence/sharing and PDF output.
+
+Fixed small-path normalization rejecting valid geometry through floating-point rounding; unchanged path edits adding undo entries and clearing Redo; Ctrl+S being ignored while a Path Tool field had focus; path and merge/cut previews appearing above artwork that should cover them; kept originals being faded in the preview; and grouped boolean results taking an unused wrapper colour instead of the first child's fill. Invalid point-coordinate edits now restore the controls as well as the geometry. The group colour rule is documented in the app and user documentation.
+
+All **73 unit tests**, JavaScript syntax checks and all **21 desktop suites** pass. New regressions cover tiny-path coordinate round trips, nested group colours, unchanged-edit history preservation, saving from a focused field, invalid-draft protection, preview layer order and retained-original opacity. PDF inspection confirms curved vector output with eight cubic segments, no raster images and a transparent cut-out. Existing checks verify physical square/stripe sizes, sheet-name alignment, library sharing and persistence.
+
+A fresh Windows package passes the path, editor-control/pattern and selection/car-positioning suites. Light/dark and compact layouts were inspected; tool panels also pass overflow checks. Tests used isolated workspaces. macOS/Linux were not run locally. No version change, push or release was performed.
+
+## Main-canvas Path Tool and Merge & Cut — 3 November 2026
+
+Renamed the drawing tool to **Path Tool**. It and **Merge & Cut** now have dedicated buttons in Add artwork. Both operate on the main sheet canvas with controls in the right-hand inspector; their toolbox-menu entries and separate editing dialogs were removed. Path drafts remain separate from committed artwork until Finish, with local undo, cancellation, point/handle editing, Ctrl-wheel zoom and fit/pan controls. Switching tools or saving finishes a valid path; invalid drafts require finishing or cancellation. Merge/cut supports selecting shapes on the canvas before or after activation, previews at the actual sheet position, and requires explicit Apply.
+
+Syntax checks and all **71 unit tests** pass. All **21 desktop suites** pass, plus focused tests of gesture cancellation, unfinished-draft/autosave protection, switching tools, inspector persistence through zoom, on-canvas selection, editable library round trips and curved vector PDF output. A fresh Windows package passes path, editor-control and selection/car-positioning tests. An initial packaged car-drag test intermittently missed its gesture; the test now waits for a stable, visible preview target before using raw mouse coordinates, and its final isolated run passed. Dark and light layouts were inspected, including a compact window. Tests use isolated workspaces; no version bump or publication was performed.
+
+## Editable paths and shape operations — 3 November 2026
+
+Added native editable paths with cubic Bézier handles, freehand smoothing, open/closed contours, point insertion/deletion, smooth/corner controls and local drawing undo. The sheet-reference editor supports zoom, pan, exact point coordinates and fit-to-path. Merge, subtract, intersection and excluded-overlap operations support filled native shapes, closed paths and supported groups. Results retain curves and transparent holes. Shape calculations use the bundled, unmodified MIT-licensed Paper.js 0.12.18 core; imported SVGs, images, text and slices are excluded from these operations.
+
+JavaScript syntax checks and all **71 unit tests** pass. Unit checks cover handle and sharing round trips, exact curve subdivision, boolean areas, real holes, empty results, locks, rotations, mirroring, resized groups, base colours and freehand smoothing. All **21 desktop suites** pass. The path suite uses real pointer gestures to create curved closed paths and freehand lines, checks point insertion, handle dragging, cancellation and undo, and verifies library saving and restart persistence. Pixel inspection confirms a transparent hole; exported PDF inspection finds a curved vector path with eight cubic segments and no raster images. Both themes and compact windows were inspected.
+
+A fresh Windows package passes the path, editor-control and sheet-sharing suites. All workspaces are isolated from user data. macOS/Linux were not run locally; no version bump or public release was made.
+
+## Physical pattern sizing and header alignment — 3 November 2026
+
+Checkerboards now use a physical square size; row and column counts grow the pattern. Racing stripes use individual physical widths and equal gaps in millimetres, with a default width for new stripes and an apply-to-all shortcut. Editing an existing stripe pattern reads its scaled geometry, including legacy double stripes. The preview keeps overall dimensions visible. Applying settings to a stretched checkerboard restores square cells; the dialog explains this before applying.
+
+All 67 unit tests and JavaScript syntax checks pass. The editor suite verifies fixed square sizes, 12 individually sized stripes, spacing changes without thinning, colour retention, small resized patterns, undo and PDF output. PDF measurements confirm 4 mm, 0.5 mm and 2 mm stripes separated by 3 mm gaps within 0.01 mm, with vector paths and no raster images. Header labels and fields share a vertical centre at 1100, 1400 and 1600 pixels in both themes. A fresh Windows package passes the editor and page-size suites, including all six paper/orientation PDF combinations. Test workspaces are isolated; nothing was published.
+
+## Full review of the library and creation changes — 2 November 2026
+
+Reviewed all local changes since 0.2.16: import/export selection, both libraries, sheet collections and persistence, editor controls, native polygon shapes and configurable patterns. Fixed pattern colours resetting when reopening their settings and small resized patterns failing to open for adjustment. Patterns now retain valid editable child geometry at small printed sizes. Closing a library also stops its pending preview work from updating the closed window.
+
+Sheet batch imports now stage and flush complete temporary files before publishing them to the library. Simulated write and publish failures leave the original saved sheets unchanged and remove files from the failed batch. An abrupt process interruption can leave complete imported sheets or ignored temporary files; the entire batch is not a single filesystem transaction.
+
+JavaScript syntax checks, all **65 unit tests**, all **20 Windows desktop suites**, and **four suites against a freshly built Windows package** pass. The packaged checks cover editor controls/pattern editing, collection sharing, project history/recovery and line/stripe thickness. Custom colours and tiny checkerboards/12-stripe patterns are covered by regression tests. PDF inspection found 57 vector paths and no raster images for the tested shape sheet. Both themes and compact layouts were reviewed. All test workspaces are isolated from real user data. These changes remain local; macOS/Linux were not tested locally.
+
+## Editor controls and Shapes & Patterns — 2 November 2026
+
+All 64 unit tests and 20 Windows desktop suites pass. `tests/editor-controls.cjs` uses more than 50 decals and 50 saved sheets to verify two-column library lists, scroll limits, sidebar view/fold persistence and scroll preservation. It checks saving a multi-item selection without changing the canvas originals, sheet renaming, orientation and undo, scale conversion, Add Sheet, and matching toolbar/sharing export pickers. Both themes are checked at 1100, 1400 and 1600 pixels with no overlapping project controls.
+
+The creation checks cover the shape gallery, adjustable stars, arrows, checkerboards and stripes, invalid parameters, parameter editing, cancel/undo, and upgrading an existing double stripe to 12 stripes without changing its identity, placement or dimensions. PDF inspection confirms native paths and zero raster images. Unit tests round-trip every new preset through decal sharing, validate normalized polygon coordinates and pattern bounds, and exercise 1, 5 and 12 stripes plus transparent outlined shapes. The Windows package is tested separately using isolated workspaces; macOS/Linux builds are not run locally for these changes.
+
+## Import/export and library redesign — 2 November 2026
+
+Both libraries and the import/export pickers use one shared selection browser. Verified grid/list views, remembered sorting, checkboxes, Ctrl/Shift range selection, hidden selections during search, white action buttons, export-only red titles, and compact layouts in both themes. Sheet collections preserve individual settings and embedded fonts; selecting pages renumbers page references without resizing or moving artwork. Imports create independent library entries and leave the current editor open. Legacy single-sheet files and blank templates still work.
+
+All 63 unit tests and 19 Windows desktop suites pass. The sheet-file tests cover legacy/collection round trips, nested artwork, font retention, invalid data, independent identities, persistence, and rollback after a simulated disk failure. `tests/collections.cjs` (also run through `tests/sheet-sharing.cjs`) covers selective sheet/page and decal sharing, another installation's workspace, malformed saved blanks, cancellation, failed writes, restart preferences and the separate backup-restore route. A fresh Windows package passes the collection, project/history and core UI/PDF suites. All test workspaces are isolated from real user data. macOS/Linux have not been run locally for this redesign; no new public release was created for it.
+
 ## Local review — 2 November 2026
 
 Reviewed changes since the slicing review: theme-aware branding, the PDF artwork review, Ctrl+mousewheel zoom, Sheet Library saving/sharing, and Apple Silicon release recovery. Fixed an imported blank `Untitled sheet` template not being stored in the library. Later edits to saved blank templates are now preserved on switching; an unreadable saved blank blocks switching instead of silently skipping its save.
 
 JavaScript syntax checks, all 61 unit tests and all 19 Windows desktop suites pass. A newly built Windows package also passes sheet-sharing and PDF-review/zoom suites, including cancelled/failed exports, independent imports into another workspace, embedded fonts, groups, slices, multiple pages, restart persistence, mixed SVG artwork, white-mask notices, and unchanged print dimensions. Both themes, bundled logos, the 120 × 22 px footer and long-title layouts were checked at seven widths (1100–1600 px), including the responsive breakpoint. Test workspaces are isolated from real user data.
 
-Release-recovery validation tests pass; the workflow still requires all five tested platforms and matching source/artifact commits. These local changes have not been published, and macOS/Linux package checks have not been rerun for them.
+Release-recovery validation tests pass. Version 0.2.16 was subsequently published with Windows, macOS Intel and both Linux architectures after their CI checks passed. At the user's request, the separate manual publishing workflow omitted the stalled Apple Silicon build, verified the exact source/artifact commits and checksums, and disclosed the missing platform in the release notes. Normal release builds still require all five platforms.
 
 ## Slicing update — 0.2.15
 

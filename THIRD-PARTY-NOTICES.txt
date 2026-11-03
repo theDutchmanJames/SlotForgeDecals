@@ -55,3 +55,8 @@ Build-only icon tools: Sharp 0.35.5 (Apache-2.0; bundled libvips and dependencie
 retain their licences), resedit 1.7.2 and pe-library (MIT). These tools are
 recorded in the dependency lockfile and are not bundled as app runtime code.
 electron-builder 26.18.0 (MIT) creates the native packages and is build-only.
+
+Paper.js 0.12.18, Copyright (c) 2011 - 2020 Jürg Lehni & Jonathan Puckey.
+MIT licensed. Unmodified browser core and license are retained in
+resources/app/vendor/paper. Used locally for Bézier curves and vector booleans.
+Source: https://github.com/paperjs/paper.js/tree/v0.12.18

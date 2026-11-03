@@ -18,9 +18,9 @@ async function main(){
   await page.locator('[data-action="undo"]').click();await page.locator('[data-action="redo"]').click();
   await page.locator('[data-action="arrange"]').click();await page.evaluate(()=>Studio.flush());
   await page.evaluate(()=>Studio.exportPDF(false,true));await page.evaluate(()=>Studio.exportPDF(true));
-  await page.locator('[data-action="export-pack"]').first().click();await page.locator('#pack-export').click();
-  await page.locator('[data-action="export-sheet"]').first().click();await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Editable sheet exported'));
-  await page.locator('#pack-file').setInputFiles(path.join(run,'exports','Club Racing • No. 27.sfsheet'));await page.locator('#confirm').click();await page.waitForFunction(()=>!document.querySelector('#dialog').open);assert.equal(await page.evaluate(()=>Studio.project.fonts.length),1);
+  await page.locator('[data-action="export-pack"]').first().click();await page.locator('#collection-confirm').click();
+  await page.locator('[data-action="export-sheet"]').first().click();await page.locator('#collection-confirm').click();await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Editable sheet exported'));
+  await page.locator('#project-file').setInputFiles(path.join(run,'exports','Club Racing • No. 27.sfsheet'));await page.locator('#collection-confirm').click();await page.waitForFunction(()=>!document.querySelector('#dialog').open);assert.equal(await page.evaluate(()=>Studio.project.fonts.length),1);
   const exports=await fs.readdir(path.join(run,'exports'));assert.ok(exports.some(f=>f.endsWith('.pdf')));assert.ok(exports.some(f=>f.endsWith('.sfdecal')));assert.ok(exports.some(f=>f.endsWith('.sfsheet')));
   await page.evaluate(()=>Studio.select([Studio.project.items[0].id]));await page.screenshot({path:path.join(run,'editor-final.png')});
   assert.deepEqual(errors,[]);console.log(JSON.stringify({run,exports,items:await page.evaluate(()=>Studio.project.items.length),errors},null,2));

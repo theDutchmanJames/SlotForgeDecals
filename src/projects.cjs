@@ -33,7 +33,7 @@ class Projects{
   const recent=scope==='projects'?await this.recent():{},entries=[];let unreadable=0;
   for(const name of names){try{
    const {stat}=await this.file(scope,name),key=scope+'/'+name,version=stamp(stat);let meta=this.cache.get(key);
-   if(!meta||meta.stamp!==version){const data=await this.readEntry({scope,file:name,stamp:version}),p=data.project;meta={scope,file:name,stamp:version,id:p.id,name:p.name,pages:p.pages,pageSize:p.pageSize,orientation:p.orientation,scale:p.scale,count:p.items.length,updated:p.updated,modified:data.modified,thumbnail:data.thumbnail};this.cache.set(key,meta);}
+   if(!meta||meta.stamp!==version){const data=await this.readEntry({scope,file:name,stamp:version}),p=data.project;meta={scope,file:name,stamp:version,id:p.id,name:p.name,pages:p.pages,pageSize:p.pageSize,orientation:p.orientation,scale:p.scale,count:p.items.length,added:p.added||data.modified,updated:p.updated,modified:data.modified,thumbnail:data.thumbnail};this.cache.set(key,meta);}
    if(scope==='history'&&projectId&&meta.id!==projectId)continue;
    entries.push({...meta,recent:recent[name]||meta.modified});
   }catch{unreadable++;}}
@@ -42,6 +42,28 @@ class Projects{
   unique.sort((a,b)=>Date.parse(b.recent)-Date.parse(a.recent));return{entries:unique,unreadable};
  }
  async read(entry,{remember=false}={}){await this.queue;await this.init();const data=await this.readEntry(entry);if(remember&&entry.scope==='projects')await this.enqueue(()=>this.remember(entry.file));return data;}
+ importMany(incoming){
+  return this.enqueue(async()=>{
+   if(!Array.isArray(incoming)||!incoming.length||incoming.length>100)throw Error('Import 1–100 sheets at a time.');
+   const now=new Date().toISOString();
+   const records=incoming.map(raw=>{
+    const project=DM.validateProject(raw);project.id=crypto.randomUUID();project.added=now;
+    const name='project-'+crypto.createHash('sha256').update(project.id).digest('hex').slice(0,24)+'.sfsheet';
+    return{name,project,body:JSON.stringify({format:'slotforge-decals-sheet',version:DM.fileVersion(project),project,thumbnail:null})};
+   });
+   if(records.reduce((n,r)=>n+Buffer.byteLength(r.body),0)>MAX_BYTES)throw Error('Sheet import exceeds 160 MB.');
+   await this.init();const created=new Set(),staged=[];
+   try{
+    // Publish only complete files: an interrupted write must not appear as a corrupt library sheet.
+    for(const r of records){const file=path.join(this.root,'Projects',r.name),tmp=file+'.'+crypto.randomUUID()+'.tmp',handle=await fs.open(tmp,'wx');created.add(tmp);try{await handle.writeFile(r.body);await handle.sync();}finally{await handle.close();}staged.push({file,tmp});}
+    for(const {file,tmp} of staged){
+     try{await fs.lstat(file);throw Error('An imported sheet filename already exists. Please try again.');}catch(e){if(e.code!=='ENOENT')throw e;}
+     await fs.rename(tmp,file);created.delete(tmp);created.add(file);
+    }
+   }catch(e){await Promise.all([...created].map(file=>fs.unlink(file)));throw e;}
+   return records.map(r=>({id:r.project.id,name:r.project.name}));
+  });
+ }
  save({project,thumbnail}){
   return this.enqueue(async()=>{await this.init();const p=DM.validateProject(project),name='project-'+crypto.createHash('sha256').update(p.id).digest('hex').slice(0,24)+'.sfsheet',file=path.join(this.root,'Projects',name);
    const data={format:'slotforge-decals-sheet',version:DM.fileVersion(p),project:p,thumbnail:thumb(thumbnail)},body=JSON.stringify(data);if(Buffer.byteLength(body)>MAX_BYTES)throw Error('Project exceeds 160 MB.');

@@ -4,7 +4,7 @@ See the [README](../README.md) for downloads and installation.
 
 ## Choose your paper size
 
-Use **Sheet size** in the top bar, beside the project name. Choose **A4 (210 × 297 mm)**, **A5 (148 × 210 mm)** or **Photo 4×6 in (101.6 × 152.4 mm)**. Set portrait or landscape under **Paper & white ink → Orientation**. Every page in a project uses the same size.
+Use **Sheet size** in the top bar, beside the project name. Choose **A4 (210 × 297 mm)**, **A5 (148 × 210 mm)** or **Photo 4×6 in (101.6 × 152.4 mm)**. Click the **Portrait / Landscape** button in the top bar to switch orientation, or use **Paper & white ink → Orientation**. Every page in a project uses the same size.
 
 Changing paper keeps artwork at the same printed size and position. On a smaller sheet, review **Print checks** and reposition decals or use **Auto-arrange**. Undo restores the previous paper choice. Existing projects open as A4; new sheets start as A4.
 
@@ -12,11 +12,58 @@ The paper choice is saved in projects, editable sheet files and workspace backup
 
 ## Import your own picture
 
-Use **Import image or artwork** in the left-hand Add artwork panel, on the welcome screen, in the Decal Library window, or in Import & Export. You can also use **Import your own image** below the library or drop a file onto the sheet. Choose your PNG/JPEG/WebP (or SVG/EPS/PDF), set the printed width and scale, and click **Add to sheet**. Pack import is a separate action for files shared by other users.
+Use **Import an Image** in the left-hand Add artwork panel, on the welcome screen, or in **Import & Export**. You can also drop artwork onto the sheet. Choose PNG/JPEG/WebP or SVG/EPS/PDF, set the printed width and scale, and click **Add to sheet**. **Import Decals** is the separate action for saved decals shared by other users.
+
+## Editor controls and selected decals
+
+Click the bordered **Sheet name** field (with its pencil icon) to name your work. **Scale Conversion · 1:32** opens the scale conversion dialog and shows the current scale. **Add Sheet** saves your outgoing work and starts a separate sheet; **Add page** below the canvas adds a page to the current sheet instead. The toolbar’s **Export sheet…** and the Import & Export screen use the same sheet/page selection window.
+
+Select one or more items on the canvas, then click **Save Decal to Library** in Add artwork. Enter a name and optional tags, then save. Multiple selected items are saved together as one reusable grouped decal; their canvas originals stay unchanged. The button is disabled when nothing is selected.
+
+## Shapes and racing patterns
+
+Open **Shapes & Patterns** to choose basic shapes or configure a diamond, star, regular polygon, arrow, chevron, trapezoid, shield, checkerboard or racing-stripe pattern. Text remains a separate quick-access tool. The preview updates as you change dimensions and colours. Stars have adjustable point counts and inner radius; polygons have adjustable sides; arrows and chevrons have adjustable proportions. Polygon shapes also support transparent fills and outlines. Click **Add to Sheet**, then use **Adjust Shape / Pattern** in the inspector to revisit the settings.
+
+**Checkerboard** uses a **Square size (mm)** plus row and column counts. Adding rows or columns grows the overall pattern while each square keeps that size. A stretched older pattern is squared up when you apply its settings; Cancel keeps the original.
+
+**Racing stripes** offers **1–12 stripes**, a length and equal spacing in millimetres, and two alternating colours. Set each stripe’s thickness under **Individual stripe widths**, or enter a **Default stripe width** and click **Apply width to all stripes**. The default also sets the width of newly added stripes. Increasing the count or gap grows the overall pattern without thinning the stripes. The preview shows the total printed dimensions.
+
+To change existing double-stripe artwork, select it and choose **Stripe Count & Spacing**. Its existing widths and gap are used as starting values. Applying turns it into an editable group at the same position; Undo restores the original. Rotate the result for vertical or diagonal stripes.
+
+Checkerboards and stripes are groups of individually editable rectangles. You can use **Edit group** for individual changes. Reapplying the pattern settings regenerates those children, so review the preview first; Cancel keeps the previous artwork. Shapes and patterns remain vector in PDF output and editable in shared files. New polygon shapes need a receiving app with support for these tools.
+
+## Path Tool
+
+1. Choose **Path Tool** in the main **Add artwork** folder. Draw directly on your sheet; all tool options appear in the right-hand panel.
+2. Choose **Pen / Bézier** to click straight points or drag while placing points to create curves. Choose **Freehand** to draw a stroke; it is smoothed into editable points.
+3. Click the first point to close a pen path, or use **Closed shape**. Open lines need a non-zero line width. Set the line/fill colours and optional transparent fill.
+4. In **Edit Points**, drag a point to move it, or drag its blue handles to shape a curve. Hold Shift while dragging a handle to mirror the opposite handle. Use **Smooth point**, **Corner point**, **Insert point after** or **Delete point**. X/Y fields set exact sheet coordinates.
+5. Use **Ctrl + mousewheel** to zoom, **Pan** to move around, or **Fit Sheet / Fit Path**. **Undo drawing / Redo** (also Ctrl+Z / Ctrl+Shift+Z) affect the active drawing. **Finish Path** or Enter commits one undoable edit; **Cancel** or Escape discards it. These buttons stay at the top of the right panel while you scroll through the options.
+
+Switching to another editing tool or saving finishes a valid path first. An incomplete path must be finished or cancelled before switching. Automatic workspace saves retain the committed sheet while a drawing is unfinished. Closing the app also finishes a valid path before saving.
+
+Select a path on the canvas and choose **Edit Points & Curves** to edit it on the main canvas with its options on the right. Paths, including curve handles and holes, survive library saving and editable file sharing. PDF keeps the vector geometry; the receiving app needs path support to edit shared files.
+
+## Merge and cut shapes
+
+Choose **Merge & Cut** in the main **Add artwork** folder, then select 2–20 unlocked, filled native shapes or closed paths on the canvas. You can also select the shapes first and use **Merge / Cut Shapes** in the selection inspector. Ctrl/Shift-click adds or removes shapes; drag empty canvas to select several. Options appear in the right-hand panel and the canvas previews the result at its actual position.
+
+- **Merge** joins the filled areas.
+- **Cut** subtracts the other shapes from the selected **Base shape**.
+- **Keep Overlap** retains the area common to all selected shapes.
+- **Exclude Overlap** retains areas covered by an odd number of selected shapes.
+
+Review the canvas preview, choose the base shape for the result’s colour, opacity and ink treatment, then click **Apply**. **Cancel**, Escape or switching away keeps the originals. **Keep original shapes too** adds the result without replacing the selection. Empty results cannot be applied. Results are editable paths with real transparent holes and Bézier curves. Undo restores the original shapes.
+
+Groups of supported shapes also work; the first child supplies the result’s fill colour. The calculation uses filled areas, and the result has no outline; add one afterwards if needed. Images, imported SVGs, text, slices, open paths and transparent-fill shapes are not supported. Closing a path and giving it a fill makes it eligible.
+
+## Sidebar library
+
+Click the **Decal Library** heading to fold or unfold it. Its **Grid / List** buttons change the compact sidebar view, and the artwork area scrolls within a screen-relative height limit; adding 50 or more decals does not turn it into an indefinitely growing menu. The fold state and view are remembered. Open the full library from the top navigation for search, sorting and multi-selection. Both full libraries use two columns in List view.
 
 ## Racing-number templates
 
-Choose **Racing numbers…** in Add artwork. Pick a roundel, oval plate or rectangular number plate; set the number, typeface, colours, border and printed dimensions. Roundels keep a circular shape. The preview updates as you change settings.
+Choose **Shapes & Patterns → Racing Number Plates** in Add artwork. Pick a roundel, oval plate or rectangular number plate; set the number, typeface, colours, border and printed dimensions. Roundels keep a circular shape. The preview updates as you change settings.
 
 Choose **One decal** or **Matching pair**. Both copies in a pair have readable, identical numbers and can be edited independently. Pairs use the sheet’s cutting gap; if necessary they are placed vertically or on another page. Existing artwork stays in place, so review Print checks or use Auto-arrange if decals overlap.
 
@@ -95,17 +142,22 @@ The inspector and library now label artwork **Raster**, **Vector**, **Traced vec
 - Editable `.sfsheet` projects, complete `.sfbackup` backups, vector-preserving PDF output and a sizing proof with labelled 50/100 mm reference bars.
 - Optional named white-ink separation. See the printing limitations below.
 
-## Sheet Library and sharing
+## Libraries, import and export
 
-Click **Sheet Library** beside **Decal Library** in the top navigation to see your current sheet and saved projects, with first-page thumbnails, page/decal counts and model scales. Search by name or sort by recent use, name or last save. Existing `.sfsheet` files in the workspace's Projects folder are discovered automatically. **Import sheet…** adds a shared .sfsheet as an independent copy, preserving existing saved sheets.
+Open **Sheet Library** or **Decal Library** in the top navigation. Both have **Grid / List** views, search and sorting: **Name A–Z**, **Name Z–A**, **Newest added** and **Recently updated**. View and sort preferences are remembered. Existing entries use their recorded date when an original added date is unavailable.
 
-- **Save sheet / Ctrl+S** stores the current sheet in Sheet Library without opening a file picker. Repeated saves update the same project; changed saved versions are retained in `Projects/History`. Renaming a sheet keeps its project identity.
-- **Open sheet** and **New sheet** save the outgoing sheet before switching. The app refuses to switch if that save fails. The blank default sheet is not archived automatically, but you can explicitly save it.
-- **Versions** shows earlier saved versions of that project. **Workspace recovery** shows sheets from the last three automatic workspace backups.
-- **Preview & recover** lets you review a version, then opens a separate recovered copy. The original project, library and preferences are kept. This recovers a sheet, not an entire earlier library; full-workspace backup import remains available through Import & Export.
-- **Export sheet…** creates a portable editable .sfsheet file. Use the editor toolbar for the current sheet, or Export sheet… on any Sheet Library card without opening that sheet. The current sheet is saved locally before exporting.
+Click a checkbox to toggle selection. Click a name or preview to select one item, **Ctrl-click** (or Command-click) to add/remove an item, and **Shift-click** to select a range in the displayed order. **Select all shown** applies to the search results; **Clear selection** clears everything. The count identifies selected entries hidden by a search. Selection alone does not open or place artwork.
 
-Project files contain the artwork, fonts, sizes and car-reference settings. Saved histories are local and are not automatically purged. Full `.sfbackup` files include the current workspace/library; separately copy the Projects folder if you also want to back up all saved sheets and their histories.
+- **Save sheet / Ctrl+S** stores your current sheet locally. Repeated saves keep its identity and retain earlier changed versions in Projects/History.
+- **Open Sheet / Continue editing** opens a saved sheet or returns to the current one. The outgoing sheet is saved first. **Add to Sheet** places an independent decal copy at the current model scale.
+- **Import Sheet(s)** reads an editable .sfsheet file. Select which saved sheets to import; expand **Choose pages…** to import specific pages. Imported sheets receive new identities in Sheet Library, and the current sheet stays open.
+- **Export Sheet(s)** starts with the selected library entries checked. The editor toolbar preselects the current sheet. Choose the sheets and optional pages, then export one .sfsheet file. Multiple sheets retain their individual settings and fonts. There is a maximum of 100 saved sheets per file and 160 MB per import/export. Single-sheet exports remain in the existing format; multi-sheet collections require collection support in the receiving app.
+- **Import Decals / Export Decals** use the same selection browser. Packs contain up to 500 saved decals, including the fonts needed by the selected artwork. Your library supports 1,000 decals.
+- **Versions** shows earlier saved versions. **Recovery** offers the last three workspace backups. Recovering a sheet opens a separate copy.
+
+**Import & Export** groups sheets separately from images and decals. Imports are always on the left; exports are on the right, with red titles on white buttons. **Import an Image** still imports artwork to the canvas. **Export PDF** still reviews the current sheet before producing its print PDF.
+
+Use **Settings → Backup & Recovery → Restore Workspace Backup** for a full-workspace restore. This is separate from importing decals because it replaces the current workspace and decal library. A .sfbackup contains that workspace, its decals, fonts and preferences; separately copy the Projects folder to retain all saved sheets and their histories. Saved histories are not automatically purged. Only redistribute artwork and fonts you have permission to share.
 
 ## Local saving
 

@@ -34,9 +34,11 @@ async function main(){
   // Two selected decals preserve their relative spacing and their actual dimensions.
   const rects=await page.locator('#expanded-car [data-car-id] > rect').evaluateAll(es=>es.map(e=>({x:+e.getAttribute('x'),y:+e.getAttribute('y'),w:+e.getAttribute('width'),h:+e.getAttribute('height')})));
   assert.equal(rects[1].x-rects[0].x,35);assert.deepEqual(rects.map(r=>[r.w,r.h]),[[20,10],[25,5]]);
+  // Raw mouse coordinates need a stable, visible preview target before dragging.
+  await page.locator('#expanded-car [data-car-id]').first().hover();
   const p=await point(rects[0].x+5,rects[0].y+5,'#expanded-car > svg'),q=await point(rects[0].x+13,rects[0].y+8,'#expanded-car > svg');
   await page.mouse.move(p.x,p.y);await page.mouse.down();await page.mouse.move(q.x,q.y,{steps:6});await page.mouse.up();
-  art=await state();assert.ok(Math.abs(art[0].carPositions.side.x-rects[0].x-8)<.3);assert.ok(Math.abs(art[0].carPositions.side.y-rects[0].y-3)<.3);assert.deepEqual(art[1],original[1]);assert.equal(art[0].x,20);assert.equal(art[0].y,25);assert.deepEqual(await selected(),['a','b']);
+  art=await state();if(!art[0].carPositions){await page.screenshot({path:path.join(run,'car-drag-failure.png')});console.error(await page.evaluate(({p,q})=>({p,q,viewport:[innerWidth,innerHeight],hit:document.elementFromPoint(p.x,p.y)?.outerHTML,active:CanvasTools.active?.kind}),{p,q}));}assert.ok(Math.abs(art[0].carPositions.side.x-rects[0].x-8)<.3);assert.ok(Math.abs(art[0].carPositions.side.y-rects[0].y-3)<.3);assert.deepEqual(art[1],original[1]);assert.equal(art[0].x,20);assert.equal(art[0].y,25);assert.deepEqual(await selected(),['a','b']);
   const saved=JSON.parse(JSON.stringify(art));
   // Escape rolls back a car drag without closing the enlarged preview.
   const p2=await point(art[0].carPositions.side.x+5,art[0].carPositions.side.y+5,'#expanded-car > svg');

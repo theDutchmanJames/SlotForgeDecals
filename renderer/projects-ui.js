@@ -1,18 +1,20 @@
 'use strict';
 let projectTask=false,projectBrowserGeneration=0;
-const projectDate=value=>{const date=new Date(value);return Number.isNaN(date.getTime())?'Unknown date':date.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});};
+const projectDate=value=>{const date=new Date(typeof value==='string'?value:NaN);return Number.isNaN(date.getTime())?'Unknown date':date.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});};
 async function projectThumbnail(p){
  await Art.loadFonts(p.fonts);const svg=Art.sheet(p,0),img=new Image();img.src=Art.url(svg);await img.decode();
  const s=DM.size(p),c=document.createElement('canvas');c.width=Math.round(300*s.w/Math.max(s.w,s.h));c.height=Math.round(300*s.h/Math.max(s.w,s.h));
  const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);return c.toDataURL('image/png');
 }
 async function projectRun(fn){
+ CanvasTools.resolve();
  if(projectTask)return;projectTask=true;
  const owned=!$('#dialog').open;if(owned)showDialog('Saving your sheet','Please wait…','<p class="hint">Keeping your work in the local workspace.</p>');
  $('#dialog-content').inert=true;
  try{return await fn();}finally{projectTask=false;$('#dialog-content').inert=false;if(owned&&$('#dialog').open)closeDialog();}
 }
 async function saveCurrentProject(includeBlank=false){
+ CanvasTools.resolve();
  await flush();const p=DM.validateProject(DM.clone(project));
  // Skip a new empty workspace, but preserve edits to explicitly saved/imported templates.
  if(!includeBlank&&!p.items.length&&p.name==='Untitled sheet'){
@@ -27,13 +29,7 @@ async function saveEditableProject(){
  toast('Saved to Sheet Library. Earlier saved versions are kept.');
 }
 async function exportEditableProject(entry=null){
- await projectRun(async()=>{
-  const saved=entry&&!entry.current?await desktop.readProject(entry):await saveCurrentProject(true);
-  const p=DM.validateProject(saved.project);Art.inspectItems(p.items);
-  const thumbnail=saved.thumbnail||await projectThumbnail(p).catch(()=>null);
-  const file=await desktop.exportFile('sfsheet',p.name,{format:'slotforge-decals-sheet',version:DM.fileVersion(p),project:p,thumbnail});
-  toast(file?'Editable sheet exported. Share the .sfsheet file with another Decals user.':'Sheet export cancelled. Your saved sheets are kept.');
- });
+ await sheetExportDialog([entry?.id||project.id]);
 }
 async function switchProject(incoming,{recovered=false,imported=false}={}){
  const next=DM.validateProject(incoming);Art.inspectItems(next.items);
@@ -49,38 +45,63 @@ async function switchProject(incoming,{recovered=false,imported=false}={}){
 async function openProjectEntry(entry){await projectRun(async()=>{const data=await desktop.readProject(entry,true);await switchProject(data.project);});}
 async function newProject(){await projectRun(()=>switchProject(DM.project()));}
 async function saveProjectFromBrowser(){if(projectTask)return;await saveEditableProject();await projectBrowser();}
-function projectCard(entry,index,current=false){
- return `<article class="project-card" data-project-card="${index}"><div class="project-thumbnail">${entry.thumbnail?`<img src="${E(entry.thumbnail)}" alt="First page of ${E(entry.name)}">`:`<span class="hint">${current?'Preview unavailable':'Loading preview…'}</span>`}</div><div class="project-card-body"><h3 title="${E(entry.name)}">${E(entry.name)}</h3><p class="micro">${entry.pages} ${E(DM.pageFormat(entry).label)} ${entry.pages===1?'page':'pages'} · ${entry.count} decals · 1:${entry.scale}</p><p class="micro">${current?'Current sheet · autosaved workspace':'Recent: '+E(projectDate(entry.recent))}</p><div class="row"><button class="primary" data-project-open="${index}">${current?'Continue editing':'Open sheet'}</button><button data-project-export="${index}" title="Export this complete editable sheet as a .sfsheet file">Export sheet…</button><button data-project-versions="${index}">Versions</button></div></div></article>`;
+function sheetRow(p,source={}){
+ return {...source,id:p.id,name:p.name,pages:p.pages,added:p.added,updated:p.updated||source.modified,
+  meta:p.pages+' '+DM.pageFormat(p).label+' '+(p.pages===1?'page':'pages')+' · '+(p.count??p.items.length)+' decals · 1:'+p.scale};
+}
+async function sheetEntries(){
+ const result=await desktop.listProjects(),current=DM.clone(project);
+ return {unreadable:result.unreadable,entries:[sheetRow(current,{current:true,project:current}),...result.entries.filter(e=>e.id!==current.id).map(e=>sheetRow(e,e))]};
+}
+async function loadSheetRow(e){
+ const p=e.current?DM.validateProject(project):e.project?DM.validateProject(e.project):DM.validateProject((await desktop.readProject(e)).project);
+ Art.inspectItems(p.items);return p;
+}
+async function sheetPreviews(session,entries){
+ for(const e of entries){
+  if(!session.alive())break;if(e.thumbnail)continue;
+  try{e.thumbnail=await projectThumbnail(await loadSheetRow(e));session.thumbnail(e);}catch{e.thumbnail=null;}
+ }
 }
 async function projectBrowser(){
  const generation=++projectBrowserGeneration;
- showDialog('Sheet Library','Complete editable sheets, saved on this computer.',
-  '<div class="project-browser-tools"><input id="project-search" type="search" placeholder="Find a sheet…" aria-label="Find a sheet"><select id="project-sort" aria-label="Sort sheets"><option value="recent">Recently used</option><option value="name">Name</option><option value="modified">Last saved</option></select></div><p class="hint">Save sheet keeps your work here. Export sheet creates a .sfsheet file with all pages, artwork and imported fonts for another Decals user. Import sheet adds an independent copy.</p><p id="projects-notice" class="hint" role="status">Loading sheets…</p><div id="project-cards" class="project-cards"></div>',
-  '<button data-action="recover-workspace">Workspace recovery</button><button data-action="open-sheet-file">Import sheet…</button><button data-action="new">New sheet</button><button id="project-save-current" class="primary">Save sheet</button>',true);
+ showDialog('Sheet Library','Loading saved sheets…','<p class="hint">Reading your local library.</p>','',true);
+ const result=await sheetEntries();if(generation!==projectBrowserGeneration||!$('#dialog').open||$('.dialog-head h2').textContent!=='Sheet Library')return;
+ const session=collectionBrowser({title:'Sheet Library',subtitle:'Select sheets to export. Open a sheet to continue editing.',kind:'sheets',...result,
+  empty:'Save your current sheet to start your collection.',
+  footer:'<button data-action="open-sheet-file">Import Sheet(s)</button><button id="library-export-selected" class="collection-export" disabled>Export Sheet(s)</button><button data-action="new">Add Sheet</button><button id="project-save-current">Save Current Sheet</button><button data-action="recover-workspace">Recovery</button>',
+  actions:(e,n)=>'<button data-collection-action="open" data-project-open="'+n+'" data-index="'+n+'">'+(e.current?'Continue editing':'Open Sheet')+'</button><button data-collection-action="versions" data-project-versions="'+n+'" data-index="'+n+'">Versions</button>',
+  action:async(action,e)=>{if(action==='versions')await projectVersions(e);else if(e.current)closeDialog();else await openProjectEntry(e);}
+ });
+ $('#library-export-selected').onclick=()=>sheetExportDialog(session.selected().map(e=>e.id)).catch(fail);
  $('#project-save-current').onclick=()=>saveProjectFromBrowser().catch(fail);
- try{
-  const result=await desktop.listProjects(),current=DM.clone(project),thumbnail=await projectThumbnail(current).catch(()=>null);
-  if(generation!==projectBrowserGeneration||!$('#dialog').open||!$('#project-cards'))return;
-  const live={name:current.name,id:current.id,pages:current.pages,pageSize:current.pageSize,count:current.items.length,scale:current.scale,thumbnail,recent:current.updated,modified:current.updated,current:true},
-   entries=[live,...result.entries.filter(e=>e.id!==current.id)];
-  const previews=new Map();entries.forEach((e,n)=>{if(e.thumbnail)previews.set(n,e.thumbnail);});
-  const refresh=()=>{
-   const q=$('#project-search').value.trim().toLowerCase(),sort=$('#project-sort').value,shown=entries.map((e,n)=>({...e,index:n})).filter(e=>e.name.toLowerCase().includes(q));
-   shown.sort((a,b)=>Number(!!b.current)-Number(!!a.current)||(sort==='name'?a.name.localeCompare(b.name):Date.parse(b[sort])-Date.parse(a[sort])));
-   $('#projects-notice').textContent=`${shown.length} ${shown.length===1?'sheet':'sheets'}${result.unreadable?' · '+result.unreadable+' unreadable file(s) kept in the workspace folder':''}`;
-   $('#project-cards').innerHTML=shown.map(e=>projectCard({...e,thumbnail:previews.get(e.index)},e.index,e.current)).join('')||'<p class="no-selection">No sheets match your search.</p>';
-   for(const button of $$('[data-project-open]'))button.onclick=()=>{const e=entries[Number(button.dataset.projectOpen)];if(e.current)closeDialog();else openProjectEntry(e).catch(fail);};
-   for(const button of $$('[data-project-export]'))button.onclick=()=>exportEditableProject(entries[Number(button.dataset.projectExport)]).catch(fail);
-   for(const button of $$('[data-project-versions]'))button.onclick=()=>projectVersions(entries[Number(button.dataset.projectVersions)]).catch(fail);
-  };
-  $('#project-search').oninput=refresh;$('#project-sort').onchange=refresh;refresh();
-  // Legacy .sfsheet files have no cached PNG; generate their previews without changing files.
-  for(let n=1;n<entries.length;n++){if(generation!==projectBrowserGeneration||!$('#dialog').open||!$('#project-cards'))break;if(previews.has(n))continue;
-   try{const data=await desktop.readProject(entries[n]),p=DM.validateProject(data.project);Art.inspectItems(p.items);const png=await projectThumbnail(p);previews.set(n,png);
-    if(generation!==projectBrowserGeneration||!$('#dialog').open||!$('#project-cards'))break;const box=$(`[data-project-card="${n}"] .project-thumbnail`);if(box)box.innerHTML=`<img src="${E(png)}" alt="First page of ${E(p.name)}">`;
-   }catch{if(generation!==projectBrowserGeneration)break;const box=$(`[data-project-card="${n}"] .project-thumbnail`);if(box)box.textContent='Preview unavailable';}
+ sheetPreviews(session,result.entries).catch(fail);
+}
+async function sheetExportDialog(ids=[project.id]){
+ showDialog('Export a Sheet','Loading saved sheets…','<p class="hint">Reading your local library.</p>');const loading=$('.dialog-head');
+ const result=await sheetEntries();
+ if(!loading.isConnected||!$('#dialog').open)return;
+ const session=collectionBrowser({title:'Export a Sheet',subtitle:'Choose saved sheets. All pages are included unless you choose specific pages.',kind:'sheets',...result,selected:ids,pages:true,load:loadSheetRow,max:100,commitLabel:'Export',
+  note:'One editable .sfsheet file keeps each selected sheet’s artwork, settings and fonts. Maximum 100 sheets. Only share fonts you may redistribute.',
+  commit:async(entries,pageChoices)=>{
+   const sheets=[];for(const e of entries){if(e.current)await saveCurrentProject(true);const p=await loadSheetRow(e);sheets.push(SheetFiles.pages(p,pageChoices.get(e.id)||Array.from({length:p.pages},(_,n)=>n)));}
+   const file=await desktop.exportFile('sfsheet',sheets.length===1?sheets[0].name:'My sheet collection',SheetFiles.pack(sheets));
+   toast(file?'Editable sheet exported. '+sheets.length+' saved sheet(s) included.':'Sheet export cancelled. Your saved sheets are kept.');return !!file;
   }
- }catch(e){if($('#projects-notice'))$('#projects-notice').textContent=e.message;}
+ });sheetPreviews(session,result.entries).catch(fail);
+}
+async function sheetImportDialog(raw){
+ const sheets=SheetFiles.read(raw);for(const p of sheets)Art.inspectItems(p.items);
+ // Incoming IDs are not selection keys: a collection may contain independent copies.
+ const entries=sheets.map((p,n)=>({...sheetRow(p,{project:p}),id:'incoming-'+n}));
+ const session=collectionBrowser({title:'Import a Sheet',subtitle:'Choose sheets to add to your library. Your current work stays open.',kind:'sheets',entries,selected:entries.map(e=>e.id),pages:true,load:loadSheetRow,max:100,commitLabel:'Import',
+  note:'Imported sheets become independent copies. All pages are included unless you choose specific pages.',
+  commit:async(chosen,pageChoices)=>{
+   const incoming=chosen.map(e=>SheetFiles.pages(e.project,pageChoices.get(e.id)||Array.from({length:e.pages},(_,n)=>n)));
+   for(const p of incoming)await Art.loadFonts(p.fonts);
+   await flush();await desktop.importProjects(incoming);toast('Imported '+incoming.length+' sheet(s) into Sheet Library.');return true;
+  }
+ });sheetPreviews(session,entries).catch(fail);
 }
 async function projectVersions(entry){
  const generation=++projectBrowserGeneration;

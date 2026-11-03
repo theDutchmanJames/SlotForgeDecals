@@ -49,6 +49,8 @@
   switch(i.kind){
    case 'rect':return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${Math.min(i.radius||0,w/2,h/2)}" ${common}/>`;
    case 'ellipse':return `<ellipse cx="${i.w/2}" cy="${i.h/2}" rx="${w/2}" ry="${h/2}" ${common}/>`;
+   case 'path':return [true,false].map(closed=>{const contours=i.pathContours.filter(c=>c.closed===closed);return contours.length?`<path d="${PathTools.data(contours,p=>[x+p[0]*Math.max(.001,i.w-sw),y+p[1]*Math.max(.001,i.h-sw)])}" fill="${closed?fill:'none'}" fill-rule="evenodd" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`:'';}).join('');
+   case 'polygon':return `<polygon points="${i.points.map(([a,b])=>[x+a*(i.w-2*x),y+b*(i.h-2*y)].join(',')).join(' ')}" ${common} stroke-linejoin="round"/>`;
    case 'triangle':return `<path d="M ${i.w/2} ${y} L ${i.w-x} ${i.h-y} L ${x} ${i.h-y} Z" ${common} stroke-linejoin="round"/>`;
    case 'line':return `<rect width="${i.w}" height="${i.h}" fill="${fill}"/>`;
    case 'stripe':return `<rect width="${i.w}" height="${i.h*.42}" fill="${fill}"/><rect y="${i.h*.58}" width="${i.w}" height="${i.h*.42}" fill="${E(i.fill2||'#245cc3')}"/>`;

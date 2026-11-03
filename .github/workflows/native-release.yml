@@ -42,7 +42,6 @@ jobs:
         include:
           - {runner: windows-2025, platform: windows, target: win, arch: x64}
           - {runner: macos-15-intel, platform: mac, target: mac, arch: x64}
-          - {runner: macos-26, platform: mac, target: mac, arch: arm64}
           - {runner: ubuntu-24.04, platform: linux, target: linux, arch: x64}
           - {runner: ubuntu-24.04-arm, platform: linux, target: linux, arch: arm64}
     defaults:
@@ -123,6 +122,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          OMIT_APPLE_SILICON: 'true'
         run: |
           cd release-assets
           for manifest in SHA256SUMS-*.txt; do sha256sum -c "$manifest"; done

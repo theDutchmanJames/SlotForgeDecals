@@ -37,7 +37,7 @@ async function main(){
   const m=await import('mupdf'),doc=m.Document.openDocument(await fs.readFile(path.join(run,'exports','Refined vector.pdf')),'application/pdf'),sheet=doc.loadPage(0);let images=0,green=0,black=0;
   const dev=new m.Device({fillImage(){images++;},fillPath(p,eo,ctm,cs,color){if(Math.abs(color[0])<.01&&Math.abs(color[1]-170/255)<.01&&Math.abs(color[2]-68/255)<.01)green++;if(color.slice(0,3).every(c=>c<.01))black++;}});sheet.run(dev,m.Matrix.identity);dev.close();dev.destroy();sheet.destroy();doc.destroy();assert.equal(images,0);assert.equal(green,2);assert.equal(black,0);
   await page.locator('#inspector [data-action="save-decal"]').click();await page.locator('#save-decal-confirm').click();assert.ok((await page.locator('.lib-type').first().textContent()).includes('Traced vector'));
-  await page.locator('[data-action="export-pack"]').first().click();await page.locator('#pack-export').click();await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Decal pack exported'));
+  await page.locator('[data-action="export-pack"]').first().click();await page.locator('#collection-confirm').click();await page.waitForFunction(()=>document.querySelector('#toast').textContent.startsWith('Decals exported'));
   const pack=JSON.parse(await fs.readFile(path.join(run,'exports','Refinement fixture.sfdecal'),'utf8'));assert.equal(pack.decals[0].art.svg,refined.svg);
   // Reject unsupported styled SVGs rather than injecting stylesheet rules into the app.
   assert.ok(await page.evaluate(()=>{try{TraceRefine.load('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><style>button{fill:red}</style><path d="M0 0H10V10Z" fill="#ff0000"/></svg>');return false;}catch{return true;}}));

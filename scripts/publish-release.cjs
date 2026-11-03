@@ -23,7 +23,7 @@ if(!refs.some(r=>r.ref===`refs/tags/${tag}`))gh(['api',`repos/${process.env.GH_R
 assert.equal(JSON.parse(gh(['api',`repos/${process.env.GH_REPO}/commits/${tag}`])).sha,process.env.GITHUB_SHA,'Release tag must match the tested source');
 if(!release){
  // Use the create response directly: the release list can briefly lag behind it.
- const availability=withoutAppleSilicon?'**Platform availability:** Windows x64, macOS Intel, Linux x64 and Linux ARM64 are included. The native macOS Apple Silicon download is unavailable in this release because GitHub could not allocate an Apple Silicon build runner.\n\n':'';
+ const availability=withoutAppleSilicon?'**Platform availability:** Windows x64, macOS Intel, Linux x64 and Linux ARM64 are included. The native macOS Apple Silicon build is intentionally excluded from this release.\n\n':'';
  const notes=availability+fs.readFileSync('RELEASE_NOTES.md','utf8');
  release=JSON.parse(gh(['api',`repos/${process.env.GH_REPO}/releases`,'--method','POST','-f',`tag_name=${tag}`,'-f',`target_commitish=${process.env.GITHUB_SHA}`,'-f',`name=SlotForge Decals ${version}`,'-F','draft=true','-F','prerelease=false','-f',`body=${notes}`]));
 }

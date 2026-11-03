@@ -144,9 +144,25 @@ For a printer or print shop that supports white ink, enable the option under **P
 
 The PDF includes a named white separation using a 600 PPI silhouette mask. Confirm the spot name, ink order and appearance with your print shop. This has passed PDF structure checks but has **not been validated on a physical white-ink printer**. Output preserves RGB artwork; it is not a certified PDF/X file or a managed CMYK proof.
 
+### Shapes, patterns and clearer editor controls
+
+Open **Shapes & Patterns** for rectangles, ellipses, triangles and lines, plus diamonds, stars, regular polygons, arrows, chevrons, trapezoids and shields. Set exact dimensions, colours, transparent fills and outlines in a live preview. **Checkerboard** and **Racing stripes** create editable groups. Checkerboards grow by rows and columns of a chosen square size. Stripe count ranges from **1 to 12**, with individual widths, equal spacing in millimetres and two alternating colours. Adding stripes or spacing grows the pattern without thinning the stripes; existing double stripes can be upgraded through **Stripe Count & Spacing**. **Racing Number Plates** is in the same toolbox. New polygon shapes require a version of Decals that supports them.
+
+Select one or more canvas items and choose **Save Decal to Library**; multiple items become one reusable grouped decal after you name and save it. Both full library windows use **two columns in List view**. The sidebar library folds closed, offers its own grid/list switch, and scrolls within a height limit as collections grow.
+
+The labelled **Sheet name** field opens renaming. **Portrait / Landscape** switches canvas orientation, **Scale Conversion** opens scale conversion, and **Add Sheet** saves the outgoing work before starting another sheet. The editor’s **Export sheet…** opens the same selection window as Import & Export.
+
+### Draw paths, merge shapes and cut holes
+
+Choose **Path Tool** directly in **Add artwork** to draw freehand strokes or place precise points on the main sheet canvas. Its drawing modes, colours, line width and point controls appear in the right-hand panel. Drag when placing a point to create a curve, close the path to make a filled shape, and adjust individual points and handles afterwards. The editor includes smooth/corner points, point insertion and deletion, line width, fill colours, zoom, panning and drawing undo. Select a saved path and choose **Edit Points & Curves** to continue editing.
+
+Choose **Merge & Cut** directly in **Add artwork**, then select **2–20 filled native shapes or closed paths** on the canvas. Set the operation in the right-hand panel: merge, cut from a chosen base, keep only the overlap or exclude overlapping areas. The result previews on the actual sheet; click **Apply** to keep it. Groups of supported shapes work too. Results retain Bézier curves and transparent holes, stay editable when shared, and remain vector in PDF output. You can keep the originals or replace them; Undo restores the selection. These operations use filled areas, omit outlines and take the base shape’s colour, opacity and ink treatment. For a group, the first child supplies the fill colour. Imported SVGs, images and text are not supported by the shape operations.
+
+Files containing these editable paths need a Decals version with path support.
+
 ### Keep a library and share editable designs
 
-Explicitly **Save decal to library** to keep a reusable design with a name and tags. Search or filter your collection, then place independent copies on another sheet. Editing a sheet copy does not change its library master.
+Explicitly **Save decal to library** to keep a reusable design with a name and tags. **Decal Library** and **Sheet Library** share grid/list views, search, alphabetical sorting, newest-added and recently-updated sorting. Select items with checkboxes, Ctrl-click or Shift-click; use **Add to Sheet** or **Open Sheet** when you want to edit. Your view and sorting choices are remembered. Editing a sheet copy does not change its library master.
 
 | Format | Use it for |
 | --- | --- |
@@ -158,17 +174,19 @@ Explicitly **Save decal to library** to keep a reusable design with a name and t
 
 The library supports **1,000 decals**, and a sharing pack can contain up to **500**. Send the files yourself; sharing works without an online account. Editable A5 and Photo sheets need Decals 0.2.13 or newer. PDFs can be viewed independently of the app. Only redistribute artwork and fonts you have permission to share.
 
+**Import & Export** puts imports on the left and exports on the right. **Import an Image** adds artwork to the canvas; **Import Decals** and **Export Decals** let you choose saved decals. **Export PDF** keeps the existing print-review workflow. Multi-sheet collection files require a Decals version with collection support; older single-sheet files remain importable. Up to 100 saved sheets can travel in one collection.
+
 Sharing is currently file-based. Online galleries and direct Livery integration are not included.
 
 ### Save, share and recover complete sheets
 
-The current workspace saves automatically. Open **Sheet Library**, beside **Decal Library** in the top navigation, to browse complete sheets with thumbnails, search by name, and sort by recent use, name or last save. **Save sheet / Ctrl+S** saves locally. **Export sheet…** creates a shareable `.sfsheet` containing all pages, editable artwork and imported fonts. Export the current sheet from the toolbar, or any saved sheet directly from its library card. **Import sheet…** adds an independent editable copy, preserving existing saved sheets.
+The current workspace saves automatically. **Save sheet / Ctrl+S** saves locally to **Sheet Library**. Select one or more library entries and choose **Export Sheet(s)** to share an editable `.sfsheet` file. Each saved sheet keeps its own paper size, scale, artwork, imported fonts and pages. Use **Choose pages…** to share only part of a saved sheet. **Import Sheet(s)** lets you select which sheets and pages to add as independent copies; your current work stays open.
 
 Earlier saved project versions and recent workspace backups can be previewed and recovered as separate sheet copies. Opening another project or starting a new sheet preserves the outgoing project first.
 
 Your files live in **Documents/SlotForge Decals**, separate from the installed application. **Settings → Open workspace folder** shows the actual location, including redirected Documents folders. Updating the app does not replace that folder.
 
-A `.sfbackup` contains the current workspace and library. **Separately copy the Projects folder to back up all saved sheets and their histories.** Keep an independent backup of valuable artwork.
+Use **Settings → Backup & Recovery** to export or restore a `.sfbackup` containing the current workspace and library. **Separately copy the Projects folder to back up all saved sheets and their histories.** Keep an independent backup of valuable artwork.
 
 For step-by-step instructions, see the [user guide](docs/USER-GUIDE.md). The [testing notes](docs/TESTING.md) describe what has been checked and the remaining practical limits.
 
@@ -179,7 +197,7 @@ Open the **[latest GitHub release](https://github.com/theDutchmanJames/SlotForge
 | Your computer | Download |
 | --- | --- |
 | **Windows · Intel/AMD 64-bit** | `SlotForgeDecals-…-windows-x64.exe` |
-| **Mac · Apple Silicon (M1 or newer)** | `SlotForgeDecals-…-mac-arm64.dmg` |
+| **Mac · Apple Silicon (M1 or newer)** | Native download currently unavailable |
 | **Mac · Intel** | `SlotForgeDecals-…-mac-x64.dmg` |
 | **Linux · Intel/AMD 64-bit** | `SlotForgeDecals-…-linux-amd64.deb` or `…-linux-x86_64.AppImage` |
 | **Linux · ARM64** | `SlotForgeDecals-…-linux-arm64.deb` or `…-linux-arm64.AppImage` |
@@ -194,7 +212,7 @@ Windows releases are unsigned and may show an unknown-publisher warning. Smart A
 
 Requires **macOS 15 or newer**. Open the `.dmg`, drag **SlotForge Decals** into **Applications**, then launch it from there. You can eject the disk image afterwards. ZIP downloads are also available.
 
-**Apple menu → About This Mac** shows whether you need Intel or Apple Silicon. Mac releases are ad-hoc signed, not Apple-notarized. If macOS blocks the app, check its origin and use the per-app approval in **System Settings → Privacy & Security**, if offered.
+This release provides the Intel build; the native Apple Silicon build is excluded. **Apple menu → About This Mac** shows your Mac’s processor. Mac releases are ad-hoc signed, not Apple-notarized. If macOS blocks the app, check its origin and use the per-app approval in **System Settings → Privacy & Security**, if offered.
 
 ### Linux
 
