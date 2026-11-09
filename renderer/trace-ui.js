@@ -80,13 +80,13 @@ window.TraceUI={open(item,onApply){
    const failed=message=>{if(disposed||token!==sequence)return;stop();valid=false;buttons();q('#dialog-error').textContent=message;q('#trace-badge').textContent='No result';q('#trace-status').textContent='Your artwork has not changed.';};
    worker.onerror=event=>{event.preventDefault();failed('Tracing could not start. Close this window and try again.');};
    worker.onmessage=event=>{if(disposed||token!==sequence)return;stop();if(event.data.error){failed(event.data.error);return;}
-    try{const next=event.data.result,nextEditor=TraceRefine.load(next.svg);remember(previous);result=next;editor=nextEditor;selected=-1;valid=true;renderEditor();}catch(error){failed(error.message);}
+    try{const next=event.data.result,nextEditor=TraceRefine.load(next.svg);remember(previous);result={...next,regenerated:true};editor=nextEditor;selected=-1;valid=true;renderEditor();}catch(error){failed(error.message);}
    };
    timer=setTimeout(()=>failed('Tracing took too long. Try fewer colours or Smooth detail.'),45000);
    worker.postMessage({width:pixels.width,height:pixels.height,buffer:pixels.data.buffer,settings},[pixels.data.buffer]);canvas.width=canvas.height=1;
   }catch(error){if(!disposed&&token===sequence){stop();valid=false;buttons();q('#dialog-error').textContent=error.message;q('#trace-badge').textContent='No result';}}
  }
- const apply=copy=>{if(!valid||colorPending||!result)return;try{const vector={...DM.clone(item),kind:'svg',svg:editor.svg(),mixed:false,traceSource:DM.clone(source),traceSettings:result.settings};delete vector.src;delete vector.pixelsW;delete vector.pixelsH;onApply(vector,copy);dispose();closeDialog();}catch(error){q('#dialog-error').textContent=error.message;}};
+ const apply=copy=>{if(!valid||colorPending||!result)return;try{const vector={...DM.clone(item),kind:'svg',svg:editor.svg(),mixed:false,traceSource:DM.clone(source),traceSettings:result.settings};if(result.regenerated)delete vector.vectorSource;delete vector.src;delete vector.pixelsW;delete vector.pixelsH;onApply(vector,copy);dispose();closeDialog();}catch(error){q('#dialog-error').textContent=error.message;}};
  q('#trace-apply').onclick=()=>apply(false);q('#trace-copy').onclick=()=>apply(true);q('#trace-update').onclick=update;
  if(item.traceSource){try{editor=TraceRefine.load(item.svg);const vb=Art.sanitize(item.svg).viewBox;result={svg:item.svg,width:vb[2],height:vb[3],settings:initial};valid=true;renderEditor();}catch(error){q('#dialog-error').textContent=error.message;q('#trace-badge').textContent='Re-trace to refine';q('#trace-placeholder').textContent='Use Re-trace image to create editable paths.';buttons();}}
  else update();

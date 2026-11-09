@@ -93,6 +93,14 @@ The original artwork is kept inside an outlined group at its existing printed si
 
 An outlined decal scales as a complete unit. Reopening Adjust outline rebuilds a uniform border at the chosen millimetre width. Use the dedicated outline controls for its border; use Remove outline before preparing, tracing or editing the original again. You can group outlined decals with other elements and resize them inside that group. To adjust an individual outline, work with that decal separately on the sheet. Explicitly ungrouping the outlined decal turns its source and border into independent layers.
 
+## Remove backgrounds from vector artwork
+
+Select an imported SVG (including SVG artwork converted from EPS or PDF) and choose **Edit Vector Artwork** in the right-hand panel. Click a shape in the preview, or use **Previous shape**, **Next shape** and **Next white shape** to find a background. The orange box marks the selected shape; **Remove selected shape** removes it from the drawing.
+
+Use Transparent, Light or Dark backgrounds and Fit–800% zoom to inspect the result. White lettering and details remain unless selected. A compound path is one selectable shape, including its cut-outs. Definitions such as clipping paths, masks and reusable symbols are kept; a shape is protected from removal if it or its containing group is referenced by linked copies. Embedded images remain images: this tool removes drawing objects, not white pixels inside a bitmap.
+
+**Undo / Redo** work inside the preview (Ctrl/Command+Z and Ctrl/Command+Shift+Z; Delete removes the selection). **Cancel** leaves the sheet unchanged. **Apply changes** creates one sheet undo step and retains physical dimensions, rotation and car placement. **Restore original** brings back the vector artwork from before the first edit; review and apply to confirm. The original travels with saved sheets, library decals and editable sharing files, so restoration remains available after restarting. Re-tracing starts a new vector result; the original raster image remains separately restorable.
+
 ## Prepare imported images
 
 Select a PNG, JPEG or WebP and choose **Crop & remove background** in the inspector.

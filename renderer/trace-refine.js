@@ -13,7 +13,9 @@ window.TraceRefine={
   if([...root.children].some(e=>!['path','title','desc'].includes(e.localName)||e.children.length)||root.hasAttribute('style')||root.hasAttribute('class'))throw Error('Re-trace this artwork to edit its colours and shapes.');
   let nodes=[...root.querySelectorAll('path')];
   if(!nodes.length||nodes.length>18000)throw Error('The trace needs between 1 and 18,000 shapes.');
-  for(const p of nodes){if(p.hasAttribute('style')||p.hasAttribute('class')||p.hasAttribute('clip-path')||p.hasAttribute('mask'))throw Error('Re-trace this artwork to edit its colours and shapes.');TraceRefine.color(p.getAttribute('fill'));}
+  const hidden=p=>p.style.length===1&&p.style.display==='none'&&p.style.getPropertyPriority('display')==='important';
+  for(const p of nodes){if(p.hasAttribute('style')&&!hidden(p)||p.hasAttribute('class')||p.hasAttribute('clip-path')||p.hasAttribute('mask'))throw Error('Re-trace this artwork to edit its colours and shapes.');TraceRefine.color(p.getAttribute('fill'));}
+  nodes=nodes.filter(p=>!hidden(p));if(!nodes.length)throw Error('Keep at least one visible trace shape.');
   const serialize=()=>new XMLSerializer().serializeToString(root);
   return{
    get count(){return nodes.length;},
@@ -23,7 +25,7 @@ window.TraceRefine={
    remove(index){if(nodes.length===1)throw Error('Keep at least one shape in the decal.');if(!Number.isInteger(index)||!nodes[index])throw Error('Click a shape in the vector preview first.');nodes[index].remove();nodes.splice(index,1);},
    preview(selected){
     const clone=root.cloneNode(true);clone.removeAttribute('width');clone.removeAttribute('height');clone.setAttribute('aria-label','Editable traced vector preview');
-    [...clone.querySelectorAll('path')].forEach((p,n)=>{p.setAttribute('data-trace-shape',n);p.setAttribute('tabindex','-1');p.setAttribute('pointer-events','visiblePainted');if(n===selected){p.setAttribute('stroke','#ffa000');p.setAttribute('stroke-width','2');p.setAttribute('vector-effect','non-scaling-stroke');}});
+    [...clone.querySelectorAll('path')].filter(p=>!hidden(p)).forEach((p,n)=>{p.setAttribute('data-trace-shape',n);p.setAttribute('tabindex','-1');p.setAttribute('pointer-events','visiblePainted');if(n===selected){p.setAttribute('stroke','#ffa000');p.setAttribute('stroke-width','2');p.setAttribute('vector-effect','non-scaling-stroke');}});
     return new XMLSerializer().serializeToString(clone);
    }
   };

@@ -74,6 +74,6 @@
  function trimFonts(required=new Set()){let bytes=[...loadedFonts.values()].reduce((n,f)=>n+f.data.length,0);for(const [family,f]of loadedFonts){if(loadedFonts.size<=48&&bytes<=24e6)break;if(pinnedFonts.has(family)||required.has(family))continue;document.fonts.delete(f.face);loadedFonts.delete(family);bytes-=f.data.length;}}
  function pinFonts(fonts){pinnedFonts=new Set(fonts.map(f=>f.family));trimFonts();}
  async function loadFonts(fonts){for(const f of fonts){const old=loadedFonts.get(f.family);if(old?.data===f.data){loadedFonts.delete(f.family);loadedFonts.set(f.family,old);continue;}const face=new FontFace(f.family,`url(${f.data})`);await face.load();if(old)document.fonts.delete(old.face);document.fonts.add(face);loadedFonts.set(f.family,{face,data:f.data});}trimFonts(new Set(fonts.map(f=>f.family)));}
- function inspectItems(items){for(const i of items){if(i.kind==='svg')i.svg=sanitize(i.svg).svg;if(['group','slice'].includes(i.kind))inspectItems(i.children);}return items;}
+ function inspectItems(items){for(const i of items){if(i.kind==='svg'){i.svg=sanitize(i.svg).svg;if(i.vectorSource)i.vectorSource.svg=sanitize(i.vectorSource.svg).svg;}if(['group','slice'].includes(i.kind))inspectItems(i.children);}return items;}
  window.Art={sanitize,body,element,textBox,bendText,standalone,url,sheet,masks,printHTML,loadFonts,pinFonts,inspectItems};
 })();

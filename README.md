@@ -74,6 +74,8 @@ Build your own designs directly on the sheet:
 - Add a silhouette outline around imported artwork, following its outer edge and transparent cut-outs.
 - Combine elements into a group, then edit individual parts—including nested groups—without rebuilding the design.
 
+**Edit Vector Artwork** lets you select and remove white background shapes from imported vectors, with preview backgrounds, zoom, undo/redo and a retained original you can restore later. White details stay intact unless selected; SVG artwork stays vector.
+
 Groups keep text and shapes editable. Silhouette outlines retain the source artwork and can be adjusted or removed; a bitmap with a vector outline still contains a bitmap. Save a finished design to the library when you want to reuse it.
 
 ### Size decals in millimetres or model scale

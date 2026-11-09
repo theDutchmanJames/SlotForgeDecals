@@ -1,33 +1,26 @@
-# SlotForge Decals 0.2.19
+# SlotForge Decals 0.2.20
 
-Keep up to **10,000 saved decals**, with libraries that load artwork only when needed. Startup and autosave no longer load or resend your complete decal collection.
+Remove unwanted background shapes from imported vector artwork while keeping the decal vector and retaining an original you can restore.
 
-## Browse larger collections
+## Edit Vector Artwork
 
-- Both libraries show 48 items per page; the sidebar shows 24. Use Previous / Next to browse.
-- Search and sorting cover the entire library. Grid and two-column List views remain available.
-- Previews load as they approach the visible area, using a bounded thumbnail cache.
-- Selections stay checked across pages and searches. Select this page adds the displayed items; Clear selection clears the whole selection.
-- Full artwork loads when needed for placement, editing, previews or selected exports. Export processing runs in the storage worker.
+- Select an SVG decal on your sheet and choose **Edit Vector Artwork** in the right-hand panel. This also supports vector artwork imported through EPS/PDF conversion.
+- Click a drawing shape, browse with Previous / Next, or use **Next white shape** to find white backgrounds. Only the selected shape is removed, so white lettering and details stay unless you select them.
+- Inspect the result against transparent, light or dark backgrounds, with Fit–800% zoom.
+- Undo and redo changes inside the preview. Cancel leaves the sheet unchanged; Apply changes creates one sheet undo step and preserves printed size, rotation and placement.
+- **Restore original** recovers the artwork from before the first vector edit. That original stays with saved sheets, library decals and editable sharing files, including after restarting.
 
-## Existing artwork is preserved
+Compound paths are selected as whole objects. Clipping paths, masks and reusable definitions are retained. Shapes used by linked copies, including children of linked groups, are protected from removal. Embedded bitmap backgrounds still need the image preparation tool; this editor removes SVG drawing objects, not individual pixels.
 
-- The library upgrade creates a verified pre-upgrade complete backup in the workspace Backups folder.
-- Existing decals become independent SQLite records in one transaction. Each stored decal is checked against its validated original; a failure rolls back the upgrade.
-- Saved sheets, history, embedded artwork and fonts are retained. Original legacy files remain unchanged.
-- Older complete backups can be restored and upgraded. **Decals 0.2.18 and earlier cannot open the upgraded database or new complete backups.** Use compatible editable sheet and decal exports for sharing with older versions.
+## Tracing and reliability
 
-## Backup, sharing and recovery
-
-- **Settings → Backup & Recovery → Export Complete Backup** saves the whole collection, including all sheets, history, decals, artwork and settings.
-- Sharing files retain their limits: **500 decals per .sfdecal pack**, **100 sheets per .sfsheet collection**, and approximately **160 MB per portable file**.
-- Legacy .sfbackup files support up to 1,000 decals and 30 embedded library fonts. Use a complete .sfdbbackup for larger collections.
-- If saving fails when closing, **Export Unsaved Sheet** rescues the current editable sheet without loading or replacing the library.
-- Conflicting embedded font names are rejected when adding a decal or exporting a pack, protecting existing text. Existing sheet copies remain independent of their library masters.
+- Traced artwork remains compatible with colour and shape refinement after removing a background in the vector editor. Hidden shapes stay removed.
+- Manual trace refinement preserves the retained vector original. Explicitly re-tracing creates a new vector result; undoing that regeneration restores the preceding result. The original raster image remains separately restorable.
+- SVG visibility overrides are respected, preview styles are isolated from the app, and editor history is bounded. Controls remain accessible in smaller windows.
 
 ## Updating and installing
 
-Keep an independent complete backup before updating. Your workspace remains in **Documents/SlotForge Decals**, outside the application installation. Allow free space for the upgrade backup alongside the database. Retained JSON and Projects files are migration-time copies, not current saves; do not remove the database to return to them.
+Your saved sheets and decals remain in **Documents/SlotForge Decals**, outside the application installation. This update does not change the database format. You can make an independent complete backup through **Settings → Backup & Recovery → Export Complete Backup**.
 
 | Computer | Download |
 | --- | --- |
@@ -42,6 +35,6 @@ Windows builds are unsigned; Smart App Control may block them. Mac builds are ad
 
 ## Verification and sources
 
-Local verification passed **97 unit tests**, **23 desktop suites** and **13 packaged Windows acceptance suites**. Tests cover 10,000 decals, migration rollback, exact artwork preservation, older backup restore, in-app recovery, cross-page selection and export, font conflicts, restart, PDF output and both themes. All test workspaces are isolated from user data. Large individual images and active sheets still require memory; this release does not claim unlimited collections.
+Local verification passed **99 unit tests**, **24 desktop suites** and **14 packaged Windows acceptance suites**. Coverage includes selective background removal, retained white details, vector PDF output, linked groups, clipping, trace refinement, undo, original restoration after restart, library sharing and both themes at a compact window size. All test workspaces are isolated from user data.
 
-GitHub Actions builds and tests the native downloads. Downloads include SHA256 checksum files. Licensed under **AGPL-3.0-or-later**; application source, corresponding Ghostscript and MuPDF sources, revision records and build instructions accompany the release. Bundled components retain their notices in THIRD-PARTY-NOTICES.txt.
+GitHub Actions builds and tests the native downloads before publication. Downloads include SHA256 checksum files. Licensed under **AGPL-3.0-or-later**; application source, corresponding Ghostscript and MuPDF sources, revision records and build instructions accompany the release. Bundled components retain their notices in THIRD-PARTY-NOTICES.txt.
