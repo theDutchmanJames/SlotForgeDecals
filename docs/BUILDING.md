@@ -56,7 +56,7 @@ Electron-builder 26.18.0 is pinned. Windows packages are unsigned; Mac apps use 
 | ubuntu-24.04 | Linux x64 AppImage / DEB |
 | ubuntu-24.04-arm | Linux ARM64 AppImage / DEB |
 
-Apple Silicon runs separately on macOS 26 after the main release workflow succeeds. It builds and tests the exact released source, then adds the ARM64 DMG, ZIP and checksums to that public release. A delayed or failed Apple Silicon job does not hold up the other platforms.
+Apple Silicon runs separately on the macOS 15 ARM64 runner after the main release workflow succeeds. It builds and tests the exact released source, then adds the ARM64 DMG, ZIP and checksums to that public release. A delayed or failed Apple Silicon job does not hold up the other platforms.
 
 Every platform runs syntax/unit tests. Windows also runs the full desktop regression suite. All four included packaged apps run the import/PDF/persistence integration test, all eight review regressions, and the editor/export UI test. Linux GUI tests use Xvfb and configure the setuid sandbox helper only on the isolated unpacked CI copy.
 
