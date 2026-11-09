@@ -29,7 +29,7 @@ Your saved sheets and decals remain in **Documents/SlotForge Decals**, outside t
 | Linux x64 | linux-amd64.deb or linux-x86_64.AppImage |
 | Linux ARM64 | linux-arm64.deb or linux-arm64.AppImage |
 
-Apple Silicon is excluded. Mac builds require macOS 15 or newer. Linux packages target compatible modern systems using Ubuntu 24.04 builders. Install the DEB through your software installer, or mark the AppImage executable. No Node.js installation is needed.
+Apple Silicon downloads will be added after the separate build and tests pass. Mac builds require macOS 15 or newer. Linux packages target compatible modern systems using Ubuntu 24.04 builders. Install the DEB through your software installer, or mark the AppImage executable. No Node.js installation is needed.
 
 Windows builds are unsigned; Smart App Control may block them. Mac builds are ad-hoc signed, not Apple-notarized. The application sandbox remains enabled. There is no automatic in-app updater.
 

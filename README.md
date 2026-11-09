@@ -202,7 +202,7 @@ Open the **[latest GitHub release](https://github.com/theDutchmanJames/SlotForge
 | Your computer | Download |
 | --- | --- |
 | **Windows · Intel/AMD 64-bit** | `SlotForgeDecals-…-windows-x64.exe` |
-| **Mac · Apple Silicon (M1 or newer)** | Native download currently unavailable |
+| **Mac · Apple Silicon (M1 or newer)** | `SlotForgeDecals-…-mac-arm64.dmg` — added after the separate build passes |
 | **Mac · Intel** | `SlotForgeDecals-…-mac-x64.dmg` |
 | **Linux · Intel/AMD 64-bit** | `SlotForgeDecals-…-linux-amd64.deb` or `…-linux-x86_64.AppImage` |
 | **Linux · ARM64** | `SlotForgeDecals-…-linux-arm64.deb` or `…-linux-arm64.AppImage` |
@@ -217,7 +217,7 @@ Windows releases are unsigned and may show an unknown-publisher warning. Smart A
 
 Requires **macOS 15 or newer**. Open the `.dmg`, drag **SlotForge Decals** into **Applications**, then launch it from there. You can eject the disk image afterwards. ZIP downloads are also available.
 
-This release provides the Intel build; the native Apple Silicon build is excluded. **Apple menu → About This Mac** shows your Mac’s processor. Mac releases are ad-hoc signed, not Apple-notarized. If macOS blocks the app, check its origin and use the per-app approval in **System Settings → Privacy & Security**, if offered.
+Choose the Intel (`mac-x64`) or Apple Silicon (`mac-arm64`) download for your Mac. Apple Silicon builds run separately and are added to the same release after their tests pass; if those files are not listed yet, that native download is not ready. **Apple menu → About This Mac** shows your Mac’s processor. Mac releases are ad-hoc signed, not Apple-notarized. If macOS blocks the app, check its origin and use the per-app approval in **System Settings → Privacy & Security**, if offered.
 
 ### Linux
 

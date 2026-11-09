@@ -14,6 +14,7 @@ function validate(release,sha,tagSha,hashes){
 function notes(body){
  return body.replace(/\*\*Platform availability:\*\*[^\n]*\n\n/,'')
   .replace('Apple Silicon is excluded. ','')
+  .replace('Apple Silicon downloads will be added after the separate build and tests pass. ','')
   .replace(/\| Intel Mac \|[^\n]*\n/,line=>line+(body.includes('| Apple Silicon Mac (M1 or newer) |')?'':'| Apple Silicon Mac (M1 or newer) | mac-arm64.dmg — drag Decals to Applications; ZIP also available |\n'));
 }
 if(require.main===module){
