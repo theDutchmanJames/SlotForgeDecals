@@ -56,7 +56,7 @@ Electron-builder 26.18.0 is pinned. Windows packages are unsigned; Mac apps use 
 | ubuntu-24.04 | Linux x64 AppImage / DEB |
 | ubuntu-24.04-arm | Linux ARM64 AppImage / DEB |
 
-Apple Silicon remains excluded from the main release workflow following runner availability problems.
+Apple Silicon runs separately on macOS 26 after the main release workflow succeeds. It builds and tests the exact released source, then adds the ARM64 DMG, ZIP and checksums to that public release. A delayed or failed Apple Silicon job does not hold up the other platforms.
 
 Every platform runs syntax/unit tests. Windows also runs the full desktop regression suite. All four included packaged apps run the import/PDF/persistence integration test, all eight review regressions, and the editor/export UI test. Linux GUI tests use Xvfb and configure the setuid sandbox helper only on the isolated unpacked CI copy.
 
@@ -64,7 +64,7 @@ Only after all native builds and corresponding sources pass does the publisher v
 
 Pull requests run read-only syntax and unit checks. Publishing permissions are limited to the final job; build jobs have read-only repository access. No signing or publishing secrets are required beyond GitHub's scoped workflow token.
 
-If GitHub cannot allocate an Apple Silicon runner, [Recover Apple Silicon release](../.github/workflows/recover-apple-release.yml) can rebuild only that platform on macOS 26. First stop the stalled native workflow, then supply its run ID and full source commit SHA. Recovery requires successful source, Windows, Intel Mac and both Linux jobs, plus unexpired artifacts from that same commit. It checks out the original source, runs the normal Apple Silicon tests, verifies all download checksums, and publishes the original version and commit. It does not include later application changes.
+The [Apple Silicon workflow](../.github/workflows/recover-apple-release.yml) also supports manual retries: supply the completed native workflow's run ID and full source commit SHA. It requires successful source, Windows, Intel Mac and both Linux jobs, plus unexpired artifacts from that same commit. It checks out the original source, runs the normal Apple Silicon tests, and verifies the original downloads against the public release before uploading new assets. Existing files are never overwritten. The release notes are updated after upload verification. If the original release is still a draft, the normal complete-release publisher is used. Later application changes are not included in the recovered binary.
 
 ## Corresponding source and licences
 

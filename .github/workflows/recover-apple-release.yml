@@ -1,5 +1,8 @@
 name: Recover Apple Silicon release
 on:
+  workflow_run:
+    workflows: [Native desktop release]
+    types: [completed]
   workflow_dispatch:
     inputs:
       source_run:
@@ -14,10 +17,11 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: decals-native-release
+  group: decals-apple-release
   cancel-in-progress: false
 jobs:
   apple:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.event == 'push')
     runs-on: macos-26
     timeout-minutes: 60
     outputs:
@@ -38,8 +42,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          SOURCE_RUN: ${{ inputs.source_run }}
-          SOURCE_SHA: ${{ inputs.source_sha }}
+          SOURCE_RUN: ${{ inputs.source_run || github.event.workflow_run.id }}
+          SOURCE_SHA: ${{ inputs.source_sha || github.event.workflow_run.head_sha }}
         run: node --test tests/apple-recovery.test.cjs && node scripts/validate-apple-recovery.cjs
       - name: Check out the exact original release source
         uses: actions/checkout@v6
@@ -78,6 +82,12 @@ jobs:
         with:
           ref: ${{ needs.apple.outputs.sha }}
           persist-credentials: false
+      - name: Check out the release attachment helper
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: workflow-tools
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -85,7 +95,7 @@ jobs:
         uses: actions/download-artifact@v6
         with:
           github-token: ${{ github.token }}
-          run-id: ${{ inputs.source_run }}
+          run-id: ${{ inputs.source_run || github.event.workflow_run.id }}
           pattern: release-*
           path: release-assets
           merge-multiple: true
@@ -104,4 +114,4 @@ jobs:
           for manifest in SHA256SUMS-*.txt; do sha256sum -c "$manifest"; done
           cd ..
           # The recovery workflow has a newer commit. Tag the original tested source.
-          GITHUB_SHA="$SOURCE_SHA" node scripts/publish-release.cjs
+          GITHUB_SHA="$SOURCE_SHA" node workflow-tools/scripts/publish-recovered-apple.cjs
