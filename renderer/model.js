@@ -237,6 +237,29 @@
     };
     return { x: clamp(b.x, b.w, s.w) + (i.x - b.x), y: clamp(b.y, b.h, s.h) + (i.y - b.y) };
   }
+  // First free position inside the margins, scanning rows top-left to bottom-right and
+  // keeping the sheet's cutting gap to existing artwork. Returns null when nothing fits.
+  function freeSpot(i, p, others) {
+    if (others.length > 400) return null;
+    const s = size(p),
+      b = bounds(i),
+      gap = Math.max(0, p.gap ?? 3),
+      m = p.margin,
+      boxes = others.map(bounds),
+      eps = 1e-6;
+    if (b.w > s.w - 2 * m + eps || b.h > s.h - 2 * m + eps) return null;
+    for (let y = m; y + b.h <= s.h - m + eps; y += 1) {
+      let x = m;
+      while (x + b.w <= s.w - m + eps) {
+        const hit = boxes.find(
+          o => x < o.x + o.w + gap && x + b.w + gap > o.x && y < o.y + o.h + gap && y + b.h + gap > o.y
+        );
+        if (!hit) return { x: x + (i.x - b.x), y: y + (i.y - b.y) };
+        x = hit.x + hit.w + gap;
+      }
+    }
+    return null;
+  }
   function ungroup(g) {
     if (g.locked) throw Error('Unlock this group before ungrouping.');
     if (g.opacity > 0 && g.opacity < 1) {
@@ -774,6 +797,7 @@
     group,
     ungroup,
     fitPlacement,
+    freeSpot,
     arrange,
     warnings,
     hasWhite,

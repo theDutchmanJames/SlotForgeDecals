@@ -100,7 +100,7 @@
         const valid = DM.validateItem(next);
         if (JSON.stringify(valid) === JSON.stringify(draft)) return;
         undo.push(draft);
-        if (undo.length > 35) undo.shift();
+        if (undo.length > 200) undo.shift();
         redo = [];
         draft = valid;
       },
@@ -111,7 +111,7 @@
         parent.children.push(DM.clone(item));
         const valid = DM.validateItem(next);
         undo.push(draft);
-        if (undo.length > 35) undo.shift();
+        if (undo.length > 200) undo.shift();
         redo = [];
         draft = valid;
         return parent.children.length - 1;

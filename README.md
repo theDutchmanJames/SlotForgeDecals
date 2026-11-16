@@ -68,7 +68,8 @@ Tracing works best for logos, numbers and flat-colour graphics. Photographs, gra
 
 Build your own designs directly on the sheet:
 
-- Add editable text, import custom fonts, adjust spacing and bend lettering into an arc.
+- Add editable text, choose any font installed on your computer or import a font file, adjust spacing and bend lettering into an arc. Chosen fonts are embedded in the sheet, so PDFs and shared files keep them.
+- Pick colours with an eyedropper or from quick swatches of your recent colours and the colours already on the sheet; set opacity with a percentage slider.
 - Draw rectangles, ellipses, triangles, lines and racing stripes, with colour and outline controls.
 - Create racing-number roundels, oval plates and rectangular plates, individually or as matching pairs.
 - Add a silhouette outline around imported artwork, following its outer edge and transparent cut-outs.
@@ -107,7 +108,8 @@ Choose **Sheet size** beside the project name, then set portrait or landscape un
 Every page in a project uses the same paper size. Changing paper preserves decal dimensions and positions; review anything that no longer fits on a smaller sheet.
 
 - Drag a selection rectangle or use Ctrl/Command/Shift-click to select several decals.
-- Move, resize, rotate, mirror, group and layer artwork. Lock finished placements and use undo/redo while editing.
+- Move, resize, rotate, mirror, group and layer artwork. Lock finished placements and use up to 200 undo/redo steps while editing.
+- Copy, cut and paste decals with Ctrl+C / Ctrl+X / Ctrl+V, also between sheets. Paste a copied image, screenshot or SVG code to import it. New artwork is placed in free space on the page.
 - Repeat a decal or selection in rows and columns, with separate horizontal and vertical gaps.
 - Align edges or centres, distribute equal gaps, and move selections between pages.
 - Use **Auto-arrange** to fit artwork within the margins, adding pages when needed while preserving physical size.

@@ -23,7 +23,8 @@ const suites = [
   'creation',
   'finishing',
   'thickness',
-  'review-fixes'
+  'review-fixes',
+  'quick-wins'
 ];
 for (const suite of suites) {
   console.log(`Desktop check: ${suite}`);

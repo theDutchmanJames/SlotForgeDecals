@@ -43,6 +43,18 @@ let project = DM.project(),
   busy = false,
   carImportView = 'side';
 const carData = {};
+// Snapshots share image and font strings (see DM.clone), so a long history stays cheap.
+const UNDO_LIMIT = 200;
+ColourKit.configure({
+  recent: () => settings.recentColours || [],
+  sheet: () => ColourKit.sheetColours(project.items),
+  remember: colour => {
+    if (!colour) return;
+    settings.recentColours = ColourKit.addRecent(settings.recentColours || [], colour);
+    revision++;
+    scheduleSave();
+  }
+});
 const items = () => project.items.filter(i => selected.has(i.id));
 const current = () => (items().length === 1 ? items()[0] : null);
 const activeFonts = () => project.fonts;
@@ -69,7 +81,7 @@ function fail(e) {
 }
 function record() {
   history.push(DM.clone(project));
-  if (history.length > 35) history.shift();
+  if (history.length > UNDO_LIMIT) history.shift();
   future = [];
 }
 function changed() {
@@ -90,7 +102,7 @@ function mutate(fn, coalesce = false) {
   }
   if (!coalesce) {
     history.push(before);
-    if (history.length > 35) history.shift();
+    if (history.length > UNDO_LIMIT) history.shift();
   }
   future = [];
   changed();
@@ -352,7 +364,7 @@ function commitGesture(before) {
     return;
   }
   history.push(before);
-  if (history.length > 35) history.shift();
+  if (history.length > UNDO_LIMIT) history.shift();
   future = [];
   changed();
 }
@@ -464,7 +476,7 @@ function renderInspector() {
         : 'Scalable artwork';
   $('#inspector').innerHTML =
     `<h2 class="inspector-title">Selected decal <span class="artwork-badge" data-artwork-type="${E(artworkType)}">${E(artworkType)}</span><small class="hint">${E(quality)}${i.flipX || i.flipY ? ' · Mirrored' : ''}</small></h2><input class="inspector-name" id="decal-name" value="${E(i.name)}" aria-label="Decal name"><details class="folder blue" open><summary>Size & position</summary><div class="folder-body"><div class="fields2">${prop('Width (mm)', 'w', i.w, 0.1, 1000)}${prop('Height (mm)', 'h', i.h, 0.1, 1000)}</div><label class="check"><input id="aspect-lock" type="checkbox" ${settings.aspectLock !== false ? 'checked' : ''}>Keep proportions</label><div class="fields2" style="margin-top:10px">${prop('X (mm)', 'x', i.x)}${prop('Y (mm)', 'y', i.y)}</div><div class="fields2">${prop('Rotation (°)', 'rotation', i.rotation, -3600, 3600, 1)}<div class="field"><label>Copies to add</label><div class="unit-input"><input id="copies" type="number" value="1" min="1" max="100"><button data-action="copies" title="Add copies">+</button></div></div></div><button class="wide" data-action="save-decal">Save decal to library</button><div class="layer-actions"><button data-action="backward">Backward</button><button data-action="forward">Forward</button><button data-action="lock">${i.locked ? 'Unlock' : 'Lock'}</button></div></div></details>
- ${i.kind === 'svg' ? `<section class="folder blue"><h2>Vector artwork</h2><div class="folder-body"><button class="wide" data-action="edit-vector" ${i.locked ? 'disabled' : ''}>Edit Vector Artwork</button><p class="hint">Select and remove background shapes. Preview, undo or restore the original.</p></div></section>` : ''}${i.kind === 'path' ? `<section class="folder blue"><h2>Path editing</h2><div class="folder-body"><button class="wide" data-action="edit-path" ${i.locked ? 'disabled' : ''}>Edit Points & Curves</button></div></section>` : ''}${i.kind === 'stripe' || (i.shapeOptions && Object.hasOwn(ShapeTools.presets, i.shapeOptions.type)) ? `<section class="folder blue"><h2>Shape & pattern</h2><div class="folder-body"><button class="wide" data-action="edit-shape" ${i.locked ? 'disabled' : ''}>${i.kind === 'stripe' ? 'Stripe Count & Spacing' : 'Adjust Shape / Pattern'}</button></div></section>` : ''}${i.kind === 'svg' || i.kind === 'image' || i.artOutline ? `<section class="folder blue"><h2>Artwork outline</h2><div class="folder-body"><button class="wide" data-action="artwork-outline" ${i.locked ? 'disabled' : ''}>${i.artOutline ? 'Adjust outline' : 'Add silhouette outline'}</button>${i.artOutline ? `<button class="wide" data-action="remove-outline" ${i.locked ? 'disabled' : ''}>Remove outline</button>` : ''}</div></section>` : ''}${i.kind === 'group' && !i.artOutline ? `<section class="folder purple"><h2>Group contents</h2><div class="folder-body"><button class="wide primary" data-action="edit-group" ${i.locked ? 'disabled' : ''}>Edit group</button><p class="hint">Edit individual text and shapes while keeping this decal together.</p></div></section>` : ''}${i.kind === 'image' ? `<section class="folder blue"><h2>Image preparation</h2><div class="folder-body"><button class="wide" data-action="prepare-image" ${i.locked ? 'disabled' : ''}>${i.imageSource ? 'Adjust crop & background' : 'Crop & remove background'}</button><p class="hint">${i.imageSource ? 'Original retained. Cropping keeps the printed artwork scale.' : 'Crop empty borders and remove plain backgrounds before tracing.'}</p>${i.imageSource ? `<button class="wide" data-action="restore-prepared" ${i.locked ? 'disabled' : ''}>Restore original image</button>` : ''}</div></section>` : ''}${i.kind === 'image' || i.traceSource ? `<section class="folder teal"><h2>Image tracing</h2><div class="folder-body"><button class="wide primary" data-action="trace" ${i.locked ? 'disabled' : ''}>${i.traceSource ? 'Refine traced vector' : 'Trace image to vector'}</button><p class="hint">${i.traceSource ? 'Replace colours, remove shapes and compare details. Original retained.' : 'Turn logos and flat-colour images into scalable SVG paths. Review before applying.'}</p>${i.traceSource ? '<div class="row"><button data-action="restore-image">Restore image</button><button data-action="export-svg">Export SVG</button></div>' : ''}</div></section>` : ''}<details class="folder purple" ${i.kind === 'text' ? 'open' : ''}><summary>Text & appearance</summary><div class="folder-body">${i.kind === 'text' ? `<div class="field"><label>Text / number</label><input id="text-value" value="${E(i.text)}" maxlength="500"></div><div class="field"><label>Typeface</label><select id="font-select">${['Arial', 'Georgia', 'Verdana', 'Courier New', ...activeFonts().map(f => f.family)].map(f => `<option value="${E(f)}" ${f === i.font ? 'selected' : ''}>${E(activeFonts().find(x => x.family === f)?.name || f)}</option>`).join('')}</select></div><div class="text-toolbar"><button data-action="bold" class="${i.bold ? 'active' : ''}"><b>B</b></button><button data-action="italic" class="${i.italic ? 'active' : ''}"><i>I</i></button><button data-action="font">Import font</button></div>${prop('Letter spacing', 'spacing', i.spacing || 0, -10, 50, 0.5)}${prop('Text bend (°)', 'curve', i.curve || 0, -300, 300, 5)}<p class="hint">Positive: arch up · Negative: curve down · 0: straight. Bending keeps letter size and centre; the overall dimensions change.</p>` : ''}${canPaint ? `<div class="fields2" style="margin-top:10px"><div class="field"><label>Fill colour</label><input type="color" id="fill" value="${i.fill === 'none' ? '#ffffff' : i.fill}"></div>${canOutline ? `<div class="field"><label>Outline colour</label><input type="color" id="stroke" value="${i.stroke}"></div>` : ''}</div><label class="check"><input id="no-fill" type="checkbox" ${i.fill === 'none' ? 'checked' : ''}>Transparent fill</label>${canOutline ? prop('Outline thickness (mm)', 'strokeWidth', i.strokeWidth, 0, 50) : prop(i.kind === 'stripe' ? 'Overall stripe thickness (mm)' : 'Line thickness (mm)', 'thickness', i.h, 0.1, 1000)}${i.kind === 'stripe' ? '<p class="hint">Total height of both stripes and their gap. Length stays unchanged.</p>' : ''}${i.kind === 'rect' ? prop('Corner radius (mm)', 'radius', i.radius || 0, 0, 500) : ''}${i.kind === 'stripe' ? `<div class="field"><label>Second stripe colour</label><input id="fill2" type="color" value="${i.fill2 || '#245cc3'}"></div>` : ''}` : '<p class="hint">Original artwork is preserved. Resize, rotate or group it with new text and shapes.</p>'}${prop('Opacity', 'opacity', i.opacity, 0, 1, 0.05)}<div class="field"><label>Ink treatment</label><select id="ink"><option value="colour">Colour artwork</option><option value="colour-white">Colour + white backing</option><option value="white-only">White ink only</option></select></div><button class="wide danger" data-action="delete">Delete from sheet</button></div></details>`;
+ ${i.kind === 'svg' ? `<section class="folder blue"><h2>Vector artwork</h2><div class="folder-body"><button class="wide" data-action="edit-vector" ${i.locked ? 'disabled' : ''}>Edit Vector Artwork</button><p class="hint">Select and remove background shapes. Preview, undo or restore the original.</p></div></section>` : ''}${i.kind === 'path' ? `<section class="folder blue"><h2>Path editing</h2><div class="folder-body"><button class="wide" data-action="edit-path" ${i.locked ? 'disabled' : ''}>Edit Points & Curves</button></div></section>` : ''}${i.kind === 'stripe' || (i.shapeOptions && Object.hasOwn(ShapeTools.presets, i.shapeOptions.type)) ? `<section class="folder blue"><h2>Shape & pattern</h2><div class="folder-body"><button class="wide" data-action="edit-shape" ${i.locked ? 'disabled' : ''}>${i.kind === 'stripe' ? 'Stripe Count & Spacing' : 'Adjust Shape / Pattern'}</button></div></section>` : ''}${i.kind === 'svg' || i.kind === 'image' || i.artOutline ? `<section class="folder blue"><h2>Artwork outline</h2><div class="folder-body"><button class="wide" data-action="artwork-outline" ${i.locked ? 'disabled' : ''}>${i.artOutline ? 'Adjust outline' : 'Add silhouette outline'}</button>${i.artOutline ? `<button class="wide" data-action="remove-outline" ${i.locked ? 'disabled' : ''}>Remove outline</button>` : ''}</div></section>` : ''}${i.kind === 'group' && !i.artOutline ? `<section class="folder purple"><h2>Group contents</h2><div class="folder-body"><button class="wide primary" data-action="edit-group" ${i.locked ? 'disabled' : ''}>Edit group</button><p class="hint">Edit individual text and shapes while keeping this decal together.</p></div></section>` : ''}${i.kind === 'image' ? `<section class="folder blue"><h2>Image preparation</h2><div class="folder-body"><button class="wide" data-action="prepare-image" ${i.locked ? 'disabled' : ''}>${i.imageSource ? 'Adjust crop & background' : 'Crop & remove background'}</button><p class="hint">${i.imageSource ? 'Original retained. Cropping keeps the printed artwork scale.' : 'Crop empty borders and remove plain backgrounds before tracing.'}</p>${i.imageSource ? `<button class="wide" data-action="restore-prepared" ${i.locked ? 'disabled' : ''}>Restore original image</button>` : ''}</div></section>` : ''}${i.kind === 'image' || i.traceSource ? `<section class="folder teal"><h2>Image tracing</h2><div class="folder-body"><button class="wide primary" data-action="trace" ${i.locked ? 'disabled' : ''}>${i.traceSource ? 'Refine traced vector' : 'Trace image to vector'}</button><p class="hint">${i.traceSource ? 'Replace colours, remove shapes and compare details. Original retained.' : 'Turn logos and flat-colour images into scalable SVG paths. Review before applying.'}</p>${i.traceSource ? '<div class="row"><button data-action="restore-image">Restore image</button><button data-action="export-svg">Export SVG</button></div>' : ''}</div></section>` : ''}<details class="folder purple" ${i.kind === 'text' ? 'open' : ''}><summary>Text & appearance</summary><div class="folder-body">${i.kind === 'text' ? `<div class="field"><label>Text / number</label><input id="text-value" value="${E(i.text)}" maxlength="500"></div><div class="field"><label>Typeface</label><select id="font-select">${['Arial', 'Georgia', 'Verdana', 'Courier New', ...activeFonts().map(f => f.family)].map(f => `<option value="${E(f)}" ${f === i.font ? 'selected' : ''}>${E(activeFonts().find(x => x.family === f)?.name || f)}</option>`).join('')}</select><button class="wide installed-fonts-button" data-action="installed-fonts">Choose installed font…</button></div><div class="text-toolbar"><button data-action="bold" class="${i.bold ? 'active' : ''}"><b>B</b></button><button data-action="italic" class="${i.italic ? 'active' : ''}"><i>I</i></button><button data-action="font">Import font</button></div>${prop('Letter spacing', 'spacing', i.spacing || 0, -10, 50, 0.5)}${prop('Text bend (°)', 'curve', i.curve || 0, -300, 300, 5)}<p class="hint">Positive: arch up · Negative: curve down · 0: straight. Bending keeps letter size and centre; the overall dimensions change.</p>` : ''}${canPaint ? `<div class="fields2" style="margin-top:10px"><div class="field"><label>Fill colour</label><input type="color" id="fill" value="${i.fill === 'none' ? '#ffffff' : i.fill}"></div>${canOutline ? `<div class="field"><label>Outline colour</label><input type="color" id="stroke" value="${i.stroke}"></div>` : ''}</div><label class="check"><input id="no-fill" type="checkbox" ${i.fill === 'none' ? 'checked' : ''}>Transparent fill</label>${canOutline ? prop('Outline thickness (mm)', 'strokeWidth', i.strokeWidth, 0, 50) : prop(i.kind === 'stripe' ? 'Overall stripe thickness (mm)' : 'Line thickness (mm)', 'thickness', i.h, 0.1, 1000)}${i.kind === 'stripe' ? '<p class="hint">Total height of both stripes and their gap. Length stays unchanged.</p>' : ''}${i.kind === 'rect' ? prop('Corner radius (mm)', 'radius', i.radius || 0, 0, 500) : ''}${i.kind === 'stripe' ? `<div class="field"><label>Second stripe colour</label><input id="fill2" type="color" value="${i.fill2 || '#245cc3'}"></div>` : ''}` : '<p class="hint">Original artwork is preserved. Resize, rotate or group it with new text and shapes.</p>'}<div class="field"><label for="prop-opacity">Opacity</label><div class="opacity-control"><input id="opacity-range" type="range" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}" aria-label="Opacity slider"><div class="unit-input"><input id="prop-opacity" type="number" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}"><span>%</span></div></div></div><div class="field"><label>Ink treatment</label><select id="ink"><option value="colour">Colour artwork</option><option value="colour-white">Colour + white backing</option><option value="white-only">White ink only</option></select></div><button class="wide danger" data-action="delete">Delete from sheet</button></div></details>`;
   const change = fn => {
     try {
       mutate(() => {
@@ -520,6 +532,19 @@ function renderInspector() {
         remeasureText(i);
       });
   }
+  // Opacity is edited in percent; the slider previews on the sheet and commits once on release.
+  const opacityRange = $('#opacity-range'),
+    opacityNumber = $('#prop-opacity');
+  const setOpacity = percent => change(i => (i.opacity = DM.number(percent, 0, 100, 'Opacity') / 100));
+  opacityRange.oninput = () => {
+    opacityNumber.value = opacityRange.value;
+    $(`#paper .sheet-item[data-id="${CSS.escape(i.id)}"] > g`)?.setAttribute(
+      'opacity',
+      opacityRange.value / 100
+    );
+  };
+  opacityRange.onchange = () => setOpacity(opacityRange.value);
+  opacityNumber.onchange = () => setOpacity(opacityNumber.value);
   $('#ink').value = i.ink;
   if (i.kind === 'slice') {
     $('#ink').disabled = true;
@@ -528,11 +553,15 @@ function renderInspector() {
   $('#ink').onchange = e => change(i => (i.ink = e.target.value));
   if (i.locked) {
     for (const el of $$(
-      '#inspector [data-prop],#decal-name,#text-value,#font-select,#fill,#stroke,#fill2,#no-fill,#ink'
+      '#inspector [data-prop],#decal-name,#text-value,#font-select,#fill,#stroke,#fill2,#no-fill,#ink,#opacity-range,#prop-opacity'
     ))
       el.disabled = true;
     for (const b of $$('#inspector [data-action]'))
-      if (['backward', 'forward', 'bold', 'italic', 'font', 'delete'].includes(b.dataset.action))
+      if (
+        ['backward', 'forward', 'bold', 'italic', 'font', 'installed-fonts', 'delete'].includes(
+          b.dataset.action
+        )
+      )
         b.disabled = true;
   }
 }
@@ -884,9 +913,14 @@ function place(i, point) {
     i.x = point.x;
     i.y = point.y;
   } else {
-    const count = project.items.filter(i => i.page === page).length;
-    i.x = project.margin + 8 + (count % 5) * 5;
-    i.y = project.margin + 8 + (count % 7) * 5;
+    const onPage = project.items.filter(i => i.page === page),
+      spot = DM.freeSpot(i, project, onPage);
+    if (spot) Object.assign(i, spot);
+    else {
+      // The page is full: fall back to a visible cascade near the top-left.
+      i.x = project.margin + 8 + (onPage.length % 5) * 5;
+      i.y = project.margin + 8 + (onPage.length % 7) * 5;
+    }
   }
   Object.assign(i, DM.fitPlacement(i, project));
   project.items.push(i);
@@ -1292,7 +1326,7 @@ function helpDialog() {
   showDialog(
     'Your decal workshop',
     'SlotForge Decals · 0.2.20',
-    `<p><strong>1. Import or create.</strong> Bring PNG, SVG, EPS or PDF artwork, or use the text and shape tools. Select a bitmap and use Crop &amp; remove background to prepare it. Preview against transparent, light or dark backgrounds; the original is retained.</p><p><strong>2. Size in millimetres.</strong> Use physical dimensions, then check all selected decals on the car reference. Drag each one over the car to inspect placement without moving it on your sheet. Reference images are illustrative, not a wrap calculation. Text bend arches editable lettering up or down. Add silhouette outline creates an adjustable vector border around imported artwork while retaining its original contents.</p><p><strong>3. Choose a sheet size and arrange decals.</strong> Use the Sheet size picker beside the project name for A4, A5 or Photo 4×6 in. All pages share that size; changing paper never rescales decals. Drag across empty canvas to select decals. Ctrl/Shift-click toggles individual decals. Drag selected artwork to move it together. Use Arrange… for grids of copies, equal gaps, alignment, mirroring and moving to another page. Path Tool in Add artwork lets you draw lines or closed shapes, then edit points and curve handles. Use Merge &amp; Cut in Add artwork to select filled native shapes on the canvas and choose an operation in the right panel for union, cutting, intersection or excluded overlap. Results remain editable paths; imports and text cannot be combined with these tools. Open Shapes &amp; Patterns for basic shapes, adjustable stars, polygons, arrows, chevrons, shields, checkerboards and 1–12 racing stripes. Racing Number Plates offers editable roundels and plates, including matching pairs. Select a grouped decal and choose Edit group to change individual elements; Apply changes commits them together. Group a complete design, duplicate it, and use Auto-arrange to preserve size while making room. Lock finished placements.</p><p><strong>Slice area.</strong> Use Slice area… above the sheet to draw a rectangle or enter its position and size in millimetres. Clip at its boundary or expand to include whole decals. Save a transparent slice to your library, print only that area on the original paper size, or export a cropped PDF. Preview before saving and print at Actual size / 100%. The original sheet stays unchanged. Saved slices move and resize as one decal; edit the original artwork before making a new slice.</p><p><strong>Sheet Library.</strong> Browse complete saved sheets beside Decal Library in the top navigation. Click the labelled Sheet name field to rename your work. Portrait / Landscape switches orientation; Scale Conversion changes model scale. Add Sheet saves the outgoing work and starts another sheet. Save sheet / Ctrl+S saves locally. Select sheets to export together in one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent library copies while your current work stays open. Both libraries support grid/list views, sorting, checkboxes, Ctrl-click and Shift-click. The sheet you leave is saved before switching. Versions and Workspace recovery open earlier sheets as separate copies.</p><p><strong>4. Save useful decals.</strong> “Save decal to library” is explicit. Sheet copies remain independent. Share selected saved decals in a .sfdecal pack.</p><p><strong>5. Print at actual size.</strong> Export PDF and disable “Fit to page” in your PDF viewer. Check the labelled 50/100 mm bars on a plain-paper sizing proof.</p><div class="notice"><strong>White ink:</strong> enable the printer option, set its required spot name, and choose Colour + white backing or White ink only on a decal. Export uses an alpha-thresholded 600 PPI white mask. Confirm ink order and spot recognition with your print shop; this has not been validated on physical printers. RGB artwork is preserved; PDF/X and colour-proof certification are not provided.</div><p class="hint">Ctrl+mousewheel zoom over the canvas · Ctrl+Z undo · Ctrl+Shift+Z redo · Ctrl+D duplicate · Ctrl+G group · Delete remove · Arrow keys move 1 mm · Shift+Arrow 0.1 mm · Alt-drag bypass snap · Ctrl+S save sheet.</p><p class="hint">Select a PNG, JPEG or WebP and choose “Trace image to vector” to review an SVG approximation. Adjust colours, detail and transparency, then replace traced colours or remove unwanted shapes before applying. Zoom both previews to compare details. The original image is kept for restoration. SVG filters and external resources need preparation in another editor. Source and third-party notices are included with the app.</p>`,
+    `<p><strong>1. Import or create.</strong> Bring PNG, SVG, EPS or PDF artwork, or use the text and shape tools. Select a bitmap and use Crop &amp; remove background to prepare it. Preview against transparent, light or dark backgrounds; the original is retained.</p><p><strong>2. Size in millimetres.</strong> Use physical dimensions, then check all selected decals on the car reference. Drag each one over the car to inspect placement without moving it on your sheet. Reference images are illustrative, not a wrap calculation. Text bend arches editable lettering up or down. Add silhouette outline creates an adjustable vector border around imported artwork while retaining its original contents.</p><p><strong>3. Choose a sheet size and arrange decals.</strong> Use the Sheet size picker beside the project name for A4, A5 or Photo 4×6 in. All pages share that size; changing paper never rescales decals. Drag across empty canvas to select decals. Ctrl/Shift-click toggles individual decals. Drag selected artwork to move it together. Use Arrange… for grids of copies, equal gaps, alignment, mirroring and moving to another page. Path Tool in Add artwork lets you draw lines or closed shapes, then edit points and curve handles. Use Merge &amp; Cut in Add artwork to select filled native shapes on the canvas and choose an operation in the right panel for union, cutting, intersection or excluded overlap. Results remain editable paths; imports and text cannot be combined with these tools. Open Shapes &amp; Patterns for basic shapes, adjustable stars, polygons, arrows, chevrons, shields, checkerboards and 1–12 racing stripes. Racing Number Plates offers editable roundels and plates, including matching pairs. Select a grouped decal and choose Edit group to change individual elements; Apply changes commits them together. Group a complete design, duplicate it, and use Auto-arrange to preserve size while making room. Lock finished placements.</p><p><strong>Slice area.</strong> Use Slice area… above the sheet to draw a rectangle or enter its position and size in millimetres. Clip at its boundary or expand to include whole decals. Save a transparent slice to your library, print only that area on the original paper size, or export a cropped PDF. Preview before saving and print at Actual size / 100%. The original sheet stays unchanged. Saved slices move and resize as one decal; edit the original artwork before making a new slice.</p><p><strong>Sheet Library.</strong> Browse complete saved sheets beside Decal Library in the top navigation. Click the labelled Sheet name field to rename your work. Portrait / Landscape switches orientation; Scale Conversion changes model scale. Add Sheet saves the outgoing work and starts another sheet. Save sheet / Ctrl+S saves locally. Select sheets to export together in one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent library copies while your current work stays open. Both libraries support grid/list views, sorting, checkboxes, Ctrl-click and Shift-click. The sheet you leave is saved before switching. Versions and Workspace recovery open earlier sheets as separate copies.</p><p><strong>4. Save useful decals.</strong> “Save decal to library” is explicit. Sheet copies remain independent. Share selected saved decals in a .sfdecal pack.</p><p><strong>Shortcuts.</strong> Ctrl+C / Ctrl+X / Ctrl+V copy, cut and paste decals, also between sheets. Paste a copied image, a screenshot or SVG code to import it. Ctrl+D duplicates, Ctrl+G groups, Ctrl+A selects the page, arrow keys nudge 1 mm (Shift: 0.1 mm), Delete removes, Ctrl+Z / Ctrl+Y undo and redo up to 200 steps. Choose installed font… embeds a font from this computer into the sheet. Colour fields offer an eyedropper and quick swatches of recent and sheet colours.</p><p><strong>5. Print at actual size.</strong> Export PDF and disable “Fit to page” in your PDF viewer. Check the labelled 50/100 mm bars on a plain-paper sizing proof.</p><div class="notice"><strong>White ink:</strong> enable the printer option, set its required spot name, and choose Colour + white backing or White ink only on a decal. Export uses an alpha-thresholded 600 PPI white mask. Confirm ink order and spot recognition with your print shop; this has not been validated on physical printers. RGB artwork is preserved; PDF/X and colour-proof certification are not provided.</div><p class="hint">Ctrl+mousewheel zoom over the canvas · Ctrl+Z undo · Ctrl+Shift+Z redo · Ctrl+D duplicate · Ctrl+G group · Delete remove · Arrow keys move 1 mm · Shift+Arrow 0.1 mm · Alt-drag bypass snap · Ctrl+S save sheet.</p><p class="hint">Select a PNG, JPEG or WebP and choose “Trace image to vector” to review an SVG approximation. Adjust colours, detail and transparency, then replace traced colours or remove unwanted shapes before applying. Zoom both previews to compare details. The original image is kept for restoration. SVG filters and external resources need preparation in another editor. Source and third-party notices are included with the app.</p>`,
     '<button class="primary" data-action="close">Start creating</button>'
   );
 }
@@ -1416,6 +1450,193 @@ function duplicate(count = 1) {
       }
     selected = new Set(ids);
   });
+}
+// Clipboard: decals are copied inside the app (with the fonts they need, so they can be
+// pasted into another sheet). The system clipboard gets a marker so we can tell whether
+// the user copied something else since; pasted images and SVG code are imported.
+const CLIPBOARD_TYPE = 'application/x-slotforge-decals';
+let clipboard = null;
+function copySelection(e) {
+  const list = items();
+  if (!list.length) return false;
+  const token = DM.uid();
+  clipboard = {
+    token,
+    items: list.map(i => DM.clone(i)),
+    fonts: DM.fontsFor(list, activeFonts()).map(f => DM.clone(f)),
+    project: project.id,
+    page,
+    pastes: 0
+  };
+  e.clipboardData.setData(CLIPBOARD_TYPE, token);
+  e.clipboardData.setData(
+    'text/plain',
+    `SlotForge Decals: ${list.length} ${list.length === 1 ? 'decal' : 'decals'} copied (${token})`
+  );
+  return true;
+}
+async function pasteDecals() {
+  const c = clipboard,
+    target = project.id,
+    targetPage = page;
+  if (project.items.length + c.items.length > 2000) throw Error('A project supports up to 2,000 decals.');
+  const merged = () => {
+    for (const f of c.fonts) {
+      const old = project.fonts.find(x => x.family === f.family);
+      if (old && old.data !== f.data)
+        throw Error('These decals use a different font with the same internal name as a sheet font.');
+    }
+    return [...new Map([...project.fonts, ...c.fonts].map(f => [f.family, DM.clone(f)])).values()];
+  };
+  await Art.loadFonts(merged());
+  if (project.id !== target || page !== targetPage) throw Error('The active sheet changed. Paste again.');
+  // Repeated pastes on the source page step down-right like Duplicate; elsewhere keep positions.
+  const offset = c.project === project.id && c.page === page ? 4 * ++c.pastes : 0;
+  mutate(() => {
+    project.fonts = merged();
+    const ids = [];
+    for (const source of c.items) {
+      const i = DM.clone(source);
+      i.id = DM.uid();
+      i.page = page;
+      i.x += offset;
+      i.y += offset;
+      i.locked = false;
+      Object.assign(i, DM.fitPlacement(i, project));
+      project.items.push(i);
+      ids.push(i.id);
+    }
+    selected = new Set(ids);
+  });
+  toast(`Pasted ${c.items.length} ${c.items.length === 1 ? 'decal' : 'decals'}.`);
+}
+function pastedFile(blob, base) {
+  const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/svg+xml': 'svg' }[
+    blob.type
+  ];
+  return ext ? new File([blob], `${base}.${ext}`, { type: blob.type }) : null;
+}
+const clipboardBlocked = e =>
+  !ready ||
+  projectTask ||
+  CanvasTools.active ||
+  drag ||
+  carDrag ||
+  $('#dialog').open ||
+  e.target.closest?.('input,textarea,select,[contenteditable]');
+for (const type of ['copy', 'cut'])
+  document.addEventListener(type, e => {
+    if (clipboardBlocked(e) || !copySelection(e)) return;
+    e.preventDefault();
+    if (type === 'cut') {
+      const locked = items().filter(i => i.locked).length;
+      actions.delete();
+      if (locked) toast('Locked decals were copied but stay on the sheet.');
+    }
+  });
+document.addEventListener('paste', e => {
+  if (clipboardBlocked(e)) return;
+  const data = e.clipboardData;
+  e.preventDefault();
+  const text = data.getData('text/plain'),
+    token = data.getData(CLIPBOARD_TYPE) || /\(([0-9a-f-]{36})\)$/.exec(text)?.[1];
+  if (clipboard && token === clipboard.token) return pasteDecals().catch(fail);
+  const files = [...data.files].map(f => pastedFile(f, 'Pasted image')).filter(Boolean);
+  if (files.length) return importFiles(files).catch(fail);
+  const svg = text.trim();
+  if (/^(<\?xml[\s\S]*?)?(<!--[\s\S]*?-->\s*)*<svg[\s>]/i.test(svg))
+    return importFiles([new File([svg], 'Pasted artwork.svg', { type: 'image/svg+xml' })]).catch(fail);
+  toast('The clipboard has no decals, images or SVG artwork to paste.');
+});
+// Installed fonts are embedded into the sheet exactly like an imported font file, so PDFs,
+// shared sheets and other computers render the same letters.
+let installedFontList = null;
+async function installedFonts() {
+  if (!installedFontList) {
+    if (typeof queryLocalFonts !== 'function')
+      throw Error('This computer does not let apps list installed fonts. Use Import font instead.');
+    const families = new Map();
+    for (const face of await queryLocalFonts()) {
+      if (!families.has(face.family)) families.set(face.family, []);
+      families.get(face.family).push(face);
+    }
+    installedFontList = [...families]
+      .map(([family, faces]) => ({
+        family,
+        face: faces.find(f => /^(regular|normal|book|roman)$/i.test(f.style)) || faces[0]
+      }))
+      .sort((a, b) => a.family.localeCompare(b.family));
+  }
+  return installedFontList;
+}
+async function fontFromBlob(blob, name) {
+  if (blob.size > 10e6) throw Error(`${name} is larger than 10 MB and cannot be embedded.`);
+  const tag = String.fromCharCode(...new Uint8Array(await blob.slice(0, 4).arrayBuffer()));
+  if (tag === 'ttcf')
+    throw Error(
+      `${name} is stored as a font collection, which cannot be embedded. Import a single .ttf or .otf file of this font instead.`
+    );
+  const ext = tag === 'OTTO' ? 'otf' : 'ttf';
+  const data = (await dataURL(blob)).replace(/^data:[^;]*;/, `data:font/${ext};`);
+  return (
+    project.fonts.find(f => f.name === name && f.data === data) || {
+      family: 'sf-font-' + DM.uid(),
+      name,
+      data
+    }
+  );
+}
+async function installedFontsDialog() {
+  const text = current();
+  if (text?.kind !== 'text') throw Error('Select a text decal first.');
+  if (text.locked) throw Error('Unlock this decal before editing.');
+  const list = await installedFonts(),
+    sample = E(text.text.trim().slice(0, 24) || 'Race 27'),
+    cssName = f => f.replace(/["\\]/g, '');
+  showDialog(
+    'Installed fonts',
+    `${list.length} font families on this computer. The chosen font is embedded in this sheet, so PDFs and shared sheets keep it.`,
+    '<div class="field"><input id="font-search" type="search" placeholder="Search fonts…" aria-label="Search installed fonts"></div><div id="font-list" class="font-list"></div><p class="hint">Only share sheets with fonts whose licence allows embedding.</p>',
+    '<button data-action="close">Cancel</button>',
+    true
+  );
+  const draw = () => {
+    const q = $('#font-search').value.trim().toLowerCase(),
+      matches = list.filter(f => f.family.toLowerCase().includes(q));
+    $('#font-list').innerHTML = matches.length
+      ? matches
+          .map(
+            f =>
+              `<button class="font-option" data-font-family="${E(f.family)}"><span class="font-sample" style="font-family:&quot;${E(cssName(f.family))}&quot;, sans-serif">${sample}</span><small>${E(f.family)}</small></button>`
+          )
+          .join('')
+      : '<p class="hint">No installed fonts match your search.</p>';
+  };
+  $('#font-search').oninput = draw;
+  $('#font-list').onclick = async e => {
+    const option = e.target.closest('[data-font-family]');
+    if (!option) return;
+    try {
+      const entry = list.find(f => f.family === option.dataset.fontFamily);
+      for (const b of $$('#font-list button')) b.disabled = true;
+      const font = await fontFromBlob(await entry.face.blob(), entry.face.fullName || entry.family);
+      await Art.loadFonts([...activeFonts(), font]);
+      mutate(() => {
+        const live = project.items.find(x => x.id === text.id);
+        if (!live) throw Error('The text decal is no longer on this sheet.');
+        if (!project.fonts.includes(font)) project.fonts.push(font);
+        live.font = font.family;
+        remeasureText(live);
+      });
+      closeDialog();
+      toast(`${entry.family} embedded in this sheet.`);
+    } catch (err) {
+      $('#dialog-error').textContent = err.message;
+      for (const b of $$('#font-list button')) b.disabled = false;
+    }
+  };
+  draw();
+  $('#font-search').focus();
 }
 function prepareSelected() {
   const item = current();
@@ -1619,6 +1840,7 @@ const actions = {
   'import-pack': () => $('#pack-file').click(),
   'restore-backup': () => $('#backup-file').click(),
   font: () => $('#font-file').click(),
+  'installed-fonts': installedFontsDialog,
   new: newProject,
   demo: () => {
     const open = () =>
