@@ -151,6 +151,62 @@ else {
       await writeExport(root, file, type, text);
       return file;
     });
+    // Print & cut package: a new folder holding decal PNGs, sheet files and instructions.
+    // Paths are validated per segment and every file goes through writeExport.
+    handle('export-cut-package', async ({ name, files }) => {
+      if (!Array.isArray(files) || !files.length || files.length > 700)
+        throw Error('Invalid cutter package.');
+      let total = 0;
+      const checked = files.map(({ path: relative, data }) => {
+        const parts = String(relative).split('/');
+        if (
+          parts.length > 2 ||
+          parts.some(p => !p || p === '.' || p === '..' || /[<>:"\\|?*\x00-\x1f]/.test(p) || p.length > 120)
+        )
+          throw Error('Invalid file name in cutter package.');
+        const type = path.extname(relative).slice(1).toLowerCase();
+        if (!['png', 'dxf', 'svg', 'txt'].includes(type)) throw Error('Unsupported file in cutter package.');
+        if (type === 'png' ? !(data instanceof Uint8Array) : typeof data !== 'string')
+          throw Error('Invalid file data in cutter package.');
+        total += data.length;
+        return { parts, type, data: type === 'png' ? Buffer.from(data) : data };
+      });
+      if (total > 400e6) throw Error('The cutter package exceeds 400 MB.');
+      let parent;
+      if (process.env.SLOTFORGE_EXPORT_DIR) {
+        parent = process.env.SLOTFORGE_EXPORT_DIR;
+        await fs.mkdir(parent, { recursive: true });
+      } else {
+        const exports = path.join(root, 'Exports');
+        await fs.mkdir(exports, { recursive: true });
+        const picked = await dialog.showOpenDialog(win, {
+          title: 'Choose where to save the cutter package',
+          defaultPath: exports,
+          properties: ['openDirectory', 'createDirectory']
+        });
+        if (picked.canceled || !picked.filePaths[0]) return null;
+        parent = picked.filePaths[0];
+      }
+      // Never merge into or overwrite an existing folder.
+      const base = safeName(name);
+      let folder = path.join(parent, base);
+      for (let n = 2; ; n++) {
+        try {
+          await fs.mkdir(folder);
+          break;
+        } catch (e) {
+          if (e.code !== 'EEXIST' || n > 99) throw e;
+          folder = path.join(parent, `${base} (${n})`);
+        }
+      }
+      for (const { parts, type, data } of checked) {
+        const file = path.join(folder, ...parts);
+        await fs.mkdir(path.dirname(file), { recursive: true });
+        await writeExport(root, file, type, data);
+      }
+      if (!process.env.SLOTFORGE_EXPORT_DIR) shell.openPath(folder);
+      return folder;
+    });
     handle(
       'convert',
       data =>

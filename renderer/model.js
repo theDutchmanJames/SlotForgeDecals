@@ -70,6 +70,7 @@
       whiteInk: false,
       spotName: 'RDG_WHITE',
       preview: { view: 'side', length: 140, width: 62, height: 48, side: null, top: null },
+      cut: cutSettings(),
       updated: new Date().toISOString()
     };
   }
@@ -438,6 +439,8 @@
       if (i[k] !== undefined && !/^(#[a-f\d]{6}|none)$/i.test(i[k])) throw Error('Invalid colour.');
     }
     i.ink = ['colour', 'colour-white', 'white-only'].includes(i.ink) ? i.ink : 'colour';
+    // Per-decal cut line override; absent means "use the sheet's cutting setting".
+    if (i.cutMode !== undefined && !CUT_MODES.includes(i.cutMode)) delete i.cutMode;
     i.locked = !!i.locked;
     i.flipX = i.flipX === true;
     i.flipY = i.flipY === true;
@@ -694,8 +697,22 @@
     }
     p.preview.view = p.preview.view === 'top' ? 'top' : 'side';
     p.spotName = /^[A-Za-z][A-Za-z0-9_-]{0,40}$/.test(p.spotName) ? p.spotName : 'RDG_WHITE';
+    p.cut = cutSettings(p.cut);
     return p;
   }
+  // Print & cut: how each decal is cut out. "shape" follows the artwork's outline,
+  // "rect" cuts a rectangle; both are grown by the offset (mm) around the artwork.
+  const CUT_MODES = ['shape', 'rect', 'none'];
+  function cutSettings(raw) {
+    const c = raw && typeof raw === 'object' ? raw : {};
+    return {
+      mode: CUT_MODES.includes(c.mode) ? c.mode : 'shape',
+      offset: Number.isFinite(Number(c.offset)) ? Math.min(5, Math.max(0, Number(c.offset))) : 1,
+      preview: c.preview !== false,
+      pdfLines: c.pdfLines === true
+    };
+  }
+  const cutMode = (i, p) => i.cutMode || cutSettings(p.cut).mode;
   const LIMITS = { library: 10000, pack: 500, fonts: 30 };
   function fontsFor(items, fonts) {
     const families = new Set(),
@@ -798,6 +815,9 @@
     ungroup,
     fitPlacement,
     freeSpot,
+    CUT_MODES,
+    cutSettings,
+    cutMode,
     arrange,
     warnings,
     hasWhite,

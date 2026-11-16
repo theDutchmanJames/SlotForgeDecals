@@ -314,6 +314,11 @@ function render() {
   $('#white-ink').checked = project.whiteInk;
   $('#spot-name').value = project.spotName;
   $('#spot-name').disabled = !project.whiteInk;
+  const cut = DM.cutSettings(project.cut);
+  $('#cut-mode').value = cut.mode;
+  $('#cut-offset').value = cut.offset;
+  $('#cut-preview').checked = cut.preview;
+  $('#cut-pdf').checked = cut.pdfLines;
   const warnings = DM.warnings(project);
   $('#checks').classList.toggle('warn', !!warnings.length);
   $('#checks').innerHTML =
@@ -457,6 +462,28 @@ function renderPaper() {
       `<i class="tick-y ${n % 10 === 0 ? 'major' : ''}" style="top:${n * 5 * scale}px">${n % 10 === 0 ? `<span>${n * 5}</span>` : ''}</i>`
   ).join('');
   CanvasTools.draw();
+  drawCutPreview();
+}
+// Dashed cut lines drawn over the sheet. Contours are traced asynchronously and cached,
+// so a newer render simply replaces an older, unfinished one.
+let cutPreviewRun = 0;
+async function drawCutPreview() {
+  const run = ++cutPreviewRun,
+    settings = DM.cutSettings(project.cut);
+  if (!settings.preview) return;
+  try {
+    const shapes = await Cutlines.forPage(project, page, { pxPerMm: 8 });
+    if (run !== cutPreviewRun) return;
+    $('#cut-preview-layer')?.remove();
+    const d = shapes.map(s => Cutlines.pathData(s.polygons)).join(' ');
+    if (d.trim())
+      $('#paper').insertAdjacentHTML(
+        'beforeend',
+        `<path id="cut-preview-layer" d="${d}" fill="none" stroke="#d6249f" stroke-width=".2" stroke-dasharray="1.2 .7" pointer-events="none"/>`
+      );
+  } catch (e) {
+    console.warn('Cut line preview failed', e);
+  }
 }
 function prop(label, key, value, min = -10000, max = 10000, step = 0.1) {
   return `<div class="field"><label for="prop-${key}">${label}</label><input id="prop-${key}" data-prop="${key}" type="number" min="${min}" max="${max}" step="${step}" value="${Number(value.toFixed(2))}"></div>`;
@@ -487,7 +514,7 @@ function renderInspector() {
         : 'Scalable artwork';
   $('#inspector').innerHTML =
     `<h2 class="inspector-title">Selected decal <span class="artwork-badge" data-artwork-type="${E(artworkType)}">${E(artworkType)}</span><small class="hint">${E(quality)}${i.flipX || i.flipY ? ' · Mirrored' : ''}</small></h2><input class="inspector-name" id="decal-name" value="${E(i.name)}" aria-label="Decal name"><details class="folder blue" open><summary>Size & position</summary><div class="folder-body"><div class="fields2">${prop('Width (mm)', 'w', i.w, 0.1, 1000)}${prop('Height (mm)', 'h', i.h, 0.1, 1000)}</div><label class="check"><input id="aspect-lock" type="checkbox" ${settings.aspectLock !== false ? 'checked' : ''}>Keep proportions</label><div class="fields2" style="margin-top:10px">${prop('X (mm)', 'x', i.x)}${prop('Y (mm)', 'y', i.y)}</div><div class="fields2">${prop('Rotation (°)', 'rotation', i.rotation, -3600, 3600, 1)}<div class="field"><label>Copies to add</label><div class="unit-input"><input id="copies" type="number" value="1" min="1" max="100"><button data-action="copies" title="Add copies">+</button></div></div></div><button class="wide" data-action="save-decal">Save decal to library</button><div class="layer-actions"><button data-action="backward">Backward</button><button data-action="forward">Forward</button><button data-action="lock">${i.locked ? 'Unlock' : 'Lock'}</button></div></div></details>
- ${i.kind === 'svg' ? `<section class="folder blue"><h2>Vector artwork</h2><div class="folder-body"><button class="wide" data-action="edit-vector" ${i.locked ? 'disabled' : ''}>Edit Vector Artwork</button><p class="hint">Select and remove background shapes. Preview, undo or restore the original.</p></div></section>` : ''}${i.kind === 'path' ? `<section class="folder blue"><h2>Path editing</h2><div class="folder-body"><button class="wide" data-action="edit-path" ${i.locked ? 'disabled' : ''}>Edit Points & Curves</button></div></section>` : ''}${i.kind === 'stripe' || (i.shapeOptions && Object.hasOwn(ShapeTools.presets, i.shapeOptions.type)) ? `<section class="folder blue"><h2>Shape & pattern</h2><div class="folder-body"><button class="wide" data-action="edit-shape" ${i.locked ? 'disabled' : ''}>${i.kind === 'stripe' ? 'Stripe Count & Spacing' : 'Adjust Shape / Pattern'}</button></div></section>` : ''}${i.kind === 'svg' || i.kind === 'image' || i.artOutline ? `<section class="folder blue"><h2>Artwork outline</h2><div class="folder-body"><button class="wide" data-action="artwork-outline" ${i.locked ? 'disabled' : ''}>${i.artOutline ? 'Adjust outline' : 'Add silhouette outline'}</button>${i.artOutline ? `<button class="wide" data-action="remove-outline" ${i.locked ? 'disabled' : ''}>Remove outline</button>` : ''}</div></section>` : ''}${i.kind === 'group' && !i.artOutline ? `<section class="folder purple"><h2>Group contents</h2><div class="folder-body"><button class="wide primary" data-action="edit-group" ${i.locked ? 'disabled' : ''}>Edit group</button><p class="hint">Edit individual text and shapes while keeping this decal together.</p></div></section>` : ''}${i.kind === 'image' ? `<section class="folder blue"><h2>Image preparation</h2><div class="folder-body"><button class="wide" data-action="prepare-image" ${i.locked ? 'disabled' : ''}>${i.imageSource ? 'Adjust crop & background' : 'Crop & remove background'}</button><p class="hint">${i.imageSource ? 'Original retained. Cropping keeps the printed artwork scale.' : 'Crop empty borders and remove plain backgrounds before tracing.'}</p>${i.imageSource ? `<button class="wide" data-action="restore-prepared" ${i.locked ? 'disabled' : ''}>Restore original image</button>` : ''}</div></section>` : ''}${i.kind === 'image' || i.traceSource ? `<section class="folder teal"><h2>Image tracing</h2><div class="folder-body"><button class="wide primary" data-action="trace" ${i.locked ? 'disabled' : ''}>${i.traceSource ? 'Refine traced vector' : 'Trace image to vector'}</button><p class="hint">${i.traceSource ? 'Replace colours, remove shapes and compare details. Original retained.' : 'Turn logos and flat-colour images into scalable SVG paths. Review before applying.'}</p>${i.traceSource ? '<div class="row"><button data-action="restore-image">Restore image</button><button data-action="export-svg">Export SVG</button></div>' : ''}</div></section>` : ''}<details class="folder purple" ${i.kind === 'text' ? 'open' : ''}><summary>Text & appearance</summary><div class="folder-body">${i.kind === 'text' ? `<div class="field"><label>Text / number</label><input id="text-value" value="${E(i.text)}" maxlength="500"></div><div class="field"><label>Typeface</label><select id="font-select">${['Arial', 'Georgia', 'Verdana', 'Courier New', ...activeFonts().map(f => f.family)].map(f => `<option value="${E(f)}" ${f === i.font ? 'selected' : ''}>${E(activeFonts().find(x => x.family === f)?.name || f)}</option>`).join('')}</select><button class="wide installed-fonts-button" data-action="installed-fonts">Choose installed font…</button></div><div class="text-toolbar"><button data-action="bold" class="${i.bold ? 'active' : ''}"><b>B</b></button><button data-action="italic" class="${i.italic ? 'active' : ''}"><i>I</i></button><button data-action="font">Import font</button></div>${prop('Letter spacing', 'spacing', i.spacing || 0, -10, 50, 0.5)}${prop('Text bend (°)', 'curve', i.curve || 0, -300, 300, 5)}<p class="hint">Positive: arch up · Negative: curve down · 0: straight. Bending keeps letter size and centre; the overall dimensions change.</p>` : ''}${canPaint ? `<div class="fields2" style="margin-top:10px"><div class="field"><label>Fill colour</label><input type="color" id="fill" value="${i.fill === 'none' ? '#ffffff' : i.fill}"></div>${canOutline ? `<div class="field"><label>Outline colour</label><input type="color" id="stroke" value="${i.stroke}"></div>` : ''}</div><label class="check"><input id="no-fill" type="checkbox" ${i.fill === 'none' ? 'checked' : ''}>Transparent fill</label>${canOutline ? prop('Outline thickness (mm)', 'strokeWidth', i.strokeWidth, 0, 50) : prop(i.kind === 'stripe' ? 'Overall stripe thickness (mm)' : 'Line thickness (mm)', 'thickness', i.h, 0.1, 1000)}${i.kind === 'stripe' ? '<p class="hint">Total height of both stripes and their gap. Length stays unchanged.</p>' : ''}${i.kind === 'rect' ? prop('Corner radius (mm)', 'radius', i.radius || 0, 0, 500) : ''}${i.kind === 'stripe' ? `<div class="field"><label>Second stripe colour</label><input id="fill2" type="color" value="${i.fill2 || '#245cc3'}"></div>` : ''}` : '<p class="hint">Original artwork is preserved. Resize, rotate or group it with new text and shapes.</p>'}<div class="field"><label for="prop-opacity">Opacity</label><div class="opacity-control"><input id="opacity-range" type="range" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}" aria-label="Opacity slider"><div class="unit-input"><input id="prop-opacity" type="number" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}"><span>%</span></div></div></div><div class="field"><label>Ink treatment</label><select id="ink"><option value="colour">Colour artwork</option><option value="colour-white">Colour + white backing</option><option value="white-only">White ink only</option></select></div><button class="wide danger" data-action="delete">Delete from sheet</button></div></details>`;
+ ${i.kind === 'svg' ? `<section class="folder blue"><h2>Vector artwork</h2><div class="folder-body"><button class="wide" data-action="edit-vector" ${i.locked ? 'disabled' : ''}>Edit Vector Artwork</button><p class="hint">Select and remove background shapes. Preview, undo or restore the original.</p></div></section>` : ''}${i.kind === 'path' ? `<section class="folder blue"><h2>Path editing</h2><div class="folder-body"><button class="wide" data-action="edit-path" ${i.locked ? 'disabled' : ''}>Edit Points & Curves</button></div></section>` : ''}${i.kind === 'stripe' || (i.shapeOptions && Object.hasOwn(ShapeTools.presets, i.shapeOptions.type)) ? `<section class="folder blue"><h2>Shape & pattern</h2><div class="folder-body"><button class="wide" data-action="edit-shape" ${i.locked ? 'disabled' : ''}>${i.kind === 'stripe' ? 'Stripe Count & Spacing' : 'Adjust Shape / Pattern'}</button></div></section>` : ''}${i.kind === 'svg' || i.kind === 'image' || i.artOutline ? `<section class="folder blue"><h2>Artwork outline</h2><div class="folder-body"><button class="wide" data-action="artwork-outline" ${i.locked ? 'disabled' : ''}>${i.artOutline ? 'Adjust outline' : 'Add silhouette outline'}</button>${i.artOutline ? `<button class="wide" data-action="remove-outline" ${i.locked ? 'disabled' : ''}>Remove outline</button>` : ''}</div></section>` : ''}${i.kind === 'group' && !i.artOutline ? `<section class="folder purple"><h2>Group contents</h2><div class="folder-body"><button class="wide primary" data-action="edit-group" ${i.locked ? 'disabled' : ''}>Edit group</button><p class="hint">Edit individual text and shapes while keeping this decal together.</p></div></section>` : ''}${i.kind === 'image' ? `<section class="folder blue"><h2>Image preparation</h2><div class="folder-body"><button class="wide" data-action="prepare-image" ${i.locked ? 'disabled' : ''}>${i.imageSource ? 'Adjust crop & background' : 'Crop & remove background'}</button><p class="hint">${i.imageSource ? 'Original retained. Cropping keeps the printed artwork scale.' : 'Crop empty borders and remove plain backgrounds before tracing.'}</p>${i.imageSource ? `<button class="wide" data-action="restore-prepared" ${i.locked ? 'disabled' : ''}>Restore original image</button>` : ''}</div></section>` : ''}${i.kind === 'image' || i.traceSource ? `<section class="folder teal"><h2>Image tracing</h2><div class="folder-body"><button class="wide primary" data-action="trace" ${i.locked ? 'disabled' : ''}>${i.traceSource ? 'Refine traced vector' : 'Trace image to vector'}</button><p class="hint">${i.traceSource ? 'Replace colours, remove shapes and compare details. Original retained.' : 'Turn logos and flat-colour images into scalable SVG paths. Review before applying.'}</p>${i.traceSource ? '<div class="row"><button data-action="restore-image">Restore image</button><button data-action="export-svg">Export SVG</button></div>' : ''}</div></section>` : ''}<details class="folder purple" ${i.kind === 'text' ? 'open' : ''}><summary>Text & appearance</summary><div class="folder-body">${i.kind === 'text' ? `<div class="field"><label>Text / number</label><input id="text-value" value="${E(i.text)}" maxlength="500"></div><div class="field"><label>Typeface</label><select id="font-select">${['Arial', 'Georgia', 'Verdana', 'Courier New', ...activeFonts().map(f => f.family)].map(f => `<option value="${E(f)}" ${f === i.font ? 'selected' : ''}>${E(activeFonts().find(x => x.family === f)?.name || f)}</option>`).join('')}</select><button class="wide installed-fonts-button" data-action="installed-fonts">Choose installed font…</button></div><div class="text-toolbar"><button data-action="bold" class="${i.bold ? 'active' : ''}"><b>B</b></button><button data-action="italic" class="${i.italic ? 'active' : ''}"><i>I</i></button><button data-action="font">Import font</button></div>${prop('Letter spacing', 'spacing', i.spacing || 0, -10, 50, 0.5)}${prop('Text bend (°)', 'curve', i.curve || 0, -300, 300, 5)}<p class="hint">Positive: arch up · Negative: curve down · 0: straight. Bending keeps letter size and centre; the overall dimensions change.</p>` : ''}${canPaint ? `<div class="fields2" style="margin-top:10px"><div class="field"><label>Fill colour</label><input type="color" id="fill" value="${i.fill === 'none' ? '#ffffff' : i.fill}"></div>${canOutline ? `<div class="field"><label>Outline colour</label><input type="color" id="stroke" value="${i.stroke}"></div>` : ''}</div><label class="check"><input id="no-fill" type="checkbox" ${i.fill === 'none' ? 'checked' : ''}>Transparent fill</label>${canOutline ? prop('Outline thickness (mm)', 'strokeWidth', i.strokeWidth, 0, 50) : prop(i.kind === 'stripe' ? 'Overall stripe thickness (mm)' : 'Line thickness (mm)', 'thickness', i.h, 0.1, 1000)}${i.kind === 'stripe' ? '<p class="hint">Total height of both stripes and their gap. Length stays unchanged.</p>' : ''}${i.kind === 'rect' ? prop('Corner radius (mm)', 'radius', i.radius || 0, 0, 500) : ''}${i.kind === 'stripe' ? `<div class="field"><label>Second stripe colour</label><input id="fill2" type="color" value="${i.fill2 || '#245cc3'}"></div>` : ''}` : '<p class="hint">Original artwork is preserved. Resize, rotate or group it with new text and shapes.</p>'}<div class="field"><label for="prop-opacity">Opacity</label><div class="opacity-control"><input id="opacity-range" type="range" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}" aria-label="Opacity slider"><div class="unit-input"><input id="prop-opacity" type="number" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}"><span>%</span></div></div></div><div class="field"><label>Ink treatment</label><select id="ink"><option value="colour">Colour artwork</option><option value="colour-white">Colour + white backing</option><option value="white-only">White ink only</option></select></div><div class="field"><label for="cut-override">Cut line</label><select id="cut-override"><option value="">Sheet setting (${E({ shape: 'follow shape', rect: 'rectangle', none: 'no cut line' }[DM.cutSettings(project.cut).mode])})</option><option value="shape">Follow the decal shape</option><option value="rect">Rectangle</option><option value="none">No cut line</option></select></div><button class="wide danger" data-action="delete">Delete from sheet</button></div></details>`;
   const change = fn => {
     try {
       mutate(() => {
@@ -562,9 +589,15 @@ function renderInspector() {
     $('#ink').title = 'Slices retain the individual ink settings of their original decals.';
   }
   $('#ink').onchange = e => change(i => (i.ink = e.target.value));
+  $('#cut-override').value = i.cutMode || '';
+  $('#cut-override').onchange = e =>
+    change(i => {
+      if (e.target.value) i.cutMode = e.target.value;
+      else delete i.cutMode;
+    });
   if (i.locked) {
     for (const el of $$(
-      '#inspector [data-prop],#decal-name,#text-value,#font-select,#fill,#stroke,#fill2,#no-fill,#ink,#opacity-range,#prop-opacity'
+      '#inspector [data-prop],#decal-name,#text-value,#font-select,#fill,#stroke,#fill2,#no-fill,#ink,#opacity-range,#prop-opacity,#cut-override'
     ))
       el.disabled = true;
     for (const b of $$('#inspector [data-action]'))
@@ -1266,7 +1299,19 @@ async function exportPDF(proof = false, confirmed = false) {
   try {
     await Art.loadFonts(snapshot.fonts);
     const masks = !proof && snapshot.whiteInk ? await Art.masks(snapshot) : null;
-    const html = Art.printHTML(snapshot, proof);
+    // Optional printed cut lines: a thin dark hairline for hand cutting and ScanNCut scanning.
+    const cut = DM.cutSettings(snapshot.cut),
+      extras = [];
+    if (!proof && cut.pdfLines)
+      for (let n = 0; n < snapshot.pages; n++) {
+        const d = (await Cutlines.forPage(snapshot, n, { pxPerMm: 20 }))
+          .map(s => Cutlines.pathData(s.polygons))
+          .join(' ');
+        extras[n] = d.trim()
+          ? `<path d="${d}" fill="none" stroke="#3a3a3a" stroke-width=".15" stroke-linejoin="round"/>`
+          : '';
+      }
+    const html = Art.printHTML(snapshot, proof, undefined, extras);
     const file = await desktop.exportPDF({
       html,
       name: snapshot.name + (proof ? '-sizing-proof' : ''),
@@ -1366,6 +1411,10 @@ const HELP_TOPICS = [
   [
     'Print & white ink',
     '<p>Export a <strong>sizing proof</strong> first and print it on plain paper at <strong>Actual size / 100%</strong>, with Fit to page disabled. Measure the labelled 50/100 mm bars, then export the final PDF.</p><div class="notice"><strong>White ink:</strong> enable the printer option, set its required spot name, and choose Colour + white backing or White ink only on a decal. Export uses an alpha-thresholded 600 PPI white mask. Confirm ink order and spot recognition with your print shop; this has not been validated on physical printers. RGB artwork is preserved; PDF/X and colour-proof certification are not provided.</div>'
+  ],
+  [
+    'Print & cut',
+    '<p>Under <strong>Print &amp; cut</strong> in the right panel, choose whether cut lines <strong>follow the decal shape</strong> or form a <strong>rectangle</strong>, and how far they sit around the artwork (offset, default 1 mm). Nearby parts such as letters share one cut line; holes are not cut. Dashed lines on the sheet show the result. Override a single decal with <strong>Cut line</strong> in its Text &amp; appearance settings.</p><p><strong>Export for cutter…</strong> saves a folder for Silhouette Studio (including the free Basic edition), Cricut Design Space or Brother ScanNCut, with an INSTRUCTIONS.txt. Each decal becomes a 300 DPI PNG with a white border along its cut line: inkjets print white as no ink, while the cutter software traces the border. Sheet files keep the exact layout: a page PNG with DXF cut lines for Silhouette, or an SVG with print and cut layers. The cutter software adds its own registration marks.</p><p>For cutting <strong>by hand</strong> or scanning with a ScanNCut, enable <strong>Print cut lines in the PDF</strong>. Always test on plain paper first.</p>'
   ],
   [
     'Keyboard shortcuts',
@@ -1910,6 +1959,7 @@ const actions = {
   'restore-backup': () => $('#backup-file').click(),
   font: () => $('#font-file').click(),
   'installed-fonts': installedFontsDialog,
+  'cutter-export': () => CutterExport.open(project),
   new: newProject,
   demo: () => {
     const open = () =>
@@ -2208,6 +2258,27 @@ for (const [id, key] of [
       render();
     }
   };
+// Print & cut panel: every change is one undoable sheet edit.
+for (const [id, key] of [
+  ['cut-mode', 'mode'],
+  ['cut-offset', 'offset'],
+  ['cut-preview', 'preview'],
+  ['cut-pdf', 'pdfLines']
+])
+  $('#' + id).onchange = e => {
+    try {
+      const value =
+        e.target.type === 'checkbox'
+          ? e.target.checked
+          : e.target.type === 'number'
+            ? DM.number(e.target.value, 0, 5, 'Cut offset')
+            : e.target.value;
+      mutate(() => (project.cut = { ...DM.cutSettings(project.cut), [key]: value }));
+    } catch (err) {
+      fail(err);
+      render();
+    }
+  };
 $('#art-file').onchange = e => {
   const files = [...e.target.files];
   e.target.value = '';
@@ -2359,7 +2430,13 @@ window.Studio = {
     render();
   },
   flush,
-  exportPDF
+  exportPDF,
+  // Turns on printed cut lines (an undoable sheet setting) and opens the PDF export review.
+  exportWithCutLines() {
+    if (!DM.cutSettings(project.cut).pdfLines)
+      mutate(() => (project.cut = { ...DM.cutSettings(project.cut), pdfLines: true }));
+    return exportPDF(false).catch(fail);
+  }
 };
 $('#sidebar-library summary').addEventListener('click', () => {
   settings.sidebarLibraryOpen = !$('#sidebar-library').open;

@@ -128,6 +128,20 @@ The original sheet stays unchanged. Saved slices can be moved, rotated and resiz
 
 Print the PDF at **Actual size / 100%**. Custom paper sizes and physical offcuts depend on your printer’s supported sizes, feed direction and margins; slicing does not position or feed an offcut automatically.
 
+### Print & cut with a cutting machine or by hand
+
+Under **Print & cut**, choose whether cut lines **follow each decal's shape** or form a **rectangle**, and set the offset around the artwork (default 1 mm). Nearby parts such as letters share one cut line, holes are not cut, and dashed lines on the sheet preview the result. Single decals can override the sheet setting.
+
+**Export for cutter…** saves a folder with step-by-step instructions for your machine:
+
+| Machine | Files |
+| --- | --- |
+| **Silhouette Studio** (including the free Basic edition) | A 300 DPI PNG per decal with a white cut border, plus a page PNG and DXF cut lines for the exact layout |
+| **Cricut Design Space** | The decal PNGs for Print Then Cut, plus an SVG of each page with print and cut layers |
+| **Brother ScanNCut** | An SVG of each page with print and cut layers for CanvasWorkspace Print to Cut, plus the decal PNGs |
+
+Inkjet printers print white as no ink, so the white border stays invisible on the decal while the cutter software traces it. The cutter software adds its own registration marks. For cutting **by hand** or scanning a printed sheet with a ScanNCut, enable **Print cut lines in the PDF**. These files have been checked for size and structure, but not yet on every machine: test on plain paper first.
+
 ### Export PDFs and check your print size
 
 **Export PDF** produces pages at the selected paper dimensions and orientation. Supported vector artwork, text and shapes remain vectors; imported bitmap content remains raster. Export individual decal artwork as SVG when you need a reusable graphic.

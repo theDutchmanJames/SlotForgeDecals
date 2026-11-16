@@ -310,7 +310,7 @@
     return `<svg xmlns="${NS}" width="${b.w}mm" height="${b.h}mm" viewBox="${b.x} ${b.y} ${b.w} ${b.h}"><style>${fontsCSS(fonts)}</style>${element({ ...i, x: 0, y: 0 }, 'preview', 'all')}</svg>`;
   }
   const url = svg => 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-  function sheet(p, page, proof = false, white = false, dimensions, preview = false) {
+  function sheet(p, page, proof = false, white = false, dimensions, preview = false, extra = '') {
     const s = dimensions || DM.size(p);
     let content = p.items
       .filter(i => i.page === page && (white ? DM.hasWhite(i) : proof || preview || i.ink !== 'white-only'))
@@ -326,7 +326,7 @@
       const bars = DM.proofBars(p);
       content += `<path d="M 10 ${s.h - 8} h ${bars.x} m ${-bars.x} -2 v 4 m ${bars.x} -4 v 4 M ${s.w - 8} 10 v ${bars.y} m -2 ${-bars.y} h 4 m -4 ${bars.y} h 4" fill="none" stroke="#333" stroke-width=".2"/><text x="10" y="${s.h - 15}" font-size="2.5" fill="#333">${bars.x} mm horizontal · ${bars.y} mm vertical</text><text x="10" y="${s.h - 11}" font-size="2.5" fill="#333">PRINT AT ACTUAL SIZE / 100%</text><rect x="${p.margin}" y="${p.margin}" width="${s.w - p.margin * 2}" height="${s.h - p.margin * 2}" fill="none" stroke="#999" stroke-width=".15" stroke-dasharray="1 1"/>`;
     }
-    return `<svg xmlns="${NS}" width="${s.w}mm" height="${s.h}mm" viewBox="0 0 ${s.w} ${s.h}"><style>${fontsCSS(p.fonts)}</style>${content}</svg>`;
+    return `<svg xmlns="${NS}" width="${s.w}mm" height="${s.h}mm" viewBox="0 0 ${s.w} ${s.h}"><style>${fontsCSS(p.fonts)}</style>${content}${extra}</svg>`;
   }
   async function masks(p, dimensions) {
     const s = dimensions || DM.size(p),
@@ -361,9 +361,10 @@
     }
     return out;
   }
-  function printHTML(p, proof = false, dimensions) {
+  // extras[page] is extra SVG markup drawn on top of that page, such as printed cut lines.
+  function printHTML(p, proof = false, dimensions, extras = []) {
     const s = dimensions || DM.size(p);
-    return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:;"><style>@page{size:${s.w}mm ${s.h}mm;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0}section{width:${s.w}mm;height:${s.h}mm;overflow:hidden;break-after:page}section:last-child{break-after:auto}svg{display:block}${fontsCSS(p.fonts)}</style></head><body>${Array.from({ length: p.pages }, (_, page) => `<section>${sheet(p, page, proof, false, dimensions)}</section>`).join('')}</body></html>`;
+    return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:;"><style>@page{size:${s.w}mm ${s.h}mm;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0}section{width:${s.w}mm;height:${s.h}mm;overflow:hidden;break-after:page}section:last-child{break-after:auto}svg{display:block}${fontsCSS(p.fonts)}</style></head><body>${Array.from({ length: p.pages }, (_, page) => `<section>${sheet(p, page, proof, false, dimensions, false, extras[page] || '')}</section>`).join('')}</body></html>`;
   }
   const loadedFonts = new Map();
   let pinnedFonts = new Set();

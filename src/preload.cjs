@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('desktop', {
   importProjects: data => ipcRenderer.invoke('projects-import', data),
   exportFile: (type, name, data) => ipcRenderer.invoke('export-file', { type, name, data }),
   exportPDF: payload => ipcRenderer.invoke('export-pdf', payload),
+  exportCutPackage: payload => ipcRenderer.invoke('export-cut-package', payload),
   convert: payload => ipcRenderer.invoke('convert', payload),
   reloadWorkspace: () => ipcRenderer.send('reload-workspace'),
   storageStats: () => ipcRenderer.invoke('storage-stats'),
