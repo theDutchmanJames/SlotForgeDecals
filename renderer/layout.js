@@ -118,5 +118,52 @@
     for (const i of list) i.page = page;
     return out;
   }
-  return { selection, gridPlan, grid, align, distribute, mirror, movePage };
+  // Left/right pair: copies of the selection mirrored horizontally (layout included), for the
+  // other side of the car. Text keeps reading correctly: a text decal is copied unflipped and
+  // text inside groups is flipped back within its own box. Copies go to free space.
+  function mirroredPair(p, ids) {
+    const out = DM.clone(p),
+      list = selection(out, ids, 1);
+    if (out.items.length + list.length > 2000) throw Error('A project supports up to 2,000 decals.');
+    const boxes = list.map(DM.bounds),
+      left = Math.min(...boxes.map(b => b.x)),
+      right = Math.max(...boxes.map(b => b.x + b.w)),
+      top = Math.min(...boxes.map(b => b.y)),
+      bottom = Math.max(...boxes.map(b => b.y + b.h));
+    const readable = i => {
+      if (i.kind === 'text') i.flipX = !i.flipX;
+      if (i.kind === 'group' || i.kind === 'slice') i.children.forEach(readable);
+    };
+    const copies = list.map(source => {
+      const c = DM.clone(source);
+      c.id = DM.uid();
+      c.locked = false;
+      delete c.carPositions;
+      c.name = String(source.name || 'Decal').slice(0, 148) + ' (mirrored)';
+      c.x = left + right - (source.x + source.w);
+      if (c.kind !== 'text') {
+        c.flipX = !c.flipX;
+        c.rotation = -(c.rotation || 0);
+        if (c.kind === 'group' || c.kind === 'slice') c.children.forEach(readable);
+      } else c.rotation = -(c.rotation || 0);
+      return c;
+    });
+    // Find room for the whole mirrored set, keeping its internal layout.
+    const block = DM.item('rect', { x: left, y: top, w: right - left, h: bottom - top }),
+      page = list[0].page,
+      spot = DM.freeSpot(
+        block,
+        out,
+        out.items.filter(i => i.page === page)
+      ),
+      dx = spot ? spot.x - left : 5,
+      dy = spot ? spot.y - top : 5;
+    for (const c of copies) {
+      c.x += dx;
+      c.y += dy;
+      out.items.push(c);
+    }
+    return { project: out, ids: copies.map(c => c.id), placed: !!spot };
+  }
+  return { selection, gridPlan, grid, align, distribute, mirror, movePage, mirroredPair };
 });

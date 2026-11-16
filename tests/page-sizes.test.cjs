@@ -19,7 +19,7 @@ test('Supported paper dimensions, orientation and legacy A4 are exact', () => {
   const old = DM.project();
   delete old.pageSize;
   assert.equal(DM.validateProject(old).pageSize, 'a4');
-  assert.throws(() => DM.validateProject({ ...old, pageSize: 'letter' }), /Unsupported sheet size/);
+  assert.throws(() => DM.validateProject({ ...old, pageSize: 'tabloid' }), /Unsupported sheet size/);
   assert.throws(() => DM.size({ pageSize: '__proto__' }));
   assert.throws(() => DM.size({ pageSize: ['a4'] }));
 });
@@ -96,4 +96,16 @@ test('Exact PDF boxes and white separation retain all paper sizes', async () => 
       assert(Math.abs(out.getPage(0).getWidth() - (s.w * 72) / 25.4) < 0.00001);
       assert(Math.abs(out.getPage(0).getHeight() - (s.h * 72) / 25.4) < 0.00001);
     }
+});
+
+test('US Letter and custom paper sizes, including validation and orientation', () => {
+  assert.deepEqual(DM.size({ pageSize: 'letter' }), { w: 215.9, h: 279.4 });
+  const p = DM.validateProject({ ...DM.project(), pageSize: 'custom', customPage: { w: '120.04', h: 180 } });
+  assert.deepEqual(p.customPage, { w: 120, h: 180 });
+  assert.deepEqual(DM.size({ ...p, orientation: 'landscape' }), { w: 180, h: 120 });
+  assert.equal(DM.pageFormat(p).label, 'Custom 120 × 180 mm');
+  assert.equal(DM.fileVersion(p), 2);
+  assert.throws(() => DM.validateProject({ ...p, customPage: { w: 20, h: 180 } }), /Custom paper width/);
+  assert.throws(() => DM.validateProject({ ...p, customPage: undefined }), /Custom paper width/);
+  assert.equal(DM.validateProject({ ...p, pageSize: 'a4' }).customPage, undefined);
 });

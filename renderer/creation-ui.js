@@ -25,6 +25,7 @@
      .map(([k, v]) => `<option value="${k}">${v}</option>`)
      .join('')}</select></div>
    <div class="field"><label for="number-text">Race number</label><input id="number-text" value="27" maxlength="6"></div>
+   <div class="field"><label for="number-batch">More numbers (optional)</label><input id="number-batch" placeholder="For a whole grid, e.g. 1-12, 21, 33"></div>
    <div class="fields2"><div class="field"><label for="number-w">Width (mm)</label><input id="number-w" type="number" min="5" max="150" step=".1" value="18"></div><div class="field"><label for="number-h">Height (mm)</label><input id="number-h" type="number" min="5" max="150" step=".1" value="18" disabled></div></div>
    <div class="field"><label for="number-font">Typeface</label><select id="number-font">${fontOptions('Arial')}</select></div><label class="check"><input id="number-bold" type="checkbox" checked>Bold number</label>
    <div class="number-colours">${[
@@ -42,7 +43,9 @@
       '<button data-action="close">Cancel</button><button class="primary" id="number-add">Add to sheet</button>',
       true
     );
-    let decal;
+    let decal,
+      batch = [],
+      lastOptions = null;
     function update() {
       try {
         const style = q('#number-style').value;
@@ -62,10 +65,15 @@
         for (const key of ['w', 'h', 'border', 'background', 'foreground', 'outline'])
           options[key] = q('#number-' + key).value;
         decal = Creation.numberTemplate(options, Art.textBox);
+        batch = Creation.numberList(q('#number-batch').value);
+        options.batchOf = batch.length;
+        lastOptions = options;
         q('#number-preview').innerHTML =
           `<img alt="Racing number preview" src="${Art.url(Art.standalone(decal, activeFonts()))}">`;
-        q('#number-size').textContent =
-          `${decal.w.toFixed(1)} × ${decal.h.toFixed(1)} mm each · ${q('#number-count').value === '2' ? 'Two identical decals' : 'One decal'} · Vector artwork`;
+        const per = q('#number-count').value === '2' ? 2 : 1;
+        q('#number-size').textContent = batch.length
+          ? `${decal.w.toFixed(1)} × ${decal.h.toFixed(1)} mm each · ${batch.length} numbers (${batch.slice(0, 4).join(', ')}${batch.length > 4 ? ', …' : ''}) · ${batch.length * per} decals · Vector artwork`
+          : `${decal.w.toFixed(1)} × ${decal.h.toFixed(1)} mm each · ${per === 2 ? 'Two identical decals' : 'One decal'} · Vector artwork`;
         q('#dialog-error').textContent = '';
         q('#number-add').disabled = false;
       } catch (e) {
@@ -80,7 +88,14 @@
       try {
         update();
         if (!decal) return;
-        commit(decal, Number(q('#number-count').value));
+        const count = Number(q('#number-count').value);
+        // A batch builds one plate per number in the same style; otherwise just this decal.
+        commit(
+          batch.length
+            ? batch.map(text => Creation.numberTemplate({ ...lastOptions, text }, Art.textBox))
+            : decal,
+          count
+        );
         closeDialog();
       } catch (e) {
         q('#dialog-error').textContent = e.message;

@@ -8,7 +8,7 @@
 
 **Create decals. Check the fit. Print at the right size.**
 
-SlotForge Decals is a desktop app for preparing printable slotcar decals. Import your own artwork, add text and shapes, set exact dimensions, and arrange everything on A4, A5 or 4×6-inch sheets. Check your designs against a car reference, then export a PDF for your home printer or print shop.
+SlotForge Decals is a desktop app for preparing printable slotcar decals. Import your own artwork, add text and shapes, set exact dimensions, and arrange everything on A4, A5, US Letter, 4×6-inch or custom-size sheets. Check your designs against a car reference, then export a PDF for your home printer or print shop.
 
 Build a reusable decal library and share editable designs with other enthusiasts. **Everything runs locally, without an account.**
 
@@ -71,7 +71,8 @@ Build your own designs directly on the sheet:
 - Add editable text, choose any font installed on your computer or import a font file, adjust spacing and bend lettering into an arc. Chosen fonts are embedded in the sheet, so PDFs and shared files keep them.
 - Pick colours with an eyedropper or from quick swatches of your recent colours and the colours already on the sheet; set opacity with a percentage slider.
 - Draw rectangles, ellipses, triangles, lines and racing stripes, with colour and outline controls.
-- Create racing-number roundels, oval plates and rectangular plates, individually or as matching pairs.
+- Create racing-number roundels, oval plates and rectangular plates, individually or as matching pairs, or for a whole grid at once (for example numbers 1-30, 44, 51).
+- Recolour a design: every colour in the selected decals, including inside SVG artwork, can be replaced in one step for team variants.
 - Add a silhouette outline around imported artwork, following its outer edge and transparent cut-outs.
 - Combine elements into a group, then edit individual parts—including nested groups—without rebuilding the design.
 
@@ -104,6 +105,8 @@ Choose **Sheet size** beside the project name, then set portrait or landscape un
 | **A4** | 210 × 297 mm |
 | **A5** | 148 × 210 mm |
 | **Photo 4×6 in** | 101.6 × 152.4 mm |
+| **US Letter** | 215.9 × 279.4 mm |
+| **Custom** | any size from 50 to 600 mm |
 
 Every page in a project uses the same paper size. Changing paper preserves decal dimensions and positions; review anything that no longer fits on a smaller sheet.
 
@@ -111,6 +114,7 @@ Every page in a project uses the same paper size. Changing paper preserves decal
 - Move, resize, rotate, mirror, group and layer artwork. Lock finished placements and use up to 200 undo/redo steps while editing.
 - Copy, cut and paste decals with Ctrl+C / Ctrl+X / Ctrl+V, also between sheets. Paste a copied image, screenshot or SVG code to import it. New artwork is placed in free space on the page.
 - Repeat a decal or selection in rows and columns, with separate horizontal and vertical gaps.
+- Add a mirrored copy for the other side of the car: directional graphics flip, editable text stays readable (lettering inside imported logos is mirrored too).
 - Align edges or centres, distribute equal gaps, and move selections between pages.
 - Use **Auto-arrange** to fit artwork within the margins, adding pages when needed while preserving physical size.
 

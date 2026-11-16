@@ -228,64 +228,71 @@ else {
           child.postMessage(data);
         })
     );
-    handle('export-pdf', async ({ html, name, pageSize = 'a4', landscape, masks, spotName, customSize }) => {
-      const DM = require('../renderer/model.js'),
-        printDimensions = DM.size({ pageSize, orientation: landscape ? 'landscape' : 'portrait' });
-      // Render on the standard sheet first. Chromium quantizes tiny CSS page sizes;
-      // cropping the resulting PDF preserves the original artwork scale.
-      const dimensions = customSize
-        ? {
-            w: DM.number(customSize.w, 1, printDimensions.w, 'Slice width'),
-            h: DM.number(customSize.h, 1, printDimensions.h, 'Slice height')
-          }
-        : printDimensions;
-      if (typeof html !== 'string' || html.length > 100e6) throw Error('Invalid print document.');
-      let file;
-      if (process.env.SLOTFORGE_EXPORT_DIR) {
-        await fs.mkdir(process.env.SLOTFORGE_EXPORT_DIR, { recursive: true });
-        file = path.join(process.env.SLOTFORGE_EXPORT_DIR, safeName(name) + '.pdf');
-      } else {
-        const result = await dialog.showSaveDialog(win, {
-          defaultPath: path.join(root, 'Exports', safeName(name) + '.pdf'),
-          filters: [{ name: 'PDF document', extensions: ['pdf'] }]
+    handle(
+      'export-pdf',
+      async ({ html, name, pageSize = 'a4', customPage, landscape, masks, spotName, customSize }) => {
+        const DM = require('../renderer/model.js'),
+          printDimensions = DM.size({
+            pageSize,
+            customPage,
+            orientation: landscape ? 'landscape' : 'portrait'
+          });
+        // Render on the standard sheet first. Chromium quantizes tiny CSS page sizes;
+        // cropping the resulting PDF preserves the original artwork scale.
+        const dimensions = customSize
+          ? {
+              w: DM.number(customSize.w, 1, printDimensions.w, 'Slice width'),
+              h: DM.number(customSize.h, 1, printDimensions.h, 'Slice height')
+            }
+          : printDimensions;
+        if (typeof html !== 'string' || html.length > 100e6) throw Error('Invalid print document.');
+        let file;
+        if (process.env.SLOTFORGE_EXPORT_DIR) {
+          await fs.mkdir(process.env.SLOTFORGE_EXPORT_DIR, { recursive: true });
+          file = path.join(process.env.SLOTFORGE_EXPORT_DIR, safeName(name) + '.pdf');
+        } else {
+          const result = await dialog.showSaveDialog(win, {
+            defaultPath: path.join(root, 'Exports', safeName(name) + '.pdf'),
+            filters: [{ name: 'PDF document', extensions: ['pdf'] }]
+          });
+          if (result.canceled) return null;
+          file = result.filePath;
+        }
+        const print = new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: true, nodeIntegration: false, contextIsolation: true }
         });
-        if (result.canceled) return null;
-        file = result.filePath;
-      }
-      const print = new BrowserWindow({
-        show: false,
-        webPreferences: { sandbox: true, nodeIntegration: false, contextIsolation: true }
-      });
-      print.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-      // Isolated print window has no app APIs and cannot fetch network resources.
-      const temp = path.join(
-        app.getPath('temp'),
-        'slotforge-decals-' + require('node:crypto').randomUUID() + '.html'
-      );
-      try {
-        await fs.writeFile(temp, html);
-        await print.loadFile(temp);
-        await print.webContents.executeJavaScript(
-          'Promise.all([document.fonts.ready,...Array.from(document.images).map(i=>i.decode())]).then(()=>true)'
+        print.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+        // Isolated print window has no app APIs and cannot fetch network resources.
+        const temp = path.join(
+          app.getPath('temp'),
+          'slotforge-decals-' + require('node:crypto').randomUUID() + '.html'
         );
-        let bytes = await print.webContents.printToPDF({
-          printBackground: true,
-          preferCSSPageSize: true,
-          pageSize: { width: printDimensions.w / 25.4, height: printDimensions.h / 25.4 },
-          landscape: false,
-          margins: { top: 0, bottom: 0, left: 0, right: 0 },
-          displayHeaderFooter: false
-        });
-        bytes = await require('./white-pdf.cjs').exactPage(bytes, dimensions);
-        if (masks?.some(Boolean))
-          bytes = await require('./white-pdf.cjs').addWhitePlate(bytes, masks, spotName);
-        await writeExport(root, file, 'pdf', bytes);
-        return file;
-      } finally {
-        print.destroy();
-        await fs.unlink(temp).catch(() => {});
+        try {
+          await fs.writeFile(temp, html);
+          await print.loadFile(temp);
+          await print.webContents.executeJavaScript(
+            'Promise.all([document.fonts.ready,...Array.from(document.images).map(i=>i.decode())]).then(()=>true)'
+          );
+          let bytes = await print.webContents.printToPDF({
+            printBackground: true,
+            preferCSSPageSize: true,
+            pageSize: { width: printDimensions.w / 25.4, height: printDimensions.h / 25.4 },
+            landscape: false,
+            margins: { top: 0, bottom: 0, left: 0, right: 0 },
+            displayHeaderFooter: false
+          });
+          bytes = await require('./white-pdf.cjs').exactPage(bytes, dimensions);
+          if (masks?.some(Boolean))
+            bytes = await require('./white-pdf.cjs').addWhitePlate(bytes, masks, spotName);
+          await writeExport(root, file, 'pdf', bytes);
+          return file;
+        } finally {
+          print.destroy();
+          await fs.unlink(temp).catch(() => {});
+        }
       }
-    });
+    );
     ipcMain.on('reload-workspace', e => {
       if (e.sender === win.webContents && e.senderFrame === win.webContents.mainFrame)
         win.webContents.reload();

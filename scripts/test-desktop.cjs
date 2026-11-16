@@ -26,7 +26,8 @@ const suites = [
   'review-fixes',
   'quick-wins',
   'collections',
-  'print-cut'
+  'print-cut',
+  'sheet-tools'
 ];
 for (const suite of suites) {
   console.log(`Desktop check: ${suite}`);

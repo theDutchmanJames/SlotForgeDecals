@@ -174,6 +174,7 @@ function slicePrintPreview(state, result, cropped) {
         html: Art.printHTML(out.project),
         name: out.project.name,
         pageSize: out.project.pageSize,
+        customPage: out.project.customPage,
         landscape: out.project.orientation === 'landscape',
         ...(cropped ? { customSize: s } : {}),
         masks,

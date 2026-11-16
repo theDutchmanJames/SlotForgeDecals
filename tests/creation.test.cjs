@@ -113,3 +113,14 @@ test('removal keeps groups valid, additions undo cleanly and drafts are detached
   assert.throws(() => s.change([], i => (i.w = 99)), /contents/);
   assert.throws(() => s.change([55], () => {}), /no longer/);
 });
+
+test('batch race numbers parse ranges, lists and zero-padded starts', () => {
+  const { numberList } = require('../renderer/creation.js');
+  assert.deepEqual(numberList('1-5, 9 12;7A'), ['1', '2', '3', '4', '5', '9', '12', '7A']);
+  assert.deepEqual(numberList('01-03'), ['01', '02', '03']);
+  assert.deepEqual(numberList('5, 5, 4-6'), ['5', '4', '6']);
+  assert.deepEqual(numberList(''), []);
+  assert.throws(() => numberList('9-3'), /low to high/);
+  assert.throws(() => numberList('1-500'), /at most 200/);
+  assert.throws(() => numberList('<b>'), /not a number/);
+});

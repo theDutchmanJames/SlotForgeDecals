@@ -36,12 +36,24 @@
   const PAGE_SIZES = Object.freeze({
     a4: Object.freeze({ label: 'A4', w: 210, h: 297 }),
     a5: Object.freeze({ label: 'A5', w: 148, h: 210 }),
-    photo4x6: Object.freeze({ label: 'Photo 4×6 in', w: 101.6, h: 152.4 })
+    photo4x6: Object.freeze({ label: 'Photo 4×6 in', w: 101.6, h: 152.4 }),
+    letter: Object.freeze({ label: 'US Letter', w: 215.9, h: 279.4 })
   });
+  // Custom paper (for odd decal-paper sizes) is stored as portrait width × height in mm.
+  const CUSTOM_PAGE = Object.freeze({ min: 50, max: 600 });
+  function customPage(c) {
+    const w = number(c?.w, CUSTOM_PAGE.min, CUSTOM_PAGE.max, 'Custom paper width'),
+      h = number(c?.h, CUSTOM_PAGE.min, CUSTOM_PAGE.max, 'Custom paper height');
+    return { w: Math.round(w * 10) / 10, h: Math.round(h * 10) / 10 };
+  }
   function pageFormat(p) {
     const key = p.pageSize ?? 'a4';
+    if (key === 'custom') {
+      const c = customPage(p.customPage);
+      return { label: `Custom ${c.w} × ${c.h} mm`, ...c, custom: true };
+    }
     if (typeof key !== 'string' || !Object.hasOwn(PAGE_SIZES, key))
-      throw Error('Unsupported sheet size. Choose A4, A5 or Photo 4×6 in.');
+      throw Error('Unsupported sheet size. Choose A4, A5, US Letter, Photo 4×6 in or a custom size.');
     return PAGE_SIZES[key];
   }
   const size = p => {
@@ -236,7 +248,9 @@
       const margin = length <= paper - 2 * p.margin ? p.margin : 0;
       return Math.max(margin, Math.min(position, Math.max(margin, paper - margin - length)));
     };
-    return { x: clamp(b.x, b.w, s.w) + (i.x - b.x), y: clamp(b.y, b.h, s.h) + (i.y - b.y) };
+    // Round to a nanometre so float noise (e.g. 215.9 mm Letter) does not leave 1e-14 offsets.
+    const tidy = v => Math.round(v * 1e6) / 1e6;
+    return { x: tidy(clamp(b.x, b.w, s.w) + (i.x - b.x)), y: tidy(clamp(b.y, b.h, s.h) + (i.y - b.y)) };
   }
   // First free position inside the margins, scanning rows top-left to bottom-right and
   // keeping the sheet's cutting gap to existing artwork. Returns null when nothing fits.
@@ -646,6 +660,8 @@
     p.added = timestamp(raw.added) || timestamp(raw.created) || timestamp(raw.updated);
     p.updated = timestamp(raw.updated) || p.added;
     p.pageSize = raw.pageSize ?? 'a4';
+    if (p.pageSize === 'custom') p.customPage = customPage(raw.customPage);
+    else delete p.customPage;
     pageFormat(p);
     p.id = typeof p.id === 'string' ? p.id : uid();
     p.name = String(p.name || 'Untitled sheet').slice(0, 160);
@@ -800,6 +816,8 @@
     esc,
     number,
     PAGE_SIZES,
+    CUSTOM_PAGE,
+    customPage,
     pageFormat,
     fileVersion,
     proofBars,

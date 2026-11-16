@@ -116,3 +116,43 @@ test('page moves keep layout, create only the next page and protect locked selec
   p.items[0].locked = true;
   assert.throws(() => L.movePage(p, ids, 1), /Unlock/);
 });
+
+test('mirrored pairs flip the layout and artwork for the other side but keep text readable', () => {
+  const p = M.project();
+  const arrow = M.item('polygon', { name: 'Arrow', x: 10, y: 10, w: 20, h: 10, rotation: 15 });
+  const label = M.item('text', { name: 'Number', x: 40, y: 10, w: 10, h: 8, text: '27' });
+  const badge = M.item('group', {
+    name: 'Badge',
+    x: 10,
+    y: 30,
+    w: 20,
+    h: 10,
+    baseW: 20,
+    baseH: 10,
+    children: [
+      M.item('rect', { x: 0, y: 0, w: 5, h: 5 }),
+      M.item('text', { x: 6, y: 0, w: 10, h: 5, text: 'SF' })
+    ]
+  });
+  p.items = [arrow, label, badge];
+  const { project, ids, placed } = L.mirroredPair(p, [arrow.id, label.id, badge.id]);
+  assert.equal(placed, true);
+  assert.equal(project.items.length, 6);
+  assert.deepEqual(p.items.length, 3, 'original project unchanged');
+  const [a, t, g] = ids.map(id => project.items.find(i => i.id === id));
+  assert.equal(a.flipX, true);
+  near(a.rotation, -15);
+  assert.equal(t.flipX, false, 'plain text is not mirrored');
+  assert.equal(g.flipX, true);
+  assert.equal(g.children[1].flipX, true, 'text inside a mirrored group is flipped back');
+  assert.equal(g.children[0].flipX, false);
+  assert.match(a.name, /\(mirrored\)$/);
+  // Layout mirrors: the text that was right of the arrow is now left of it.
+  assert.ok(t.x < a.x, 'order reversed');
+  // The copies do not overlap the originals.
+  const orig = p.items.map(M.bounds),
+    copies = [a, t, g].map(M.bounds);
+  for (const c of copies)
+    for (const o of orig)
+      assert.ok(!(c.x < o.x + o.w && c.x + c.w > o.x && c.y < o.y + o.h && c.y + c.h > o.y));
+});

@@ -136,5 +136,26 @@
       }
     };
   }
-  return { styles, numberTemplate, at, session };
+  // Batch numbers: "1-12, 21, 33 7A" → ['1', …, '12', '21', '33', '7A']. Ranges keep the
+  // width of a zero-padded start ("01-03" → 01, 02, 03). Duplicates are removed.
+  const BATCH_LIMIT = 200;
+  function numberList(spec) {
+    const out = [];
+    for (const token of String(spec || '')
+      .split(/[\s,;]+/)
+      .filter(Boolean)) {
+      const range = /^(\d{1,4})-(\d{1,4})$/.exec(token);
+      if (range) {
+        const [a, b] = [Number(range[1]), Number(range[2])],
+          pad = range[1].length > 1 && range[1].startsWith('0') ? range[1].length : 0;
+        if (b < a) throw Error(`Write the range ${token} from low to high.`);
+        if (b - a >= BATCH_LIMIT) throw Error(`Add at most ${BATCH_LIMIT} numbers at once.`);
+        for (let n = a; n <= b; n++) out.push(String(n).padStart(pad, '0'));
+      } else if (/^[a-z\d]{1,6}$/i.test(token)) out.push(token);
+      else throw Error(`"${token.slice(0, 12)}" is not a number or range such as 1-12.`);
+      if (out.length > BATCH_LIMIT) throw Error(`Add at most ${BATCH_LIMIT} numbers at once.`);
+    }
+    return [...new Set(out)];
+  }
+  return { styles, numberTemplate, numberList, BATCH_LIMIT, at, session };
 });

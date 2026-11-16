@@ -2969,3 +2969,34 @@ dialog:has(.vector-view) .dialog-foot {
     grid-template-columns: 1fr;
   }
 }
+
+/* Recolour dialog */
+.recolour-list {
+  display: grid;
+  gap: 10px;
+  max-height: min(52vh, 480px);
+  overflow-y: auto;
+  padding: 2px;
+}
+.recolour-row {
+  display: grid;
+  grid-template-columns: 28px 70px 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.recolour-old {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+}
+.recolour-row code {
+  color: var(--muted);
+  font-size: 12px;
+}
+.recolour-new input[type='color'] {
+  width: 100%;
+}
+.recolour-new .colour-kit {
+  margin-top: 4px;
+}

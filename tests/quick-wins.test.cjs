@@ -47,3 +47,40 @@ test('colour helpers rank sheet colours by use and keep a short recent list', ()
   for (const c of ['#000000', '#ffffff', '#000000', 'red', '#123456']) recent = K.addRecent(recent, c, 3);
   assert.deepEqual(recent, ['#123456', '#000000', '#ffffff']);
 });
+
+test('recolouring finds and replaces colours in shapes and SVG artwork', () => {
+  const K = require('../renderer/colour-kit.js');
+  assert.equal(K.toHex('#ABC'), '#aabbcc');
+  assert.equal(K.toHex('rgb(255, 0, 16)'), '#ff0010');
+  assert.equal(K.toHex('rgb(100%,0%,50%)'), '#ff0080');
+  const svg = M.item('svg', {
+    svg: '<svg><path fill="#E5484D"/><path style="fill:rgb(229,72,77);stroke:#000"/><path fill="#245cc3"/></svg>'
+  });
+  const group = M.item('group', {
+    children: [M.item('rect', { fill: '#e5484d', stroke: '#111111', strokeWidth: 0.5 }), svg]
+  });
+  assert.deepEqual(K.coloursIn([group]), ['#e5484d', '#111111', '#000000', '#245cc3']);
+  K.recolour(group, { '#e5484d': '#245cc3', '#000000': '#ffffff' });
+  assert.equal(group.children[0].fill, '#245cc3');
+  assert.equal(group.children[0].stroke, '#111111');
+  assert.equal(
+    group.children[1].svg,
+    '<svg><path fill="#245cc3"/><path style="fill:#245cc3;stroke:#ffffff"/><path fill="#245cc3"/></svg>'
+  );
+});
+
+test('recolouring handles named colours and SVG default black', () => {
+  const K = require('../renderer/colour-kit.js');
+  const i = M.item('svg', {
+    svg: '<svg viewBox="0 0 9 9"><path fill="#e21e32"/><text>FORGE</text><rect style="fill:white"/><circle stroke="Red" fill="none"/></svg>'
+  });
+  assert.deepEqual(K.coloursIn([i]), ['#e21e32', '#ffffff', '#ff0000', '#000000']);
+  K.recolour(i, { '#000000': '#245cc3', '#ffffff': '#111111', '#ff0000': '#00ff00' });
+  assert.equal(
+    i.svg,
+    '<svg fill="#245cc3" viewBox="0 0 9 9"><path fill="#e21e32"/><text>FORGE</text><rect style="fill:#111111"/><circle stroke="#00ff00" fill="none"/></svg>'
+  );
+  assert.deepEqual(K.coloursIn([M.item('svg', { svg: '<svg fill="#333"><text>x</text></svg>' })]), [
+    '#333333'
+  ]);
+});
