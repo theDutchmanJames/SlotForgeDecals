@@ -3,7 +3,11 @@ const {installerNames}=require('../scripts/release-manifest.cjs');
 const {options}=require('../scripts/build-desktop.cjs');
 test('Release assets distinguish native Linux labels and Mac architectures',()=>{
   assert.deepEqual(installerNames('0.2.12','linux','x64'),['SlotForgeDecals-0.2.12-linux-x86_64.AppImage','SlotForgeDecals-0.2.12-linux-amd64.deb']);
-  assert.equal(new Set(['windows','mac','linux'].flatMap(p=>(p==='windows'?['x64']:['x64','arm64']).flatMap(a=>installerNames('0.2.12',p,a)))).size,9);
+  assert.deepEqual(installerNames('0.2.12','windows','x64'),['SlotForgeDecals-0.2.12-windows-x64-portable.exe','SlotForgeDecals-0.2.12-windows-x64-setup.exe']);
+  assert.equal(new Set(['windows','mac','linux'].flatMap(p=>(p==='windows'?['x64']:['x64','arm64']).flatMap(a=>installerNames('0.2.12',p,a)))).size,10);
+  const pkg=require('../package.json');assert.deepEqual(pkg.build.win.target,['portable','nsis']);
+  assert.equal(pkg.build.portable.artifactName,'SlotForgeDecals-${version}-windows-${arch}-portable.${ext}');assert.equal(pkg.build.nsis.artifactName,'SlotForgeDecals-${version}-windows-${arch}-setup.${ext}');
+  assert.equal(pkg.build.nsis.oneClick,false);assert.equal(pkg.build.nsis.deleteAppDataOnUninstall,false);
   assert.throws(()=>installerNames('../bad','linux','x64'));assert.throws(()=>installerNames('0.2.12','windows','arm64'));
 });
 test('Native builder validates target arguments and supports unattended runs',()=>{

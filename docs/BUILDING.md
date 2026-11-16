@@ -41,7 +41,15 @@ npm run dist:mac -- --arm64 --publish never
 npm run dist:linux -- --x64 --publish never
 ```
 
-Run only the command for the current operating system and architecture. Windows creates a portable executable, macOS a DMG and ZIP, and Linux an AppImage and Debian package. Linux x64 file names use x86_64 for AppImage and amd64 for Debian.
+Run only the command for the current operating system and architecture. Each platform produces an installer and a portable version:
+
+| Platform | Installer | Portable |
+| --- | --- | --- |
+| Windows | `-windows-x64-setup.exe` (NSIS, per-user, choosable folder) | `-windows-x64-portable.exe` |
+| macOS | `.dmg` | `.zip` |
+| Linux | `.deb` | `.AppImage` |
+
+Installed and portable versions share the same workspace in Documents/SlotForge Decals. The Windows uninstaller leaves that workspace untouched. Linux x64 file names use x86_64 for AppImage and amd64 for Debian.
 
 Electron-builder 26.18.0 is pinned. Windows packages are unsigned; Mac apps use ad-hoc signing with hardened runtime disabled and are not notarized. Linux packages target Ubuntu 24.04-compatible systems. AppImage users may need FUSE support. No installer disables the Chromium sandbox.
 
@@ -51,7 +59,7 @@ Electron-builder 26.18.0 is pinned. Windows packages are unsigned; Mac apps use 
 
 | Runner | Packages |
 | --- | --- |
-| windows-2025 | Windows x64 portable EXE |
+| windows-2025 | Windows x64 setup installer and portable EXE |
 | macos-15-intel | Intel Mac DMG / ZIP |
 | ubuntu-24.04 | Linux x64 AppImage / DEB |
 | ubuntu-24.04-arm | Linux ARM64 AppImage / DEB |

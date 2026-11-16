@@ -14,7 +14,7 @@
     "build:icons": "node scripts/build-icon.cjs",
     "pack": "npm run build:icons && node scripts/pack.cjs",
     "setup:converter": "node scripts/setup-converter.cjs",
-    "dist:win": "electron-builder --win portable",
+    "dist:win": "electron-builder --win",
     "dist:mac": "electron-builder --mac",
     "dist:linux": "electron-builder --linux",
     "test:desktop": "node scripts/test-desktop.cjs",
@@ -85,10 +85,29 @@
       }
     ],
     "win": {
-      "target": "portable",
-      "artifactName": "SlotForgeDecals-${version}-windows-${arch}.${ext}",
+      "target": [
+        "portable",
+        "nsis"
+      ],
       "icon": "assets/icon.ico",
       "signExecutable": false
+    },
+    "portable": {
+      "artifactName": "SlotForgeDecals-${version}-windows-${arch}-portable.${ext}"
+    },
+    "nsis": {
+      "artifactName": "SlotForgeDecals-${version}-windows-${arch}-setup.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SlotForge Decals",
+      "uninstallDisplayName": "SlotForge Decals",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "deleteAppDataOnUninstall": false
     },
     "mac": {
       "target": [

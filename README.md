@@ -199,23 +199,31 @@ For step-by-step instructions, see the [user guide](docs/USER-GUIDE.md). The [te
 
 Open the **[latest GitHub release](https://github.com/theDutchmanJames/SlotForgeDecals/releases/latest)** and expand **Assets**. Choose the packaged app for your computer; **you do not need Node.js, Git or programming tools**. Source-code downloads are for developers rebuilding the app.
 
-| Your computer | Download |
-| --- | --- |
-| **Windows · Intel/AMD 64-bit** | `SlotForgeDecals-…-windows-x64.exe` |
-| **Mac · Apple Silicon (M1 or newer)** | `SlotForgeDecals-…-mac-arm64.dmg` — added after the separate build passes |
-| **Mac · Intel** | `SlotForgeDecals-…-mac-x64.dmg` |
-| **Linux · Intel/AMD 64-bit** | `SlotForgeDecals-…-linux-amd64.deb` or `…-linux-x86_64.AppImage` |
-| **Linux · ARM64** | `SlotForgeDecals-…-linux-arm64.deb` or `…-linux-arm64.AppImage` |
+Every platform has an **installer** and a **portable** version. Installers add Decals to your applications menu; portable versions run without installing. Both use the same library in **Documents/SlotForge Decals**, so you can switch between them.
+
+| Your computer | Installer | Portable |
+| --- | --- | --- |
+| **Windows · Intel/AMD 64-bit** | `SlotForgeDecals-…-windows-x64-setup.exe` | `SlotForgeDecals-…-windows-x64-portable.exe` |
+| **Mac · Apple Silicon (M1 or newer)** | `SlotForgeDecals-…-mac-arm64.dmg` | `SlotForgeDecals-…-mac-arm64.zip` |
+| **Mac · Intel** | `SlotForgeDecals-…-mac-x64.dmg` | `SlotForgeDecals-…-mac-x64.zip` |
+| **Linux · Intel/AMD 64-bit** | `SlotForgeDecals-…-linux-amd64.deb` | `SlotForgeDecals-…-linux-x86_64.AppImage` |
+| **Linux · ARM64** | `SlotForgeDecals-…-linux-arm64.deb` | `SlotForgeDecals-…-linux-arm64.AppImage` |
+
+Apple Silicon downloads are added after their separate build passes.
 
 ### Windows
 
-Save the portable `.exe` in a folder you want to keep, then double-click it. It extracts its runtime automatically; no separate installation is required.
+**Installer:** run the `-setup.exe` and follow the steps. You can choose the installation folder; Decals installs for your user account only, without administrator rights, and adds Start menu and desktop shortcuts. Remove it via **Settings → Apps → Installed apps**. Uninstalling never deletes your sheets and decals in Documents.
+
+**Portable:** save the `-portable.exe` in a folder you want to keep, then double-click it. It extracts its runtime automatically each time it starts; nothing is installed.
 
 Windows releases are unsigned and may show an unknown-publisher warning. Smart App Control can block unsigned downloads entirely; it has no per-app exception. Check that the download came from this repository. Trusted Windows signing is not available in this release.
 
 ### macOS
 
 Requires **macOS 15 or newer**. Open the `.dmg`, drag **SlotForge Decals** into **Applications**, then launch it from there. You can eject the disk image afterwards. ZIP downloads are also available.
+
+For the portable version, unzip the `.zip` and open **SlotForge Decals** from wherever you keep it.
 
 Choose the Intel (`mac-x64`) or Apple Silicon (`mac-arm64`) download for your Mac. Apple Silicon builds run separately and are added to the same release after their tests pass; if those files are not listed yet, that native download is not ready. **Apple menu → About This Mac** shows your Mac’s processor. Mac releases are ad-hoc signed, not Apple-notarized. If macOS blocks the app, check its origin and use the per-app approval in **System Settings → Privacy & Security**, if offered.
 
@@ -233,7 +241,7 @@ Start with the example sheet or a blank page. Choose your paper size, import art
 
 ### Updating and building from source
 
-Back up your work, close Decals, then replace the portable executable or install the newer package. Your workspace remains separate from the app. There is no automatic in-app updater. See the [release notes](RELEASE_NOTES.md) for changes.
+Back up your work, close Decals, then run the newer installer (it replaces the installed version) or replace the portable file. Your workspace remains separate from the app. There is no automatic in-app updater. See the [release notes](RELEASE_NOTES.md) for changes.
 
 Developers can follow the [build instructions](docs/BUILDING.md) for local setup and native packaging. Official Windows, macOS and Linux packages are built and tested by GitHub Actions before publication.
 
