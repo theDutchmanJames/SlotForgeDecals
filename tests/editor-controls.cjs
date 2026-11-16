@@ -36,7 +36,7 @@ async function main() {
   try {
     await attach();
     await close();
-    assert(await page.locator('#save-selection-library').isDisabled());
+    assert.equal(await page.locator('#inspector [data-action="save-decal"]').count(), 0);
     assert.equal(await page.locator('.library-panel [data-action="import"]').count(), 0);
     await page.locator('#project-name').click();
     await page.locator('#name-input').fill('Club Racing Decals');
@@ -50,7 +50,7 @@ async function main() {
     await page.locator('[data-create="ellipse"]').click();
     await page.evaluate(() => Studio.select(Studio.project.items.map(i => i.id)));
     const before = await page.evaluate(() => JSON.stringify(Studio.project.items));
-    await page.locator('#save-selection-library').click();
+    await page.locator('#inspector [data-action="save-decal"]').click();
     assert.match(await page.locator('.dialog-head p').textContent(), /2 selected items/);
     await page.locator('#save-decal-name').fill('Paired badge');
     await page.locator('#save-decal-confirm').click();

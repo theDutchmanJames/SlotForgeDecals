@@ -231,7 +231,7 @@ async function main() {
     });
     assert.equal(pixels.hole[3], 0);
     assert.equal(pixels.solid[3], 255);
-    await page.locator('#save-selection-library').click();
+    await page.locator('#inspector [data-action="save-decal"]').click();
     await page.locator('#save-decal-name').fill('Cut badge');
     await page.locator('#save-decal-confirm').click();
     await page.waitForFunction(() => !document.querySelector('#dialog').open);

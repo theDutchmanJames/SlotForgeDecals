@@ -101,9 +101,8 @@ async function main() {
     assert.equal(await page.locator('.pdf-artwork-list tbody tr').count(), 5);
     assert.equal(await page.locator('.contains-raster').count(), 3);
     assert.match(await page.locator('.pdf-raster-warning').textContent(), /3 artwork elements/);
-    const nested = page
-      .locator('.pdf-artwork-list tr')
-      .filter({ hasText: 'Saved slice › Sponsor group › Nested bitmap' });
+    const nested = page.locator('.pdf-artwork-list tr').filter({ hasText: 'Saved slice' });
+    assert.match(await nested.locator('td').first().textContent(), /bitmap: Sponsor group › Nested bitmap/);
     assert.equal(await nested.locator('td').nth(1).textContent(), '2');
     assert.equal(
       await page

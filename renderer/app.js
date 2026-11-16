@@ -338,12 +338,23 @@ function render() {
 function renderLibrary() {
   Library.renderSidebar();
 }
+// Toolbar buttons that act on the selection are greyed out until they can do something.
+const SELECTION_TOOLS = {
+  'arrange-selection': ['Select one or more decals to arrange them.', list => list.length > 0],
+  group: ['Select two or more decals to group them.', list => list.length > 1],
+  ungroup: ['Select a grouped decal to ungroup it.', list => list.length === 1 && list[0].kind === 'group'],
+  duplicate: ['Select a decal to duplicate it.', list => list.length > 0],
+  delete: ['Select a decal to delete it.', list => list.length > 0]
+};
 function selectionStatus() {
-  $('#save-selection-library').disabled = !selected.size;
-  $('#save-selection-library').title =
-    selected.size > 1
-      ? 'Save ' + selected.size + ' selected items together as one reusable decal'
-      : 'Save the selected artwork to your Decal Library';
+  const list = items();
+  for (const [action, [hint, ready]] of Object.entries(SELECTION_TOOLS)) {
+    const button = $(`.toolbar [data-action="${action}"]`);
+    if (!button) continue;
+    button.dataset.tip ??= button.title || '';
+    button.disabled = !ready(list);
+    button.title = button.disabled ? hint : button.dataset.tip;
+  }
   $('#selection-status').textContent = selected.size
     ? `${selected.size} selected · Drag to move together · Ctrl/Shift-click to toggle`
     : `${project.items.length} decals · Drag empty canvas to select · Ctrl/Shift-click to add`;
@@ -1276,7 +1287,7 @@ function settingsDialog() {
   showDialog(
     'App settings',
     'Your workspace belongs to you.',
-    `<div class="field"><label>Appearance</label><select id="theme-setting"><option value="dark">SlotForge Dark</option><option value="light">SlotForge Light</option></select></div><div class="notice"><strong>Persistent local workspace</strong><br>${E(rootPath)}<br><br>Application updates do not replace this folder. Sheets, decals, artwork and history are stored in decals.sqlite. Three previous workspace versions are retained inside the database. Legacy files are kept unchanged as migration-time recovery copies.</div><p id="storage-usage" class="hint">Reading storage usage…</p><h3>Backup &amp; Recovery</h3><div class="row"><button data-action="complete-backup">Export Complete Backup</button><button data-action="complete-restore">Restore Complete Backup</button></div><p class="hint">Complete backups include every saved sheet, history, decal and artwork asset. Legacy workspace backups below contain only the current sheet and decal library.</p><div class="row"><button data-action="projects">Open Sheet Library</button><button data-action="recover-workspace">Recover a sheet</button></div><div class="row"><button data-action="folder">Open workspace folder</button><button data-action="backup">Export Workspace Backup</button><button data-action="restore-backup">Restore Workspace Backup</button></div><p class="hint" style="margin-top:18px">Decal artwork stays on your computer. No account or internet connection is needed.</p>`,
+    `<div class="field"><label>Appearance</label><select id="theme-setting"><option value="dark">SlotForge Dark</option><option value="light">SlotForge Light</option></select></div><div class="notice"><strong>Persistent local workspace</strong><br>${E(rootPath)}<br><br>Application updates do not replace this folder. Sheets, decals, artwork and history are stored in decals.sqlite. Three previous workspace versions are retained inside the database. Legacy files are kept unchanged as migration-time recovery copies.</div><p id="storage-usage" class="hint">Reading storage usage…</p><h3>Backup &amp; Recovery</h3><div class="row"><button data-action="complete-backup">Export Complete Backup</button><button data-action="complete-restore">Restore Complete Backup</button></div><p class="hint">A complete backup contains every saved sheet, its history, your decal library and all artwork.</p><div class="row"><button data-action="projects">Open Sheet Library</button><button data-action="recover-workspace">Recover a sheet</button><button data-action="folder">Open workspace folder</button></div><details class="settings-advanced" id="legacy-backups"><summary>Older backup format (.sfbackup)</summary><p class="hint">Only for exchanging with older Decals versions. Contains the current sheet and up to 1,000 library decals, not every saved sheet.</p><div class="row"><button data-action="backup">Export Workspace Backup</button><button data-action="restore-backup">Restore Workspace Backup</button></div></details><p class="hint" style="margin-top:18px">Decal artwork stays on your computer. No account or internet connection is needed.</p>`,
     '<button class="primary" data-action="close">Done</button>'
   );
   desktop
@@ -1322,13 +1333,71 @@ function sharingDialog() {
     true
   );
 }
+// Help is split into topics with a topic list and search, instead of one long page.
+const HELP_TOPICS = [
+  [
+    'Getting started',
+    '<p>The usual workflow: <strong>import or create</strong> artwork, set its <strong>printed size</strong> in millimetres, check it on the <strong>car preview</strong>, <strong>arrange</strong> the sheet, <strong>save</strong> it, print a plain-paper <strong>sizing proof</strong>, then export the final PDF for your decal paper.</p><p>Everything is saved locally and automatically. Save sheet (Ctrl+S) also keeps a copy in Sheet Library.</p>'
+  ],
+  [
+    'Import & prepare artwork',
+    '<p>Import PNG, JPEG, WebP, SVG, EPS or PDF artwork with Import an Image, by dropping a file on the sheet, or by pasting (Ctrl+V) a copied image, screenshot or SVG code. New artwork is placed in free space on the page.</p><p>Select a bitmap and use <strong>Crop &amp; remove background</strong> to prepare it. Preview against transparent, light or dark backgrounds; the original is retained.</p><p>Choose <strong>Trace image to vector</strong> to review an SVG approximation of a PNG, JPEG or WebP. Adjust colours, detail and transparency, then replace traced colours or remove unwanted shapes before applying. Zoom both previews to compare details. The original image is kept for restoration. SVG filters and external resources need preparation in another editor.</p><p><strong>Edit Vector Artwork</strong> removes unwanted shapes, such as white backgrounds, from imported vectors while keeping the original for restoring.</p>'
+  ],
+  [
+    'Text, shapes & paths',
+    '<p>Add <strong>Text</strong> and choose a font: the built-in fonts, <strong>Choose installed font…</strong> for any font on this computer, or <strong>Import font</strong> for a font file. Chosen fonts are embedded in the sheet. Text bend arches lettering up or down.</p><p>Open <strong>Shapes &amp; Patterns</strong> for basic shapes, stars, polygons, arrows, chevrons, shields, checkerboards and 1–12 racing stripes. <strong>Racing Number Plates</strong> offers editable roundels and plates, including matching pairs.</p><p><strong>Path Tool</strong> draws lines or closed shapes; edit points and curve handles afterwards. <strong>Merge &amp; Cut</strong> combines filled native shapes on the canvas: union, cut, intersection or excluded overlap. Results remain editable paths; imports and text cannot be combined.</p><p>Colour fields offer an eyedropper and quick swatches of your recent colours and the colours on the sheet. <strong>Add silhouette outline</strong> creates an adjustable vector border around imported artwork. Select a group and choose <strong>Edit group</strong> to change its parts; Apply changes commits them together.</p>'
+  ],
+  [
+    'Size & car preview',
+    '<p>Width and height are the <strong>printed dimensions</strong> in millimetres. Keep proportions resizes both together. Scale Conversion changes the model scale for the sheet or selected artwork.</p><p>The <strong>Car preview</strong> at the top of the right panel shows every selected decal at its printed size. Drag a decal over the car to test placement without moving it on the sheet, or enlarge the preview to adjust its size. Use Reference size to enter your model’s measurements or import your own side and top pictures. The car is illustrative, not a wrap calculation: confirm the fit with a paper proof.</p>'
+  ],
+  [
+    'Arrange the sheet',
+    '<p>Use the <strong>Sheet size</strong> picker for A4, A5 or Photo 4×6 in, and Portrait ↔ for orientation. All pages share that size; changing paper never rescales decals.</p><p>Drag across empty canvas to select decals; Ctrl/Shift-click toggles individual decals. Drag the selection to move it together. <strong>Arrange…</strong> creates grids of copies, equal gaps, alignment, mirroring and moves to another page. <strong>Auto-arrange</strong> makes room while preserving sizes. Group a finished design and Lock its placement.</p><p>Margins, cutting gap, decal material and white ink are under <strong>Paper &amp; white ink</strong>. Print checks flag artwork outside the margins, too little cutting space and low-resolution images.</p>'
+  ],
+  [
+    'Slice area',
+    '<p>Use <strong>Slice area…</strong> above the sheet to draw a rectangle or enter its position and size in millimetres. Clip at its boundary or expand to include whole decals.</p><p>Save a transparent slice to your library, print only that area on the original paper size, or export a cropped PDF. The original sheet stays unchanged. Saved slices move and resize as one decal; edit the original artwork before making a new slice.</p>'
+  ],
+  [
+    'Libraries & sharing',
+    '<p><strong>Save decal to library</strong> keeps a reusable design with a name and tags. Copies on sheets stay independent. Share saved decals as an .sfdecal pack with Export Decals.</p><p><strong>Sheet Library</strong> holds complete saved sheets. Add Sheet saves the outgoing work and starts another. Export selected sheets as one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent copies while your current work stays open. Versions and Recover a sheet open earlier work as separate copies.</p><p>Back up everything with <strong>App Settings → Export Complete Backup</strong>.</p>'
+  ],
+  [
+    'Print & white ink',
+    '<p>Export a <strong>sizing proof</strong> first and print it on plain paper at <strong>Actual size / 100%</strong>, with Fit to page disabled. Measure the labelled 50/100 mm bars, then export the final PDF.</p><div class="notice"><strong>White ink:</strong> enable the printer option, set its required spot name, and choose Colour + white backing or White ink only on a decal. Export uses an alpha-thresholded 600 PPI white mask. Confirm ink order and spot recognition with your print shop; this has not been validated on physical printers. RGB artwork is preserved; PDF/X and colour-proof certification are not provided.</div>'
+  ],
+  [
+    'Keyboard shortcuts',
+    '<dl class="help-keys"><dt>Ctrl+C / Ctrl+X / Ctrl+V</dt><dd>Copy, cut and paste decals (also between sheets); paste images, screenshots or SVG code</dd><dt>Ctrl+D</dt><dd>Duplicate</dd><dt>Ctrl+G</dt><dd>Group</dd><dt>Ctrl+A</dt><dd>Select everything on the page</dd><dt>Delete</dt><dd>Remove the selection</dd><dt>Arrow keys</dt><dd>Move 1 mm · with Shift 0.1 mm</dd><dt>Ctrl+Z / Ctrl+Y</dt><dd>Undo and redo, up to 200 steps (Ctrl+Shift+Z also redoes)</dd><dt>Ctrl+S</dt><dd>Save sheet to Sheet Library</dd><dt>Ctrl+mousewheel</dt><dd>Zoom the sheet</dd><dt>Alt-drag</dt><dd>Move without snapping</dd><dt>Escape</dt><dd>Clear the selection or cancel a drag</dd></dl><p class="hint">On a Mac, use Cmd instead of Ctrl.</p>'
+  ]
+];
 function helpDialog() {
   showDialog(
     'Your decal workshop',
     'SlotForge Decals · 0.2.20',
-    `<p><strong>1. Import or create.</strong> Bring PNG, SVG, EPS or PDF artwork, or use the text and shape tools. Select a bitmap and use Crop &amp; remove background to prepare it. Preview against transparent, light or dark backgrounds; the original is retained.</p><p><strong>2. Size in millimetres.</strong> Use physical dimensions, then check all selected decals on the car reference. Drag each one over the car to inspect placement without moving it on your sheet. Reference images are illustrative, not a wrap calculation. Text bend arches editable lettering up or down. Add silhouette outline creates an adjustable vector border around imported artwork while retaining its original contents.</p><p><strong>3. Choose a sheet size and arrange decals.</strong> Use the Sheet size picker beside the project name for A4, A5 or Photo 4×6 in. All pages share that size; changing paper never rescales decals. Drag across empty canvas to select decals. Ctrl/Shift-click toggles individual decals. Drag selected artwork to move it together. Use Arrange… for grids of copies, equal gaps, alignment, mirroring and moving to another page. Path Tool in Add artwork lets you draw lines or closed shapes, then edit points and curve handles. Use Merge &amp; Cut in Add artwork to select filled native shapes on the canvas and choose an operation in the right panel for union, cutting, intersection or excluded overlap. Results remain editable paths; imports and text cannot be combined with these tools. Open Shapes &amp; Patterns for basic shapes, adjustable stars, polygons, arrows, chevrons, shields, checkerboards and 1–12 racing stripes. Racing Number Plates offers editable roundels and plates, including matching pairs. Select a grouped decal and choose Edit group to change individual elements; Apply changes commits them together. Group a complete design, duplicate it, and use Auto-arrange to preserve size while making room. Lock finished placements.</p><p><strong>Slice area.</strong> Use Slice area… above the sheet to draw a rectangle or enter its position and size in millimetres. Clip at its boundary or expand to include whole decals. Save a transparent slice to your library, print only that area on the original paper size, or export a cropped PDF. Preview before saving and print at Actual size / 100%. The original sheet stays unchanged. Saved slices move and resize as one decal; edit the original artwork before making a new slice.</p><p><strong>Sheet Library.</strong> Browse complete saved sheets beside Decal Library in the top navigation. Click the labelled Sheet name field to rename your work. Portrait / Landscape switches orientation; Scale Conversion changes model scale. Add Sheet saves the outgoing work and starts another sheet. Save sheet / Ctrl+S saves locally. Select sheets to export together in one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent library copies while your current work stays open. Both libraries support grid/list views, sorting, checkboxes, Ctrl-click and Shift-click. The sheet you leave is saved before switching. Versions and Workspace recovery open earlier sheets as separate copies.</p><p><strong>4. Save useful decals.</strong> “Save decal to library” is explicit. Sheet copies remain independent. Share selected saved decals in a .sfdecal pack.</p><p><strong>Shortcuts.</strong> Ctrl+C / Ctrl+X / Ctrl+V copy, cut and paste decals, also between sheets. Paste a copied image, a screenshot or SVG code to import it. Ctrl+D duplicates, Ctrl+G groups, Ctrl+A selects the page, arrow keys nudge 1 mm (Shift: 0.1 mm), Delete removes, Ctrl+Z / Ctrl+Y undo and redo up to 200 steps. Choose installed font… embeds a font from this computer into the sheet. Colour fields offer an eyedropper and quick swatches of recent and sheet colours.</p><p><strong>5. Print at actual size.</strong> Export PDF and disable “Fit to page” in your PDF viewer. Check the labelled 50/100 mm bars on a plain-paper sizing proof.</p><div class="notice"><strong>White ink:</strong> enable the printer option, set its required spot name, and choose Colour + white backing or White ink only on a decal. Export uses an alpha-thresholded 600 PPI white mask. Confirm ink order and spot recognition with your print shop; this has not been validated on physical printers. RGB artwork is preserved; PDF/X and colour-proof certification are not provided.</div><p class="hint">Ctrl+mousewheel zoom over the canvas · Ctrl+Z undo · Ctrl+Shift+Z redo · Ctrl+D duplicate · Ctrl+G group · Delete remove · Arrow keys move 1 mm · Shift+Arrow 0.1 mm · Alt-drag bypass snap · Ctrl+S save sheet.</p><p class="hint">Select a PNG, JPEG or WebP and choose “Trace image to vector” to review an SVG approximation. Adjust colours, detail and transparency, then replace traced colours or remove unwanted shapes before applying. Zoom both previews to compare details. The original image is kept for restoration. SVG filters and external resources need preparation in another editor. Source and third-party notices are included with the app.</p>`,
-    '<button class="primary" data-action="close">Start creating</button>'
+    `<div class="help-layout"><nav class="help-nav" aria-label="Help topics"><input id="help-search" type="search" placeholder="Search help…" aria-label="Search help">${HELP_TOPICS.map((t, n) => `<button data-help-topic="${n}">${E(t[0])}</button>`).join('')}</nav><div class="help-content" id="help-content">${HELP_TOPICS.map((t, n) => `<section class="help-topic" id="help-topic-${n}"><h3>${E(t[0])}</h3>${t[1]}</section>`).join('')}<p class="hint help-empty" hidden>No help topics match your search.</p><p class="hint">Source and third-party notices are included with the app.</p></div></div>`,
+    '<button class="primary" data-action="close">Start creating</button>',
+    true
   );
+  for (const b of $$('[data-help-topic]'))
+    b.onclick = () =>
+      $('#help-topic-' + b.dataset.helpTopic).scrollIntoView({ block: 'start', behavior: 'smooth' });
+  $('#help-search').oninput = e => {
+    const q = e.target.value.trim().toLowerCase();
+    let shown = 0;
+    HELP_TOPICS.forEach((_, n) => {
+      const match =
+        !q ||
+        $('#help-topic-' + n)
+          .textContent.toLowerCase()
+          .includes(q);
+      $('#help-topic-' + n).hidden = !match;
+      $(`[data-help-topic="${n}"]`).hidden = !match;
+      shown += match;
+    });
+    $('.help-empty').hidden = shown > 0;
+  };
 }
 function welcome() {
   showDialog(

@@ -96,9 +96,18 @@ async function main() {
         }))
       );
       assert.equal(styles.length, 6);
+      // Cards follow the theme: exports use the accent colour, imports the normal ink colour.
+      const tokens = await page.evaluate(() => {
+        const probe = document.createElement('span');
+        document.body.append(probe);
+        const read = v => ((probe.style.color = 'var(' + v + ')'), getComputedStyle(probe).color);
+        const out = { accent: read('--accent'), ink: read('--ink') };
+        probe.remove();
+        return out;
+      });
       for (const b of styles) {
-        assert.equal(b.bg, 'rgb(255, 255, 255)');
-        assert.equal(b.colour, b.exporting ? 'rgb(199, 46, 59)' : 'rgb(38, 48, 61)');
+        if (theme === 'dark') assert.notEqual(b.bg, 'rgb(255, 255, 255)', 'dark cards are not white');
+        assert.equal(b.colour, b.exporting ? tokens.accent : tokens.ink);
       }
       assert(styles.filter(x => x.exporting).every(x => x.x > styles[0].x));
       await page.screenshot({ path: path.join(run, 'sharing-' + theme + '.png') });
@@ -264,6 +273,7 @@ async function main() {
     );
     assert.deepEqual(await state(), beforeDecals);
     await page.locator('nav [data-action="settings"]').click();
+    await page.locator('#legacy-backups summary').click();
     const chooser = page.waitForEvent('filechooser');
     await page.locator('[data-action="restore-backup"]').click();
     await (await chooser).setFiles(backupFile);
@@ -345,7 +355,7 @@ async function main() {
       JSON.stringify({
         run,
         checks:
-          'white import/export columns in both themes, shared libraries, sort and view persistence, checkbox/Ctrl/Shift selection, hidden selections, multi-sheet editable collections, selected pages, embedded fonts, legacy/blank imports, independent identities, current-sheet preservation, decal selection round trips, failed/cancelled exports and restart',
+          'themed import/export columns in both themes, shared libraries, sort and view persistence, checkbox/Ctrl/Shift selection, hidden selections, multi-sheet editable collections, selected pages, embedded fonts, legacy/blank imports, independent identities, current-sheet preservation, decal selection round trips, failed/cancelled exports and restart',
         errors
       })
     );

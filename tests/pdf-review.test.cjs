@@ -49,3 +49,40 @@ test('PDF review escapes decal names and explains the separate white mask', () =
   assert(html.includes('600 PPI raster mask'));
   assert(!markup(items, false).includes('600 PPI raster mask'));
 });
+test('PDF review lists one row per decal, merges identical copies and names nested bitmaps', () => {
+  const { decals } = require('../renderer/pdf-review.js');
+  const roundel = () => ({
+    kind: 'group',
+    name: 'Roundel 27',
+    page: 0,
+    children: [
+      { kind: 'ellipse', name: 'Ellipse' },
+      { kind: 'text', name: 'Race number' }
+    ]
+  });
+  const rows = decals([
+    roundel(),
+    roundel(),
+    roundel(),
+    {
+      kind: 'group',
+      name: 'Sponsor',
+      page: 1,
+      children: [
+        { kind: 'image', name: 'Logo' },
+        { kind: 'text', name: 'Name' }
+      ]
+    },
+    { kind: 'image', name: 'Photo', page: 0 }
+  ]);
+  assert.deepEqual(
+    rows.map(r => [r.name, r.count, r.parts, r.type, r.raster]),
+    [
+      ['Roundel 27', 3, 2, 'Vector', false],
+      ['Sponsor', 1, 2, 'Mixed raster / vector', true],
+      ['Photo', 1, 1, 'Raster', true]
+    ]
+  );
+  assert.deepEqual(rows[1].rasterParts, ['Logo']);
+  assert.equal(rows[1].page, 2);
+});
