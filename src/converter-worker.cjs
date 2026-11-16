@@ -1,1 +1,8 @@
-process.parentPort.on('message',async({data})=>{try{const result=await require('./converter.cjs').convert(data);process.parentPort.postMessage({result});}catch(e){process.parentPort.postMessage({error:e.message});}});
+process.parentPort.on('message', async ({ data }) => {
+  try {
+    const result = await require('./converter.cjs').convert(data);
+    process.parentPort.postMessage({ result });
+  } catch (e) {
+    process.parentPort.postMessage({ error: e.message });
+  }
+});

@@ -1,0 +1,14 @@
+# Third-party and generated files are kept exactly as shipped.
+node_modules/
+vendor/
+dist/
+test-output/
+design-preview/
+source-assets/
+release-assets/
+src/pdf-lib.cjs
+# HTML is whitespace-sensitive; it is kept as written.
+*.html
+*.md
+*.yml
+package-lock.json

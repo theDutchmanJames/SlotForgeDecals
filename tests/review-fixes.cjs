@@ -1,28 +1,247 @@
-const {_electron:electron}=require('playwright'),fs=require('node:fs/promises'),path=require('node:path'),assert=require('node:assert/strict');
-async function main(){const root=path.resolve(__dirname,'..'),run=path.join(root,'test-output','review-fixes-'+Date.now());await fs.mkdir(run,{recursive:true});const env={...process.env,SLOTFORGE_WORKSPACE:path.join(run,'workspace'),SLOTFORGE_TEST_PROFILE:path.join(run,'profile'),SLOTFORGE_EXPORT_DIR:path.join(run,'exports')};delete env.ELECTRON_RUN_AS_NODE;
- const launch=()=>electron.launch({executablePath:process.env.SLOTFORGE_TEST_EXE||require('electron'),args:process.env.SLOTFORGE_TEST_EXE?[]:[root],env});let app=await launch(),page=await app.firstWindow();const errors=[];
- const attach=async()=>{page.on('pageerror',e=>errors.push(e.message));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].showInactive());await page.waitForFunction(()=>window.Studio?.ready);};
- const change=async(id,v)=>{await page.locator(id).fill(v);await page.locator(id).press('Tab');},done=()=>page.locator('#dialog [data-action="close"]').last().click();
- try{await attach();await done();await page.locator('[data-action="shapes"]').click();await page.locator('[data-create="line"]').click();
-  const handle=await page.locator('#paper [data-handle]').boundingBox(),scale=await page.evaluate(()=>document.querySelector('#paper').getScreenCTM().a);await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);await page.mouse.down();await page.mouse.move(handle.x+handle.width/2-38*scale,handle.y+handle.height/2,{steps:5});await page.mouse.up();
-  const resized=await page.evaluate(()=>{DM.validateProject(Studio.project);return{w:Studio.project.items[0].w,h:Studio.project.items[0].h};});assert.deepEqual(resized,{w:4,h:.1});await page.evaluate(()=>Studio.flush());await app.close();app=await launch();page=await app.firstWindow();await attach();await page.evaluate(()=>Studio.select([Studio.project.items[0].id]));
-  await change('#prop-w','0');assert.ok((await page.locator('#toast').textContent()).includes('between'));await change('#prop-w','25');assert.equal(await page.evaluate(()=>Studio.project.items[0].w),25);
-  await page.locator('[data-action="lock"]').click();for(const id of ['#prop-x','#prop-w','#prop-opacity'])assert.ok(await page.locator(id).isDisabled());const lockedX=await page.evaluate(()=>Studio.project.items[0].x);await page.locator('#prop-x').evaluate(el=>{el.value='60';el.dispatchEvent(new Event('change'));});assert.equal(await page.evaluate(()=>Studio.project.items[0].x),lockedX);await page.locator('[data-action="lock"]').click();await change('#prop-x','60');assert.equal(await page.evaluate(()=>Studio.project.items[0].x),60);
-  await page.evaluate(()=>{const g=DM.group([DM.item('rect',{x:0,y:0,w:10,h:10,fill:'#ff0000'})]);g.x=195;g.y=20;Studio.project.items=[g];Studio.select([g.id]);});await page.locator('[data-action="edit-group"]').click();await change('#group-x','20');await page.locator('#group-apply').click();assert.ok(await page.evaluate(()=>DM.warnings(Studio.project).some(w=>w.type==='margin')));
-  const preview=await page.evaluate(async()=>{const svg=Art.standalone(Studio.project.items[0]),im=new Image();im.src=Art.url(svg);await im.decode();const c=document.createElement('canvas');c.width=300;c.height=100;const ctx=c.getContext('2d');ctx.drawImage(im,0,0,300,100);return{svg,pixel:[...ctx.getImageData(250,50,1,1).data]};});assert.ok(preview.svg.includes('width="30mm"'));assert.deepEqual(preview.pixel,[255,0,0,255]);
-  await page.locator('[data-action="pdf"]').first().click();assert.ok((await page.locator('#dialog h2').textContent()).includes('Review before'));await done();await page.locator('[data-action="arrange"]').click();assert.deepEqual(await page.evaluate(()=>DM.warnings(Studio.project)),[]);assert.equal(await page.evaluate(()=>DM.bounds(Studio.project.items[0]).x),5);
-  await page.evaluate(()=>{const g=DM.group([DM.item('rect',{x:20,y:20,w:10,h:10,opacity:.8})]);g.opacity=.5;Studio.project.items=[g];Studio.select([g.id]);});await page.locator('[data-action="ungroup"]').click();assert.equal(await page.evaluate(()=>Studio.project.items[0].opacity),.4);
-  await page.evaluate(()=>{const g=DM.group([DM.item('rect',{x:0,y:0,w:10,h:10}),DM.item('rect',{x:5,y:0,w:10,h:10})]);g.opacity=.5;Studio.project.items=[g];Studio.select([g.id]);});const before=await page.evaluate(()=>JSON.stringify(Studio.project.items));await page.locator('[data-action="ungroup"]').click();assert.equal(await page.evaluate(()=>JSON.stringify(Studio.project.items)),before);assert.ok((await page.locator('#toast').textContent()).includes('transparency'));
-  await page.evaluate(async()=>{const art=DM.item('rect');let first;document.querySelector('#library-search').value='no matching entries';for(let batch=0;batch<20;batch++){const entries=await Library.import(Array.from({length:500},(_,n)=>({id:DM.uid(),name:'Saved '+(batch*500+n),scale:32,art})),[]);first=first||entries[0];}Studio.project.items[0].libraryId=first.id;Studio.select([Studio.project.items[0].id]);});
-  await page.locator('#inspector [data-action="save-decal"]').click();await page.locator('#save-decal-confirm').click();await page.waitForFunction(()=>document.querySelector('#dialog-error')?.textContent.includes('10,000'));assert.equal(await page.evaluate(()=>Studio.libraryCount),10000);await page.locator('#update-master').click();await page.waitForFunction(()=>!document.querySelector('#dialog').open);assert.equal(await page.evaluate(()=>Studio.libraryCount),10000);
-  await page.locator('[data-action="export-pack"]').first().click();assert.ok(await page.locator('#collection-confirm').isDisabled());await page.locator('#project-sort').selectOption('name');
-  for(let n=0;n<10;n++){await page.waitForFunction(()=>document.querySelector('#collection-items')?.dataset.loading==='false');await page.locator('#collection-all').click();await page.locator('#collection-next').click();}
-  await page.waitForFunction(()=>document.querySelector('#collection-items')?.dataset.loading==='false');for(let n=0;n<20;n++)await page.locator('.collection-item [data-select]').nth(n).check();assert.match(await page.locator('#collection-confirm').textContent(),/500/);await page.locator('#collection-confirm').click();await page.waitForFunction(()=>!document.querySelector('#dialog').open);
-  const pack=JSON.parse(await fs.readFile(path.join(run,'exports','My decal collection.sfdecal'),'utf8'));assert.equal(pack.decals.length,500);assert.equal(await page.evaluate(p=>DM.readPack(p).decals.length,pack),500);assert.ok(await page.evaluate(async()=>{try{await exportDecals(Array(501).fill({id:'too-many'}));return false;}catch{return true;}}));
-  await page.evaluate(()=>Studio.flush());await app.close();app=await launch();page=await app.firstWindow();await attach();assert.equal(await page.evaluate(()=>Studio.libraryCount),10000);
-  await app.evaluate(({ipcMain})=>{ipcMain.removeHandler('save');ipcMain.handle('save',()=>{throw Error('Simulated workspace write failure');});});await page.evaluate(()=>{mutate(()=>project.name='Unsaved rescue');});assert.ok(await page.evaluate(async()=>{try{await Studio.flush();return false;}catch{return true;}}));
-  assert(await page.evaluate(async()=>{try{await actions.backup();return false;}catch(e){return e.message.includes('Complete Backup');}}));await page.evaluate(()=>actions['rescue-sheet']());const backup=JSON.parse(await fs.readFile(path.join(run,'exports','Unsaved rescue.sfsheet'),'utf8'));assert.equal(backup.project.name,'Unsaved rescue');assert.equal(await page.evaluate(()=>Studio.libraryCount),10000);assert.deepEqual(errors,[]);
-  console.log(JSON.stringify({run,resized,library:10000,pack:pack.decals.length,previewPixel:preview.pixel,checks:'all eight review reproductions fixed; safe resize restart, valid correction, locked inspector, recursive print bounds, opacity-safe ungroup, library limit/update, pack round trip, unsaved-sheet rescue during save failure',errors},null,2));
- }finally{await app.close();}
+const { _electron: electron } = require('playwright'),
+  fs = require('node:fs/promises'),
+  path = require('node:path'),
+  assert = require('node:assert/strict');
+async function main() {
+  const root = path.resolve(__dirname, '..'),
+    run = path.join(root, 'test-output', 'review-fixes-' + Date.now());
+  await fs.mkdir(run, { recursive: true });
+  const env = {
+    ...process.env,
+    SLOTFORGE_WORKSPACE: path.join(run, 'workspace'),
+    SLOTFORGE_TEST_PROFILE: path.join(run, 'profile'),
+    SLOTFORGE_EXPORT_DIR: path.join(run, 'exports')
+  };
+  delete env.ELECTRON_RUN_AS_NODE;
+  const launch = () =>
+    electron.launch({
+      executablePath: process.env.SLOTFORGE_TEST_EXE || require('electron'),
+      args: process.env.SLOTFORGE_TEST_EXE ? [] : [root],
+      env
+    });
+  let app = await launch(),
+    page = await app.firstWindow();
+  const errors = [];
+  const attach = async () => {
+    page.on('pageerror', e => errors.push(e.message));
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
+    await page.waitForFunction(() => window.Studio?.ready);
+  };
+  const change = async (id, v) => {
+      await page.locator(id).fill(v);
+      await page.locator(id).press('Tab');
+    },
+    done = () => page.locator('#dialog [data-action="close"]').last().click();
+  try {
+    await attach();
+    await done();
+    await page.locator('[data-action="shapes"]').click();
+    await page.locator('[data-create="line"]').click();
+    const handle = await page.locator('#paper [data-handle]').boundingBox(),
+      scale = await page.evaluate(() => document.querySelector('#paper').getScreenCTM().a);
+    await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(handle.x + handle.width / 2 - 38 * scale, handle.y + handle.height / 2, {
+      steps: 5
+    });
+    await page.mouse.up();
+    const resized = await page.evaluate(() => {
+      DM.validateProject(Studio.project);
+      return { w: Studio.project.items[0].w, h: Studio.project.items[0].h };
+    });
+    assert.deepEqual(resized, { w: 4, h: 0.1 });
+    await page.evaluate(() => Studio.flush());
+    await app.close();
+    app = await launch();
+    page = await app.firstWindow();
+    await attach();
+    await page.evaluate(() => Studio.select([Studio.project.items[0].id]));
+    await change('#prop-w', '0');
+    assert.ok((await page.locator('#toast').textContent()).includes('between'));
+    await change('#prop-w', '25');
+    assert.equal(await page.evaluate(() => Studio.project.items[0].w), 25);
+    await page.locator('[data-action="lock"]').click();
+    for (const id of ['#prop-x', '#prop-w', '#prop-opacity']) assert.ok(await page.locator(id).isDisabled());
+    const lockedX = await page.evaluate(() => Studio.project.items[0].x);
+    await page.locator('#prop-x').evaluate(el => {
+      el.value = '60';
+      el.dispatchEvent(new Event('change'));
+    });
+    assert.equal(await page.evaluate(() => Studio.project.items[0].x), lockedX);
+    await page.locator('[data-action="lock"]').click();
+    await change('#prop-x', '60');
+    assert.equal(await page.evaluate(() => Studio.project.items[0].x), 60);
+    await page.evaluate(() => {
+      const g = DM.group([DM.item('rect', { x: 0, y: 0, w: 10, h: 10, fill: '#ff0000' })]);
+      g.x = 195;
+      g.y = 20;
+      Studio.project.items = [g];
+      Studio.select([g.id]);
+    });
+    await page.locator('[data-action="edit-group"]').click();
+    await change('#group-x', '20');
+    await page.locator('#group-apply').click();
+    assert.ok(await page.evaluate(() => DM.warnings(Studio.project).some(w => w.type === 'margin')));
+    const preview = await page.evaluate(async () => {
+      const svg = Art.standalone(Studio.project.items[0]),
+        im = new Image();
+      im.src = Art.url(svg);
+      await im.decode();
+      const c = document.createElement('canvas');
+      c.width = 300;
+      c.height = 100;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(im, 0, 0, 300, 100);
+      return { svg, pixel: [...ctx.getImageData(250, 50, 1, 1).data] };
+    });
+    assert.ok(preview.svg.includes('width="30mm"'));
+    assert.deepEqual(preview.pixel, [255, 0, 0, 255]);
+    await page.locator('[data-action="pdf"]').first().click();
+    assert.ok((await page.locator('#dialog h2').textContent()).includes('Review before'));
+    await done();
+    await page.locator('[data-action="arrange"]').click();
+    assert.deepEqual(await page.evaluate(() => DM.warnings(Studio.project)), []);
+    assert.equal(await page.evaluate(() => DM.bounds(Studio.project.items[0]).x), 5);
+    await page.evaluate(() => {
+      const g = DM.group([DM.item('rect', { x: 20, y: 20, w: 10, h: 10, opacity: 0.8 })]);
+      g.opacity = 0.5;
+      Studio.project.items = [g];
+      Studio.select([g.id]);
+    });
+    await page.locator('[data-action="ungroup"]').click();
+    assert.equal(await page.evaluate(() => Studio.project.items[0].opacity), 0.4);
+    await page.evaluate(() => {
+      const g = DM.group([
+        DM.item('rect', { x: 0, y: 0, w: 10, h: 10 }),
+        DM.item('rect', { x: 5, y: 0, w: 10, h: 10 })
+      ]);
+      g.opacity = 0.5;
+      Studio.project.items = [g];
+      Studio.select([g.id]);
+    });
+    const before = await page.evaluate(() => JSON.stringify(Studio.project.items));
+    await page.locator('[data-action="ungroup"]').click();
+    assert.equal(await page.evaluate(() => JSON.stringify(Studio.project.items)), before);
+    assert.ok((await page.locator('#toast').textContent()).includes('transparency'));
+    await page.evaluate(async () => {
+      const art = DM.item('rect');
+      let first;
+      document.querySelector('#library-search').value = 'no matching entries';
+      for (let batch = 0; batch < 20; batch++) {
+        const entries = await Library.import(
+          Array.from({ length: 500 }, (_, n) => ({
+            id: DM.uid(),
+            name: 'Saved ' + (batch * 500 + n),
+            scale: 32,
+            art
+          })),
+          []
+        );
+        first = first || entries[0];
+      }
+      Studio.project.items[0].libraryId = first.id;
+      Studio.select([Studio.project.items[0].id]);
+    });
+    await page.locator('#inspector [data-action="save-decal"]').click();
+    await page.locator('#save-decal-confirm').click();
+    await page.waitForFunction(() => document.querySelector('#dialog-error')?.textContent.includes('10,000'));
+    assert.equal(await page.evaluate(() => Studio.libraryCount), 10000);
+    await page.locator('#update-master').click();
+    await page.waitForFunction(() => !document.querySelector('#dialog').open);
+    assert.equal(await page.evaluate(() => Studio.libraryCount), 10000);
+    await page.locator('[data-action="export-pack"]').first().click();
+    assert.ok(await page.locator('#collection-confirm').isDisabled());
+    await page.locator('#project-sort').selectOption('name');
+    for (let n = 0; n < 10; n++) {
+      await page.waitForFunction(
+        () => document.querySelector('#collection-items')?.dataset.loading === 'false'
+      );
+      await page.locator('#collection-all').click();
+      await page.locator('#collection-next').click();
+    }
+    await page.waitForFunction(
+      () => document.querySelector('#collection-items')?.dataset.loading === 'false'
+    );
+    for (let n = 0; n < 20; n++) await page.locator('.collection-item [data-select]').nth(n).check();
+    assert.match(await page.locator('#collection-confirm').textContent(), /500/);
+    await page.locator('#collection-confirm').click();
+    await page.waitForFunction(() => !document.querySelector('#dialog').open);
+    const pack = JSON.parse(
+      await fs.readFile(path.join(run, 'exports', 'My decal collection.sfdecal'), 'utf8')
+    );
+    assert.equal(pack.decals.length, 500);
+    assert.equal(await page.evaluate(p => DM.readPack(p).decals.length, pack), 500);
+    assert.ok(
+      await page.evaluate(async () => {
+        try {
+          await exportDecals(Array(501).fill({ id: 'too-many' }));
+          return false;
+        } catch {
+          return true;
+        }
+      })
+    );
+    await page.evaluate(() => Studio.flush());
+    await app.close();
+    app = await launch();
+    page = await app.firstWindow();
+    await attach();
+    assert.equal(await page.evaluate(() => Studio.libraryCount), 10000);
+    await app.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('save');
+      ipcMain.handle('save', () => {
+        throw Error('Simulated workspace write failure');
+      });
+    });
+    await page.evaluate(() => {
+      mutate(() => (project.name = 'Unsaved rescue'));
+    });
+    assert.ok(
+      await page.evaluate(async () => {
+        try {
+          await Studio.flush();
+          return false;
+        } catch {
+          return true;
+        }
+      })
+    );
+    assert(
+      await page.evaluate(async () => {
+        try {
+          await actions.backup();
+          return false;
+        } catch (e) {
+          return e.message.includes('Complete Backup');
+        }
+      })
+    );
+    await page.evaluate(() => actions['rescue-sheet']());
+    const backup = JSON.parse(await fs.readFile(path.join(run, 'exports', 'Unsaved rescue.sfsheet'), 'utf8'));
+    assert.equal(backup.project.name, 'Unsaved rescue');
+    assert.equal(await page.evaluate(() => Studio.libraryCount), 10000);
+    assert.deepEqual(errors, []);
+    console.log(
+      JSON.stringify(
+        {
+          run,
+          resized,
+          library: 10000,
+          pack: pack.decals.length,
+          previewPixel: preview.pixel,
+          checks:
+            'all eight review reproductions fixed; safe resize restart, valid correction, locked inspector, recursive print bounds, opacity-safe ungroup, library limit/update, pack round trip, unsaved-sheet rescue during save failure',
+          errors
+        },
+        null,
+        2
+      )
+    );
+  } finally {
+    await app.close();
+  }
 }
-main().catch(e=>{console.error(e);process.exitCode=1;});
+main().catch(e => {
+  console.error(e);
+  process.exitCode = 1;
+});

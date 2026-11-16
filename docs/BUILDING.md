@@ -25,6 +25,10 @@ Storage uses the bundled Node/Electron `node:sqlite` module in a worker; it does
 
 Run builds as your normal user.
 
+## Code formatting
+
+First-party JavaScript and CSS are formatted with Prettier (pinned in devDependencies, settings in `.prettierrc.json`). Run `npm run format` after editing and `npm run format:check` to verify. Vendored code, `src/pdf-lib.cjs`, HTML and Markdown are excluded via `.prettierignore`. The one-time reformat commit is listed in `.git-blame-ignore-revs`; use `git config blame.ignoreRevsFile .git-blame-ignore-revs` so `git blame` skips it.
+
 ## Native builders
 
 - macOS: `bash "Build macOS.command" --no-pause`
