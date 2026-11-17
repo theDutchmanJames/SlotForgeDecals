@@ -34,6 +34,12 @@ Print & cut for cutting machines and hand cutting, a Windows installer, faster e
 - The PDF review lists one row per decal, merges identical copies and names any bitmap parts.
 - The older .sfbackup format moved into a collapsible section of Settings.
 
+## Faster with big workspaces
+
+- Decals starts in about half the time, and saving no longer slows down as the workspace grows: on a test workspace with 2,000 decals and 300 sheets, autosave went from about 1 second to 60 ms.
+- Saved sheets open faster, and the Sheet Library shows its previews almost instantly.
+- Dragging, box-selecting and zooming stay smooth on busy pages with many logos and cut lines.
+
 ## Update notice
 
 - About 15 seconds after starting, Decals asks GitHub whether a newer version has been published, at most twice a day. Only the version number is requested; nothing about you or your sheets is sent.
@@ -55,6 +61,6 @@ The Windows installer installs for your user account only, lets you choose the f
 
 ## Verification and sources
 
-Local verification passed **139 unit tests** and **29 desktop suites**, including new checks for print & cut packages (DPI, millimetre sizes, DXF and SVG), copy and paste, clipboard images, installed fonts, recolouring, mirrored copies, batch numbers, custom paper and the update notice. The packaged Windows build passed the packaged acceptance suites. All test workspaces are isolated from user data.
+Local verification passed **143 unit tests** and **29 desktop suites**, including new checks for print & cut packages (DPI, millimetre sizes, DXF and SVG), copy and paste, clipboard images, installed fonts, recolouring, mirrored copies, batch numbers, custom paper and the update notice. The packaged Windows build passed the packaged acceptance suites. All test workspaces are isolated from user data.
 
 Licensed under **AGPL-3.0-or-later**; application source, corresponding Ghostscript and MuPDF sources, revision records and build instructions accompany the release. Bundled components retain their notices in THIRD-PARTY-NOTICES.txt.
