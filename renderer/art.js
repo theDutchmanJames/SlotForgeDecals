@@ -122,10 +122,36 @@
       mixed: !!svg.querySelector('image')
     };
   }
+  // Prepared SVG artwork per source text and id prefix. Least recently used sources are dropped
+  // first (it used to be cleared completely past 100 entries, so sheets with more SVG logos re-parsed
+  // every logo on every redraw). Keyed by the source string itself, whose hash the engine caches.
   const svgCache = new Map();
+  let svgCacheSize = 0;
+  const SVG_CACHE_SOURCES = 300,
+    SVG_CACHE_CHARS = 50e6;
   function svgBody(source, prefix) {
-    const key = prefix + source;
-    if (svgCache.has(key)) return svgCache.get(key);
+    const forSource = svgCache.get(source);
+    if (forSource?.has(prefix)) {
+      svgCache.delete(source);
+      svgCache.set(source, forSource);
+      return forSource.get(prefix);
+    }
+    const value = prepareSvg(source, prefix);
+    if (forSource) {
+      svgCache.delete(source);
+      svgCache.set(source, forSource);
+    } else svgCache.set(source, new Map());
+    svgCache.get(source).set(prefix, value);
+    svgCacheSize += value.length;
+    for (const [oldest, entries] of svgCache) {
+      if (svgCache.size <= SVG_CACHE_SOURCES && svgCacheSize <= SVG_CACHE_CHARS) break;
+      if (oldest === source) continue;
+      for (const v of entries.values()) svgCacheSize -= v.length;
+      svgCache.delete(oldest);
+    }
+    return value;
+  }
+  function prepareSvg(source, prefix) {
     const doc = new DOMParser().parseFromString(source, 'image/svg+xml'),
       svg = doc.documentElement;
     const ids = new Map([...svg.querySelectorAll('[id]')].map((n, j) => [n.id, prefix + '-' + j]));
@@ -165,10 +191,7 @@
     svg.style.removeProperty('width');
     svg.style.removeProperty('height');
     svg.setAttribute('preserveAspectRatio', 'none');
-    const value = new XMLSerializer().serializeToString(svg);
-    if (svgCache.size > 100) svgCache.clear();
-    svgCache.set(key, value);
-    return value;
+    return new XMLSerializer().serializeToString(svg);
   }
   let measureId = 0;
   function textBox(i) {
@@ -215,6 +238,17 @@
     } finally {
       svg.remove();
     }
+  }
+  // Text without stored bounds (older sheets, imports) is measured once per look, not per redraw.
+  // Fonts changing (loadFonts) clears it, since metrics depend on the loaded font.
+  const textCache = new Map();
+  function measuredText(i) {
+    const key = JSON.stringify([i.font, !!i.bold, !!i.italic, i.spacing || 0, i.text, i.curve || 0]);
+    if (!textCache.has(key)) {
+      if (textCache.size > 500) textCache.delete(textCache.keys().next().value);
+      textCache.set(key, textBox(i));
+    }
+    return textCache.get(key);
   }
   function bendText(i, value) {
     const old = i.textBounds || textBox(i),
@@ -272,7 +306,7 @@
       case 'stripe':
         return `<rect width="${i.w}" height="${i.h * 0.42}" fill="${fill}"/><rect y="${i.h * 0.58}" width="${i.w}" height="${i.h * 0.42}" fill="${E(i.fill2 || '#245cc3')}"/>`;
       case 'text': {
-        const b = i.textBounds && (!i.curve || i.textBounds.advance) ? i.textBounds : textBox(i),
+        const b = i.textBounds && (!i.curve || i.textBounds.advance) ? i.textBounds : measuredText(i),
           id = prefix + '-text-curve';
         const path = i.curve ? Finishing.arc(b.advance, i.curve) : null;
         const lettering = path ? `<defs><path id="${E(id)}" d="${path}"/></defs>` : '';
@@ -383,19 +417,27 @@
     trimFonts();
   }
   async function loadFonts(fonts) {
+    // New fonts are decoded in parallel, then registered in list order (the last one per family wins).
+    const fresh = new Map();
     for (const f of fonts) {
       const old = loadedFonts.get(f.family);
+      fresh.delete(f.family);
       if (old?.data === f.data) {
         loadedFonts.delete(f.family);
         loadedFonts.set(f.family, old);
-        continue;
-      }
-      const face = new FontFace(f.family, `url(${f.data})`);
-      await face.load();
-      if (old) document.fonts.delete(old.face);
-      document.fonts.add(face);
-      loadedFonts.set(f.family, { face, data: f.data });
+      } else fresh.set(f.family, f);
     }
+    const faces = await Promise.all(
+      [...fresh.values()].map(f => new FontFace(f.family, `url(${f.data})`).load())
+    );
+    [...fresh.values()].forEach((f, n) => {
+      const old = loadedFonts.get(f.family);
+      if (old) document.fonts.delete(old.face);
+      document.fonts.add(faces[n]);
+      loadedFonts.delete(f.family);
+      loadedFonts.set(f.family, { face: faces[n], data: f.data });
+    });
+    if (fresh.size) textCache.clear();
     trimFonts(new Set(fonts.map(f => f.family)));
   }
   function inspectItems(items) {

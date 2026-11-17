@@ -228,7 +228,10 @@
     const k = Math.min(pxPerMm, 2400 / Math.max(vw, vh)),
       w = Math.max(4, Math.ceil(vw * k)),
       h = Math.max(4, Math.ceil(vh * k));
-    const fonts = p.fonts.map(f => `@font-face{font-family:'${f.family}';src:url('${f.data}');}`).join('');
+    // Only the fonts this decal uses: embedding every sheet font made each drawing megabytes larger.
+    const fonts = DM.fontsFor([i], p.fonts)
+      .map(f => `@font-face{font-family:'${f.family}';src:url('${f.data}');}`)
+      .join('');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${vx} ${vy} ${vw} ${vh}" preserveAspectRatio="none"><style>${fonts}</style>${Art.element(i, 'cut', 'all')}</svg>`;
     const img = new Image();
     img.src = Art.url(svg);
@@ -256,7 +259,9 @@
       '|' +
       k +
       '|' +
-      p.fonts.map(f => f.family).join(',') +
+      DM.fontsFor([i], p.fonts)
+        .map(f => f.family)
+        .join(',') +
       '|' +
       JSON.stringify(top, (key, v) =>
         typeof v === 'string' && v.length > 240 ? v.length + ':' + v.slice(0, 80) + v.slice(-80) : v

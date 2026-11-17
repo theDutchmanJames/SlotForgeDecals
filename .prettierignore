@@ -12,3 +12,4 @@ src/pdf-lib.cjs
 *.md
 *.yml
 package-lock.json
+renderer/car-bounds.js

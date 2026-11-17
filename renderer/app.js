@@ -207,6 +207,9 @@ async function start() {
   document.body.inert = true;
   document.body.setAttribute('aria-busy', 'true');
   try {
+    // The default car decodes while the workspace loads instead of after it.
+    const car = loadCar('gt');
+    car.catch(() => {});
     const loaded = await desktop.load();
     rootPath = loaded.root;
     appVersion = loaded.version || '';
@@ -224,12 +227,14 @@ async function start() {
           ' legacy file(s) could not be migrated. Originals are kept in your workspace folder.',
         true
       );
-    await loadCar('gt');
+    await car;
     ready = true;
     applyTheme();
     render();
     $('#save-status').innerHTML = '<i></i>Saved locally';
     if (!loaded.data) welcome();
+    // Load the path library once the editor is idle, so the Path Tool opens without a wait.
+    requestIdleCallback(() => PathTools.ready().catch(() => {}), { timeout: 4000 });
   } catch (e) {
     document.body.innerHTML = `<div class="error-state"><h1>Your workspace needs attention</h1><p>${E(e.message)}</p><p>No existing data has been overwritten.</p><button id="open-recovery">Open workspace folder</button><button id="restore-complete-recovery">Restore Complete Backup</button></div>`;
     $('#open-recovery').onclick = () => desktop.folder();
@@ -256,12 +261,29 @@ function loadCar(body) {
   });
   return carLoads[body];
 }
+const carImage = (body, view) =>
+  new URL(
+    body === 'gt' ? '../assets/car-' + view + '.png' : `../assets/cars/${body}-${view}.webp`,
+    location.href
+  ).href;
 async function loadCars(body = 'gt') {
   carData[body] = {};
-  for (const view of ['side', 'top']) {
+  // Built-in cars have their size and outline precomputed (renderer/car-bounds.js), so nothing has
+  // to be decoded before the editor opens; the preview loads the picture itself.
+  const known = globalThis.CAR_BOUNDS?.[body];
+  if (known?.side && known?.top) {
+    for (const view of ['side', 'top']) carData[body][view] = { src: carImage(body, view), ...known[view] };
+    return;
+  }
+  const views = ['side', 'top'].map(view => {
     const img = new Image();
-    img.src = body === 'gt' ? '../assets/car-' + view + '.png' : `../assets/cars/${body}-${view}.webp`;
-    await img.decode();
+    img.src = carImage(body, view);
+    const decoded = img.decode();
+    decoded.catch(() => {}); // awaited below; avoids an unhandled rejection if the other view fails first
+    return { view, img, decoded };
+  });
+  for (const { view, img, decoded } of views) {
+    await decoded;
     const c = document.createElement('canvas');
     c.width = img.naturalWidth;
     c.height = img.naturalHeight;
@@ -433,7 +455,8 @@ function zoomSheet(factor, clientX, clientY) {
     next = Math.max(0.5, Math.min(12, old * factor));
   if (next === old) return;
   zoom = next;
-  renderPaper();
+  sizePaper();
+  CanvasTools.draw();
   const after = paper.getBoundingClientRect();
   area.scrollLeft += after.left + x * next - clientX;
   area.scrollTop += after.top + y * next - clientY;
@@ -450,7 +473,50 @@ $('#sheet-scroll').addEventListener(
   },
   { passive: false }
 );
-function renderPaper() {
+const itemTransform = i =>
+  `translate(${i.x + i.w / 2} ${i.y + i.h / 2}) rotate(${i.rotation}) translate(${-i.w / 2} ${-i.h / 2})`;
+function itemMarkup(i, n) {
+  return `<g class="sheet-item ${i.locked ? 'locked' : ''}" data-id="${E(i.id)}"><g transform="${itemTransform(i)}" opacity="${i.opacity}">${Art.body(i, 'sheet' + n)}<rect class="item-hit" width="${i.w}" height="${i.h}"/>${selected.has(i.id) ? `<rect class="selection" width="${i.w}" height="${i.h}"/>${!i.locked && selected.size === 1 ? `<rect class="handle" data-handle="${E(i.id)}" x="${i.w - 1}" y="${i.h - 1}" width="2" height="2"/>` : ''}` : ''}</g></g>`;
+}
+// While dragging, the screen is updated at most once per frame and only where needed: a move shifts
+// the dragged decals, a resize redraws that one decal, a box selection redraws the selection. The
+// full redraw follows when the drag ends (finishSheetDrag).
+let dragFrame = 0;
+function scheduleDragFrame() {
+  dragFrame ||= requestAnimationFrame(() => {
+    dragFrame = 0;
+    if (!drag) return;
+    const onPage = project.items.filter(i => i.page === page);
+    if (drag.kind === 'select') {
+      // Redraw only decals whose selection mark changed; the panels follow when the drag ends.
+      onPage.forEach((i, n) => {
+        const node = $('#paper').querySelector(`.sheet-item[data-id="${CSS.escape(i.id)}"]`);
+        if (!node) return;
+        const shown = node.querySelector('[data-handle]') ? 2 : node.querySelector('.selection') ? 1 : 0,
+          wanted = selected.has(i.id) ? (selected.size === 1 && !i.locked ? 2 : 1) : 0;
+        if (shown !== wanted) node.outerHTML = itemMarkup(i, n);
+      });
+      $('#paper .selection-marquee')?.remove();
+      $('#paper').insertAdjacentHTML('beforeend', marqueeMarkup());
+      selectionStatus();
+      return;
+    }
+    for (const old of drag.initial) {
+      const n = onPage.findIndex(i => i.id === old.id),
+        node = $('#paper').querySelector(`.sheet-item[data-id="${CSS.escape(old.id)}"]`);
+      if (n < 0 || !node) return renderPaper();
+      if (drag.handle) node.outerHTML = itemMarkup(onPage[n], n);
+      else node.firstElementChild.setAttribute('transform', itemTransform(onPage[n]));
+    }
+    if (drag.handle) {
+      $('#cut-preview-layer')?.remove(); // redrawn for the new size when the drag ends
+      renderCar();
+    } else drawCutPreview();
+  });
+}
+// Sheet size on screen, zoom label and rulers. Zooming only needs this: the artwork scales with the
+// viewBox, so it is not redrawn.
+function sizePaper() {
   const s = DM.size(project),
     scale = zoom || fitScale();
   $('#paper-wrap').style.width = s.w * scale + 'px';
@@ -459,15 +525,6 @@ function renderPaper() {
   $('#paper').setAttribute('viewBox', `0 0 ${s.w} ${s.h}`);
   $('#sheet-size').textContent = `${s.w} × ${s.h} mm`;
   $('#zoom').textContent = zoom ? Math.round((scale / 3.7795) * 100) + '%' : 'Fit page';
-  const art = project.items
-    .filter(i => i.page === page)
-    .map(
-      (i, n) =>
-        `<g class="sheet-item ${i.locked ? 'locked' : ''}" data-id="${E(i.id)}"><g transform="translate(${i.x + i.w / 2} ${i.y + i.h / 2}) rotate(${i.rotation}) translate(${-i.w / 2} ${-i.h / 2})" opacity="${i.opacity}">${Art.body(i, 'sheet' + n)}<rect class="item-hit" width="${i.w}" height="${i.h}"/>${selected.has(i.id) ? `<rect class="selection" width="${i.w}" height="${i.h}"/>${!i.locked && selected.size === 1 ? `<rect class="handle" data-handle="${E(i.id)}" x="${i.w - 1}" y="${i.h - 1}" width="2" height="2"/>` : ''}` : ''}</g></g>`
-    )
-    .join('');
-  $('#paper').innerHTML =
-    `<rect width="${s.w}" height="${s.h}" fill="white"/><rect x="${project.margin}" y="${project.margin}" width="${s.w - 2 * project.margin}" height="${s.h - 2 * project.margin}" fill="none" stroke="#b7c1cf" stroke-width=".15" stroke-dasharray="1.5 1" pointer-events="none"/>${art}${marqueeMarkup()}`;
   $('#ruler-x').innerHTML = Array.from(
     { length: Math.floor(s.w / 5) + 1 },
     (_, n) =>
@@ -478,6 +535,16 @@ function renderPaper() {
     (_, n) =>
       `<i class="tick-y ${n % 10 === 0 ? 'major' : ''}" style="top:${n * 5 * scale}px">${n % 10 === 0 ? `<span>${n * 5}</span>` : ''}</i>`
   ).join('');
+}
+function renderPaper() {
+  const s = DM.size(project);
+  sizePaper();
+  const art = project.items
+    .filter(i => i.page === page)
+    .map(itemMarkup)
+    .join('');
+  $('#paper').innerHTML =
+    `<rect width="${s.w}" height="${s.h}" fill="white"/><rect x="${project.margin}" y="${project.margin}" width="${s.w - 2 * project.margin}" height="${s.h - 2 * project.margin}" fill="none" stroke="#b7c1cf" stroke-width=".15" stroke-dasharray="1.5 1" pointer-events="none"/>${art}${marqueeMarkup()}`;
   CanvasTools.draw();
   drawCutPreview();
 }
@@ -845,6 +912,8 @@ function finishSheetDrag(cancel = false) {
   if (!drag) return;
   const d = drag;
   drag = null;
+  cancelAnimationFrame(dragFrame);
+  dragFrame = 0;
   if (cancel) {
     selected = d.beforeSelected;
     if (d.before) project = d.before;
@@ -919,7 +988,7 @@ sheetSurface.onpointermove = e => {
     const box = selectionBox(drag.start, p);
     selected = new Set(drag.additive ? drag.beforeSelected : []);
     for (const i of project.items) if (i.page === page && DM.intersectsSelection(i, box)) selected.add(i.id);
-    renderSelection();
+    scheduleDragFrame();
     return;
   }
   const snap = n => ($('#snap').checked && !e.altKey ? Math.round(n) : n);
@@ -948,8 +1017,7 @@ sheetSurface.onpointermove = e => {
       i.x = old.x + snap(dx);
       i.y = old.y + snap(dy);
     }
-  renderPaper();
-  renderCar();
+  scheduleDragFrame();
 };
 sheetSurface.onpointerup = e => {
   if (CanvasTools.pointer('up', e)) return;
@@ -2028,9 +2096,9 @@ function removeOutline() {
   toast('Outline removed; original artwork restored.');
 }
 const actions = {
-  'draw-path': () => startPathTool(),
-  'edit-path': () => startPathTool(current()),
-  'combine-shapes': startCombineTool,
+  'draw-path': async () => (await PathTools.ready(), startPathTool()),
+  'edit-path': async () => (await PathTools.ready(), startPathTool(current())),
+  'combine-shapes': async () => (await PathTools.ready(), startCombineTool()),
   slice: () => sliceDialog(),
   'artwork-outline': outlineSelected,
   'remove-outline': removeOutline,

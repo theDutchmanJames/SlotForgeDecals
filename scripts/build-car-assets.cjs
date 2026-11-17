@@ -69,6 +69,10 @@ async function main() {
       );
     }
   }
+  // Precomputed sizes and outlines let the app skip decoding car images at startup.
+  const bounds = require('./build-car-bounds.cjs');
+  await fs.writeFile(path.join(root, 'renderer/car-bounds.js'), bounds.source(await bounds.carBounds()));
+  console.log('renderer/car-bounds.js updated');
 }
 main().catch(e => {
   console.error(e);

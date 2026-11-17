@@ -1,15 +1,44 @@
 (function (root, factory) {
   const api = factory(
     typeof module === 'object' ? require('./model.js') : root.DM,
-    typeof module === 'object' ? require('paper') : root.paper
+    typeof module === 'object'
+      ? () => require('paper')
+      : // window.paper is also the sheet's <svg id="paper"> until the library loads.
+        () => (root.paper?.PaperScope ? root.paper : null)
   );
   if (typeof module === 'object') module.exports = api;
   else root.PathTools = api;
-})(globalThis, (DM, paper) => {
+})(globalThis, (DM, getPaper) => {
   'use strict';
-  const scope = new paper.PaperScope();
-  scope.setup(new scope.Size(1000, 1000));
-  scope.settings.insertItems = false;
+  // paper.js (vector booleans and curve fitting) takes about 0.4 s to load in a fresh window, so the
+  // app loads it after startup (ready()). Only smoothing freehand paths and Merge & Cut need it.
+  let shared = null,
+    loading = null;
+  function use() {
+    if (!shared) {
+      const paper = getPaper();
+      if (!paper) throw Error('Path tools are still loading. Try again in a moment.');
+      shared = new paper.PaperScope();
+      shared.setup(new shared.Size(1000, 1000));
+      shared.settings.insertItems = false;
+    }
+    shared.activate();
+    return shared;
+  }
+  function ready() {
+    if (getPaper()) return Promise.resolve();
+    return (loading ??= new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = '../vendor/paper/paper-core.min.js';
+      script.onload = () => resolve();
+      script.onerror = () => {
+        loading = null;
+        script.remove();
+        reject(Error('Path tools could not be loaded.'));
+      };
+      document.head.append(script);
+    }));
+  }
   function contours(item) {
     return item.pathContours.map(c => ({
       closed: c.closed,
@@ -91,7 +120,7 @@
       .join(' ');
   }
   function paperPath(contours) {
-    scope.activate();
+    const scope = use();
     const p = new scope.CompoundPath({ pathData: data(contours), insert: false });
     p.fillRule = 'evenodd';
     return p;
@@ -109,7 +138,7 @@
       }));
   }
   function smooth(points, tolerance = 0.6) {
-    scope.activate();
+    const scope = use();
     const p = new scope.Path({ segments: points, insert: false });
     try {
       p.simplify(tolerance);
@@ -147,7 +176,7 @@
     );
   }
   function geometry(i) {
-    scope.activate();
+    const scope = use();
     if (!eligible(i))
       throw Error(
         'Use unlocked, filled native shapes or closed paths. Ungroup to select individual shapes; imported images, SVGs and text cannot be combined here.'
@@ -268,5 +297,5 @@
       paths.forEach(p => p.remove());
     }
   }
-  return { contours, artwork, data, smooth, split, combine, eligible };
+  return { contours, artwork, data, smooth, split, combine, eligible, ready };
 });
