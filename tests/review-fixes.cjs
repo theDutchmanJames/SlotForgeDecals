@@ -37,8 +37,28 @@ async function main() {
     await done();
     await page.locator('[data-action="shapes"]').click();
     await page.locator('[data-create="line"]').click();
-    const handle = await page.locator('#paper [data-handle]').boundingBox(),
-      scale = await page.evaluate(() => document.querySelector('#paper').getScreenCTM().a);
+    // The resize handle is only 2 mm wide: wait until the layout has settled (same position over
+    // several frames) and the handle is what lies under the pointer, so the drag cannot miss it.
+    const { handle, scale } = await (
+      await page.waitForFunction(
+        () => {
+          const h = document.querySelector('#paper [data-handle]');
+          if (!h || document.querySelector('#dialog[open]')) return (window.__handle = null);
+          const r = h.getBoundingClientRect(),
+            key = [r.x, r.y, r.width, r.height].join();
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          const last = window.__handle;
+          window.__handle = { key, frames: last?.key === key ? last.frames + 1 : 0 };
+          if (window.__handle.frames < 10 || !hit?.closest('[data-handle]')) return null;
+          return {
+            handle: { x: r.x, y: r.y, width: r.width, height: r.height },
+            scale: document.querySelector('#paper').getScreenCTM().a
+          };
+        },
+        null,
+        { polling: 'raf' }
+      )
+    ).jsonValue();
     await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
     await page.mouse.down();
     await page.mouse.move(handle.x + handle.width / 2 - 38 * scale, handle.y + handle.height / 2, {
