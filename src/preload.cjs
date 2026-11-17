@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('desktop', {
   completeBackup: () => ipcRenderer.invoke('complete-backup'),
   completeRestore: () => ipcRenderer.invoke('complete-restore'),
   folder: () => ipcRenderer.invoke('folder'),
+  updateCheck: (action, payload) => ipcRenderer.invoke('update-check', { ...payload, action }),
+  onUpdateStatus: callback => ipcRenderer.on('update-status', () => callback()),
   onClose: callback => ipcRenderer.on('close-request', callback),
   closeReady: () => ipcRenderer.send('close-ready')
 });

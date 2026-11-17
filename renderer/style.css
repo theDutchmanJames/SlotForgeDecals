@@ -3005,3 +3005,43 @@ dialog:has(.vector-view) .dialog-foot {
 .car-body-field {
   margin-bottom: 8px;
 }
+/* Update notice (top bar) and App settings → Updates */
+.update-notice {
+  display: flex;
+  flex-basis: 100%;
+  order: -1;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--blue);
+  border-radius: 6px;
+  background: var(--head);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.update-notice button {
+  padding: 3px 10px;
+  font-size: 11px;
+}
+.update-notice > span {
+  margin-right: auto;
+}
+#update-settings .row {
+  margin-bottom: 8px;
+}
+.update-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  margin: 8px 0 12px;
+}
+.update-facts dt {
+  color: var(--muted);
+}
+.update-facts dd {
+  margin: 0;
+}
+.update-error {
+  color: #ff8d81;
+}

@@ -261,7 +261,7 @@ Start with the example sheet or a blank page. Choose your paper size, import art
 
 ### Updating and building from source
 
-Back up your work, close Decals, then run the newer installer (it replaces the installed version) or replace the portable file. Your workspace remains separate from the app. There is no automatic in-app updater. See the [release notes](RELEASE_NOTES.md) for changes.
+Back up your work, close Decals, then run the newer installer (it replaces the installed version) or replace the portable file. Your workspace remains separate from the app. About 15 seconds after starting, installed and portable copies ask GitHub whether a newer release has been published (at most twice a day) and show a notice with **Download**, which opens the release page, and **Not now**. Decals never downloads or installs updates by itself; turn the check off or run it by hand in **App Settings → Updates**. See the [release notes](RELEASE_NOTES.md) for changes.
 
 Developers can follow the [build instructions](docs/BUILDING.md) for local setup and native packaging. Official Windows, macOS and Linux packages are built and tested by GitHub Actions before publication.
 

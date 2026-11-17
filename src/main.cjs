@@ -1,11 +1,14 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, utilityProcess } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, utilityProcess, net } = require('electron');
 const path = require('node:path'),
   fs = require('node:fs/promises');
 const { Workspace } = require('./storage.cjs');
 const { Projects } = require('./projects.cjs');
 const { writeExport } = require('./export-file.cjs');
+const updates = require('./update-check.cjs');
 let win,
   workspace,
+  updateCheck,
+  updateTimer,
   allowClose = false;
 app.setName('SlotForge Decals');
 if (process.env.SLOTFORGE_TEST_PROFILE) app.setPath('userData', process.env.SLOTFORGE_TEST_PROFILE);
@@ -44,6 +47,48 @@ else {
         return fn(arg);
       });
     handle('load', async () => ({ ...(await workspace.read()), root, version: app.getVersion() }));
+    // "A new version is available" (ported from Paddock): installed and portable apps ask GitHub
+    // about 15 seconds after startup and then at most every 12 hours; development copies only check
+    // when asked in Settings. Test runs never reach GitHub: they may point it at a local server.
+    const testApi = process.env.SLOTFORGE_TEST_PROFILE
+      ? /^http:\/\/127\.0\.0\.1:\d+$/.exec(process.env.SLOTFORGE_UPDATE_API || '')?.[0]
+      : null;
+    updateCheck = new updates.UpdateCheck({
+      profile: app.getPath('userData'),
+      current: app.getVersion(),
+      homepage: require('../package.json').homepage,
+      fetch: (url, init) => net.fetch(url, init),
+      api: testApi || undefined,
+      automatic: process.env.SLOTFORGE_TEST_PROFILE ? !!testApi : app.isPackaged,
+      onChange: () => {
+        if (win && !win.isDestroyed()) win.webContents.send('update-status');
+      }
+    });
+    if (process.env.SLOTFORGE_TEST_PROFILE && !testApi)
+      Object.assign(updateCheck, { repo: null, unavailable: 'Update checks are off in test runs.' });
+    updateTimer = setTimeout(
+      () => {
+        void updateCheck.tick();
+        updateTimer = setInterval(() => void updateCheck.tick(), 60 * 60 * 1000);
+        updateTimer.unref();
+      },
+      (testApi && Number(process.env.SLOTFORGE_UPDATE_DELAY)) || 15000
+    );
+    updateTimer.unref();
+    handle('update-check', async request => {
+      const action = request?.action;
+      if (action === 'status') return updateCheck.status();
+      if (action === 'check') return updateCheck.check();
+      if (action === 'enable') return updateCheck.setEnabled(request.enabled);
+      if (action === 'skip') return updateCheck.skip(request.version);
+      if (action === 'open') {
+        const url = updateCheck.releaseUrl();
+        if (process.env.SLOTFORGE_TEST_PROFILE) global.openedUpdatePage = url;
+        else await shell.openExternal(url);
+        return { opened: true };
+      }
+      throw Error('Unknown update action.');
+    });
     handle('save', data => {
       if (data?.libraryMode !== 'external') throw Error('Invalid editor snapshot.');
       return workspace.save(data);
@@ -310,6 +355,11 @@ else {
       }
     });
     await win.loadFile(path.join(__dirname, '../renderer/index.html'));
+  });
+  app.on('before-quit', () => {
+    clearTimeout(updateTimer);
+    clearInterval(updateTimer);
+    updateCheck?.stop();
   });
   app.on('window-all-closed', () => app.quit());
 }

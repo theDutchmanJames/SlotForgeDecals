@@ -34,6 +34,12 @@ Print & cut for cutting machines and hand cutting, a Windows installer, faster e
 - The PDF review lists one row per decal, merges identical copies and names any bitmap parts.
 - The older .sfbackup format moved into a collapsible section of Settings.
 
+## Update notice
+
+- About 15 seconds after starting, Decals asks GitHub whether a newer version has been published, at most twice a day. Only the version number is requested; nothing about you or your sheets is sent.
+- A newer version shows a notice above the sheet bar: **Download** opens the release page in your browser, **Not now** hides it until an even newer version appears. Decals never downloads or installs anything by itself.
+- **App Settings → Updates** shows the result, has **Check now** and turns automatic checks off.
+
 ## Updating and installing
 
 Your saved sheets and decals remain in **Documents/SlotForge Decals**, outside the application. Sheets that use US Letter, a custom size or cut-line settings need Decals 0.3.0 or newer. Back up first through **Settings → Backup & Recovery → Export Complete Backup**.
@@ -45,10 +51,10 @@ Your saved sheets and decals remain in **Documents/SlotForge Decals**, outside t
 | Linux x64 | linux-amd64.deb | linux-x86_64.AppImage |
 | Linux ARM64 | linux-arm64.deb | linux-arm64.AppImage |
 
-The Windows installer installs for your user account only, lets you choose the folder and never deletes your workspace when uninstalling. Apple Silicon downloads are added after their separate build passes. Mac builds require macOS 15 or newer. Windows builds are unsigned; Smart App Control may block them. Mac builds are ad-hoc signed, not Apple-notarized. There is no automatic in-app updater.
+The Windows installer installs for your user account only, lets you choose the folder and never deletes your workspace when uninstalling. Apple Silicon downloads are added after their separate build passes. Mac builds require macOS 15 or newer. Windows builds are unsigned; Smart App Control may block them. Mac builds are ad-hoc signed, not Apple-notarized. Updates are never installed automatically.
 
 ## Verification and sources
 
-Local verification passed **122 unit tests** and **28 desktop suites**, including new checks for print & cut packages (DPI, millimetre sizes, DXF and SVG), copy and paste, clipboard images, installed fonts, recolouring, mirrored copies, batch numbers and custom paper. The packaged Windows build passed the packaged acceptance suites. All test workspaces are isolated from user data.
+Local verification passed **139 unit tests** and **29 desktop suites**, including new checks for print & cut packages (DPI, millimetre sizes, DXF and SVG), copy and paste, clipboard images, installed fonts, recolouring, mirrored copies, batch numbers, custom paper and the update notice. The packaged Windows build passed the packaged acceptance suites. All test workspaces are isolated from user data.
 
 Licensed under **AGPL-3.0-or-later**; application source, corresponding Ghostscript and MuPDF sources, revision records and build instructions accompany the release. Bundled components retain their notices in THIRD-PARTY-NOTICES.txt.
