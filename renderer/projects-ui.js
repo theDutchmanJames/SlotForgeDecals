@@ -156,9 +156,18 @@ async function sheetEntries(args = {}) {
     entries.unshift(sheetRow({ ...project, count: project.items.length }, { current: true }));
   return { ...result, total: result.total + (includeCurrent ? 1 : 0), entries };
 }
+// Saved sheets carry the thumbnail made when they were saved. Only the current sheet, imported
+// sheets without one and unsaved rows are rendered here.
+async function sheetThumbnail(e) {
+  if (!e.current && !e.project && e.file) {
+    const stored = await desktop.projectThumbnail(e).catch(() => null);
+    if (stored) return stored;
+  }
+  return projectThumbnail(await loadSheetRow(e));
+}
 function sheetPreview(e) {
-  return Library.thumbnail('sheet:' + (e.stamp || project.id + ':' + project.updated), async () =>
-    projectThumbnail(await loadSheetRow(e))
+  return Library.thumbnail('sheet:' + (e.stamp || project.id + ':' + project.updated), () =>
+    sheetThumbnail(e)
   );
 }
 async function loadSheetRow(e) {
@@ -171,7 +180,7 @@ async function loadSheetRow(e) {
   return p;
 }
 async function sheetPreviews(session, entries) {
-  session.watchPreviews(async e => projectThumbnail(await loadSheetRow(e)));
+  session.watchPreviews(sheetThumbnail);
 }
 
 async function projectBrowser() {

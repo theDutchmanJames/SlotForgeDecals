@@ -57,7 +57,10 @@ test('Projects, histories and workspace reload retain sheet size and use compati
   const parent = path.resolve(__dirname, '../test-output');
   await fs.mkdir(parent, { recursive: true });
   const dir = await fs.mkdtemp(path.join(parent, 'page-size-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }));
+  t.after(async () => {
+    await require('../src/sqlite-client.cjs').close(dir);
+    await fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  });
   const store = new Projects(dir),
     p = DM.project('Small sheet');
   p.pageSize = 'a5';

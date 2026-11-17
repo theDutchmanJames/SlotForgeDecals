@@ -16,6 +16,9 @@ class Projects {
   read(entry, { remember = false } = {}) {
     return call(this.root, 'read', { entry, remember });
   }
+  thumbnail(entry) {
+    return call(this.root, 'thumbnail', { entry });
+  }
   save(data) {
     return call(this.root, 'saveSheet', data);
   }

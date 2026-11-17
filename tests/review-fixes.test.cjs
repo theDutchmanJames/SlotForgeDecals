@@ -97,7 +97,10 @@ test('invalid workspace saves cannot replace the current file or rotate backups'
   const parent = path.resolve(__dirname, '../test-output');
   await fs.mkdir(parent, { recursive: true });
   const dir = await fs.mkdtemp(path.join(parent, 'safe-save-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(async () => {
+    await require('../src/sqlite-client.cjs').close(dir);
+    await fs.rm(dir, { recursive: true, force: true });
+  });
   const store = new Workspace(dir),
     p = DM.project('Valid');
   p.items = [DM.item('line')];
@@ -118,7 +121,10 @@ test('workspace recovery skips semantically invalid primary data and retains it 
   const parent = path.resolve(__dirname, '../test-output');
   await fs.mkdir(parent, { recursive: true });
   const dir = await fs.mkdtemp(path.join(parent, 'safe-recovery-'));
-  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  t.after(async () => {
+    await require('../src/sqlite-client.cjs').close(dir);
+    await fs.rm(dir, { recursive: true, force: true });
+  });
   const store = new Workspace(dir),
     data = {
       format: 'slotforge-decals-workspace',

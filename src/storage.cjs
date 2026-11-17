@@ -39,6 +39,10 @@ class Workspace {
   exportLegacy(data) {
     return call(this.root, 'legacy-export', { data });
   }
+  async close() {
+    await this.queue.catch(() => {});
+    return call(this.root, 'close');
+  }
   stats() {
     return call(this.root, 'stats');
   }

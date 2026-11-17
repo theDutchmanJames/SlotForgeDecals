@@ -51,4 +51,6 @@ function call(root, method, args) {
     pump();
   });
 }
-module.exports = { call };
+// Releases the open database file (the worker keeps it open between calls), e.g. before deleting it.
+const close = root => call(root, 'close');
+module.exports = { call, close };

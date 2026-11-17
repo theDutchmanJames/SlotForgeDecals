@@ -153,18 +153,62 @@ const setState = (db, key, value) =>
   db
     .prepare('INSERT INTO state VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value')
     .run(key, String(value));
+// Unused documents and assets are removed at the end of every write. Instead of scanning the whole
+// database each time, connection-local TEMP triggers note every document or asset that was added or
+// lost a reference; only those candidates are checked. TEMP objects live outside the database file,
+// so its schema (and compatibility with older Decals versions) is unchanged. collectAll() remains
+// the full sweep and is what the tests compare against.
+const tracked = new WeakSet();
+function track(db) {
+  if (tracked.has(db)) return;
+  db.exec(`CREATE TEMP TABLE IF NOT EXISTS gc_documents(hash TEXT PRIMARY KEY) WITHOUT ROWID;
+ CREATE TEMP TABLE IF NOT EXISTS gc_batch(hash TEXT PRIMARY KEY) WITHOUT ROWID;
+ CREATE TEMP TABLE IF NOT EXISTS gc_assets(hash TEXT PRIMARY KEY) WITHOUT ROWID;
+ CREATE TEMP TRIGGER IF NOT EXISTS gc_record_update AFTER UPDATE OF document ON main.records WHEN old.document IS NOT new.document BEGIN INSERT OR IGNORE INTO gc_documents VALUES(old.document); END;
+ CREATE TEMP TRIGGER IF NOT EXISTS gc_record_delete AFTER DELETE ON main.records BEGIN INSERT OR IGNORE INTO gc_documents VALUES(old.document); END;
+ CREATE TEMP TRIGGER IF NOT EXISTS gc_document_insert AFTER INSERT ON main.documents BEGIN INSERT OR IGNORE INTO gc_documents VALUES(new.hash); END;
+ CREATE TEMP TRIGGER IF NOT EXISTS gc_child_unlink AFTER DELETE ON main.document_links BEGIN INSERT OR IGNORE INTO gc_documents VALUES(old.child); END;
+ CREATE TEMP TRIGGER IF NOT EXISTS gc_asset_insert AFTER INSERT ON main.assets BEGIN INSERT OR IGNORE INTO gc_assets VALUES(new.hash); END;
+ CREATE TEMP TRIGGER IF NOT EXISTS gc_asset_unlink AFTER DELETE ON main.asset_links BEGIN INSERT OR IGNORE INTO gc_assets VALUES(old.asset); END;`);
+  tracked.add(db);
+}
 function collect(db) {
-  let count;
+  // Bulk changes (restore, migration, large imports) are cheaper as one full sweep.
+  if (db.prepare('SELECT count(*) n FROM gc_documents').get().n > 2000) {
+    db.exec('DELETE FROM gc_documents; DELETE FROM gc_assets;');
+    collectAll(db);
+    return;
+  }
+  // Deleting a document cascades to its links, whose triggers queue the children: repeat until done.
+  for (;;) {
+    db.exec(
+      'DELETE FROM gc_batch; INSERT INTO gc_batch SELECT hash FROM gc_documents; DELETE FROM gc_documents;'
+    );
+    if (!db.prepare('SELECT 1 FROM gc_batch LIMIT 1').get()) break;
+    db.exec(
+      'DELETE FROM documents WHERE hash IN (SELECT hash FROM gc_batch) AND NOT EXISTS (SELECT 1 FROM records WHERE document=documents.hash) AND NOT EXISTS (SELECT 1 FROM document_links WHERE child=documents.hash)'
+    );
+  }
+  db.exec(
+    'DELETE FROM assets WHERE hash IN (SELECT hash FROM gc_assets) AND NOT EXISTS (SELECT 1 FROM asset_links WHERE asset=assets.hash); DELETE FROM gc_assets; DELETE FROM gc_batch;'
+  );
+}
+function collectAll(db) {
+  let count,
+    total = 0;
   do {
-    count = db
+    total += count = db
       .prepare(
         'DELETE FROM documents WHERE hash NOT IN (SELECT document FROM records) AND hash NOT IN (SELECT child FROM document_links)'
       )
       .run().changes;
   } while (count);
-  db.exec('DELETE FROM assets WHERE hash NOT IN (SELECT asset FROM asset_links)');
+  return (
+    total + db.prepare('DELETE FROM assets WHERE hash NOT IN (SELECT asset FROM asset_links)').run().changes
+  );
 }
 function transaction(db, fn) {
+  track(db);
   db.exec('BEGIN IMMEDIATE');
   try {
     const result = fn();
@@ -450,7 +494,7 @@ function list(db, { scope = 'projects', projectId } = {}) {
     unreadable: db.prepare('SELECT count(*) n FROM migration_issues WHERE scope=?').get(scope).n
   };
 }
-function read(db, { entry, remember = false }) {
+function entryFile(entry) {
   if (
     !['projects', 'history', 'workspace'].includes(entry?.scope) ||
     typeof entry.file !== 'string' ||
@@ -458,6 +502,24 @@ function read(db, { entry, remember = false }) {
     /[\\/:]/.test(entry.file)
   )
     throw Error('Invalid project file.');
+}
+// The stored thumbnail of a saved sheet, read without unpacking the sheet itself. Null when the
+// sheet has none (imported sheets) or the entry is stale; the library then renders one.
+function thumbnail(db, { entry }) {
+  entryFile(entry);
+  const row = db.prepare('SELECT * FROM records WHERE scope=? AND key=?').get(entry.scope, entry.file);
+  if (!row || (entry.stamp && entry.stamp !== token(db, row))) return null;
+  const doc = db.prepare('SELECT json FROM documents WHERE hash=?').get(row.document);
+  if (!doc || hash(doc.json) !== row.document) return null;
+  const refs = JSON.parse(doc.json).refs;
+  const ref =
+    Array.isArray(refs) && refs.find(r => r?.asset && r.path?.length === 1 && r.path[0] === 'thumbnail');
+  if (!ref) return null;
+  const png = readAsset(db, ref.asset);
+  return png.length < 2e6 && /^data:image\/png;base64,[A-Za-z\d+/=]+$/.test(png) ? png : null;
+}
+function read(db, { entry, remember = false }) {
+  entryFile(entry);
   const row = db.prepare('SELECT * FROM records WHERE scope=? AND key=?').get(entry.scope, entry.file);
   if (!row) throw Error('This saved sheet is unavailable. Refresh the library.');
   if (entry.stamp && entry.stamp !== token(db, row))
@@ -644,57 +706,105 @@ function execute(root, method, args = {}) {
   if (method === 'restore') return restore(root, args.source);
   const db = connection(file);
   try {
-    const catalog = require('./catalog.cjs');
-    catalog.upgrade(db, file);
-    if (method.startsWith('catalog-')) return catalog.execute(db, method.slice(8), args);
-    if (method === 'legacy-restore') return catalog.restoreLegacy(db, file, args);
-    if (method === 'legacy-export') return catalog.exportLegacy(db, args);
-    switch (method) {
-      case 'load':
-        return workspaceRead(db);
-      case 'save':
-        return workspaceSave(db, args);
-      case 'list':
-        return list(db, args);
-      case 'read':
-        return read(db, args);
-      case 'saveSheet':
-        return transaction(db, () => saveSheet(db, args));
-      case 'import':
-        return transaction(db, () => {
-          if (!Array.isArray(args) || !args.length || args.length > 100)
-            throw Error('Import 1–100 sheets at a time.');
-          if (Buffer.byteLength(JSON.stringify(args)) > MAX) throw Error('Sheet import exceeds 160 MB.');
-          return args.map(p => {
-            const project = DM.validateProject(p);
-            project.id = crypto.randomUUID();
-            project.added = new Date().toISOString();
-            saveSheet(db, { project });
-            return { id: project.id, name: project.name };
-          });
-        });
-      case 'stats':
-        return stats(db, file);
-      case 'verify':
-        verifyAll(db);
-        return true;
-      case 'backup':
-        return backup(db, file, args.destination);
-      default:
-        throw Error('Unknown storage operation.');
-    }
+    require('./catalog.cjs').upgrade(db, file);
+    return run(db, file, method, args);
   } finally {
     db.close();
   }
 }
+// The storage worker keeps one connection per workspace open instead of reopening and re-checking
+// the database for every call. Checks run once when it opens; any error closes it so the next call
+// starts fresh, and restore always works on closed files.
+const sessions = new Map();
+function closeSession(root) {
+  const open = sessions.get(root);
+  sessions.delete(root);
+  try {
+    open?.db.close();
+  } catch {}
+}
+function session(root, method, args = {}) {
+  if (method === 'close') return void closeSession(root);
+  if (method === 'restore') {
+    closeSession(root);
+    return execute(root, method, args);
+  }
+  let open = sessions.get(root);
+  if (open && !fs.existsSync(open.file)) {
+    closeSession(root);
+    open = null;
+  }
+  if (!open) {
+    const file = initialize(root),
+      db = connection(file);
+    try {
+      require('./catalog.cjs').upgrade(db, file);
+    } catch (e) {
+      db.close();
+      throw e;
+    }
+    sessions.set(root, (open = { file, db }));
+  }
+  try {
+    return run(open.db, open.file, method, args);
+  } catch (e) {
+    closeSession(root);
+    throw e;
+  }
+}
+function run(db, file, method, args = {}) {
+  const catalog = require('./catalog.cjs');
+  if (method.startsWith('catalog-')) return catalog.execute(db, method.slice(8), args);
+  if (method === 'legacy-restore') return catalog.restoreLegacy(db, file, args);
+  if (method === 'legacy-export') return catalog.exportLegacy(db, args);
+  switch (method) {
+    case 'load':
+      return workspaceRead(db);
+    case 'save':
+      return workspaceSave(db, args);
+    case 'list':
+      return list(db, args);
+    case 'read':
+      return read(db, args);
+    case 'thumbnail':
+      return thumbnail(db, args);
+    case 'saveSheet':
+      return transaction(db, () => saveSheet(db, args));
+    case 'import':
+      return transaction(db, () => {
+        if (!Array.isArray(args) || !args.length || args.length > 100)
+          throw Error('Import 1–100 sheets at a time.');
+        if (Buffer.byteLength(JSON.stringify(args)) > MAX) throw Error('Sheet import exceeds 160 MB.');
+        return args.map(p => {
+          const project = DM.validateProject(p);
+          project.id = crypto.randomUUID();
+          project.added = new Date().toISOString();
+          saveSheet(db, { project });
+          return { id: project.id, name: project.name };
+        });
+      });
+    case 'stats':
+      return stats(db, file);
+    case 'verify':
+      verifyAll(db);
+      return true;
+    case 'backup':
+      return backup(db, file, args.destination);
+    default:
+      throw Error('Unknown storage operation.');
+  }
+}
 module.exports = {
   execute,
+  session,
+  closeSession,
   connection,
   initialize,
   verifyAll,
   pack,
   unpack,
   transaction,
+  collectAll,
   put,
   workspaceRead,
   workspaceSave,

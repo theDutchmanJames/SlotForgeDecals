@@ -26,6 +26,7 @@ test('serialized SQLite writes survive reload; originals remain migration recove
     assert.equal((await new Workspace(dir).read()).data.project.name, 'Second');
     assert.equal(await fs.readFile(path.join(dir, 'workspace.json'), 'utf8'), '{broken');
   } finally {
+    await require('../src/sqlite-client.cjs').close(dir);
     await fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 });

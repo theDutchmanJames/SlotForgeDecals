@@ -134,6 +134,7 @@ else {
     const projects = new Projects(root);
     handle('projects-list', options => projects.list(options));
     handle('projects-read', ({ entry, remember }) => projects.read(entry, { remember: remember === true }));
+    handle('projects-thumbnail', entry => projects.thumbnail(entry));
     handle('projects-save', data => projects.save(data));
     handle('projects-import', data => projects.importMany(data));
     handle('folder', () => shell.openPath(root));
