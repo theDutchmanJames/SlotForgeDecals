@@ -73,6 +73,36 @@ async function main() {
     ok('US Letter, custom 160 × 230 mm (validated, editable, cancel-safe) and PDF page size');
     await page.locator('#sheet-size-select').selectOption('a4');
 
+    // Car bodies: each built-in car loads, sizes the model from its real length at 1:32 with
+    // undistorted proportions, and can be undone.
+    const roundel = (await P()).items.find(i => i.name === 'Roundel 27');
+    await page.evaluate(id => Studio.select([id]), roundel.id);
+    const bodies = { 'classic-gt': 4180, touring: 4800, rally: 4100, 'group-c': 4800 };
+    for (const [body, real] of Object.entries(bodies)) {
+      await page.locator('#car-body').selectOption(body);
+      await page.waitForFunction(b => Studio.project.preview.body === b, body);
+      const pv = (await P()).preview;
+      assert.ok(Math.abs(pv.length - real / 32) < 0.06, body + ' length ' + pv.length);
+      assert.ok(
+        pv.height > 20 && pv.height < 60 && pv.width > 45 && pv.width < 80,
+        body + ' ' + pv.width + ' x ' + pv.height
+      );
+      for (const view of ['side', 'top']) {
+        await page.locator('#car-' + view).click();
+        await page.waitForFunction(
+          b => document.querySelector('#car-stage image')?.getAttribute('href').includes(b),
+          body
+        );
+        if (body === 'group-c' || view === 'side')
+          await page.locator('#car-stage').screenshot({ path: path.join(run, `car-${body}-${view}.png`) });
+      }
+      await page.locator('#car-side').click();
+      ok(`${body}: ${pv.length} × ${pv.width} × ${pv.height} mm at 1:32`);
+    }
+    await page.locator('#undo').click();
+    assert.equal((await P()).preview.body, 'rally', 'undo returns to the previous car');
+    await page.locator('#car-body').selectOption('gt');
+    assert.ok(Math.abs((await P()).preview.length - 140) < 0.06);
     // Mirrored pair of a decal: copy flipped, placed without overlapping, undoable.
     const before = (await P()).items.length,
       forge = (await P()).items.find(i => i.name === 'Forge Racing');

@@ -90,11 +90,11 @@ A scale such as 1:32 cannot determine a logo's size on its own: you still need a
 
 ### Check the fit on your car
 
-All selected decals appear in the **side or top car preview** at their printed dimensions. Enter your model's length, width and height, or import your own straight-on reference pictures for a closer comparison.
+All selected decals appear in the **side or top car preview** at their printed dimensions. Choose one of five built-in cars — modern GT, classic endurance GT, touring saloon, rally hatchback or Group C prototype — which are sized from the real car's length at your model scale. Enter your model's length, width and height, or import your own straight-on reference pictures for a closer comparison.
 
 Drag decals on the car to try different placements without moving them on the print sheet. Open the enlarged preview to adjust a selected decal's width and height; the sheet and car views update together. Side and top placements are saved with the project.
 
-The supplied GT car is illustrative. This is a **2D sizing aid**, not a measured template for every model, a 3D wrap or a simulation of stretching around curved bodywork. Print a plain-paper proof and check the final fit on the actual shell.
+The supplied cars are illustrative. This is a **2D sizing aid**, not a measured template for every model, a 3D wrap or a simulation of stretching around curved bodywork. Print a plain-paper proof and check the final fit on the actual shell.
 
 ### Arrange sheets without changing decal sizes
 

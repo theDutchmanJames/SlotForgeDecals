@@ -15,6 +15,7 @@ Print & cut for cutting machines and hand cutting, a Windows installer, faster e
 - **Recolour…** lists every colour in the selected decals, including inside SVG artwork, named colours and default black, and replaces the ones you change: handy for team variants.
 - **Add mirrored copy (other side)** flips directional graphics such as arrows and stripes for the other side of the car. Editable text stays readable; lettering inside imported logos is mirrored too.
 - **US Letter** and **custom paper sizes** (50–600 mm) join A4, A5 and Photo 4×6 in.
+- **Four new cars** in the car preview: classic endurance GT, touring saloon, rally hatchback and Group C prototype, each with side and top views. Choosing a car sizes the model from the real car's length at your scale.
 
 ## Everyday editing
 

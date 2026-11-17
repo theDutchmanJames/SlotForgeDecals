@@ -224,7 +224,7 @@ async function start() {
           ' legacy file(s) could not be migrated. Originals are kept in your workspace folder.',
         true
       );
-    await loadCars();
+    await loadCar('gt');
     ready = true;
     applyTheme();
     render();
@@ -245,10 +245,22 @@ async function start() {
     document.body.removeAttribute('aria-busy');
   }
 }
-async function loadCars() {
+// Car images load on demand per body and are cached; the visible outline (alpha bounds)
+// defines the car's extent in the preview.
+const carLoads = {};
+const carBody = () => (Object.hasOwn(DM.CAR_BODIES, project.preview.body) ? project.preview.body : 'gt');
+function loadCar(body) {
+  carLoads[body] ??= loadCars(body).catch(e => {
+    delete carLoads[body];
+    throw e;
+  });
+  return carLoads[body];
+}
+async function loadCars(body = 'gt') {
+  carData[body] = {};
   for (const view of ['side', 'top']) {
     const img = new Image();
-    img.src = '../assets/car-' + view + '.png';
+    img.src = body === 'gt' ? '../assets/car-' + view + '.png' : `../assets/cars/${body}-${view}.webp`;
     await img.decode();
     const c = document.createElement('canvas');
     c.width = img.naturalWidth;
@@ -268,7 +280,7 @@ async function loadCars() {
           y0 = Math.min(y0, y);
           y1 = Math.max(y1, y);
         }
-    carData[view] = {
+    carData[body][view] = {
       src: img.src,
       width: c.width,
       height: c.height,
@@ -647,8 +659,14 @@ function carPosition(i, view, list = items()) {
 }
 function carMarkup(prefix = 'car') {
   const v = project.preview.view,
-    source = project.preview[v] || carData[v];
-  if (!source) return '';
+    body = carBody();
+  if (!project.preview[v] && !carData[body]?.[v]) {
+    loadCar(body)
+      .then(() => renderCar())
+      .catch(fail);
+    if (!carData.gt?.[v]) return '';
+  }
+  const source = project.preview[v] || carData[body]?.[v] || carData.gt[v];
   const length = project.preview.length,
     h = v === 'top' ? project.preview.width : project.preview.height,
     b = source.bounds || { x: 0, y: 0, w: source.width, h: source.height },
@@ -666,6 +684,7 @@ function renderCar() {
   $('#car-side').classList.toggle('active', project.preview.view === 'side');
   $('#car-top').classList.toggle('active', project.preview.view === 'top');
   $('#car-stage').innerHTML = carMarkup();
+  $('#car-body').value = carBody();
   $('#car-dimension').textContent = `Model length: ${Number(project.preview.length.toFixed(1))} mm`;
   bindCar($('#car-stage'));
   const expanded = $('#expanded-car');
@@ -1400,7 +1419,7 @@ const HELP_TOPICS = [
   ],
   [
     'Size & car preview',
-    '<p>Width and height are the <strong>printed dimensions</strong> in millimetres. Keep proportions resizes both together. Scale Conversion changes the model scale for the sheet or selected artwork.</p><p>The <strong>Car preview</strong> at the top of the right panel shows every selected decal at its printed size. Drag a decal over the car to test placement without moving it on the sheet, or enlarge the preview to adjust its size. Use Reference size to enter your model’s measurements or import your own side and top pictures. The car is illustrative, not a wrap calculation: confirm the fit with a paper proof.</p>'
+    '<p>Width and height are the <strong>printed dimensions</strong> in millimetres. Keep proportions resizes both together. Scale Conversion changes the model scale for the sheet or selected artwork.</p><p>The <strong>Car preview</strong> at the top of the right panel shows every selected decal at its printed size. Drag a decal over the car to test placement without moving it on the sheet, or enlarge the preview to adjust its size. Pick a <strong>Car</strong> — modern GT, classic endurance GT, touring saloon, rally hatchback or Group C prototype — and the model is sized from the real car’s length at your scale. Use Reference size to enter your model’s measurements or import your own side and top pictures. The car is illustrative, not a wrap calculation: confirm the fit with a paper proof.</p>'
   ],
   [
     'Arrange the sheet',
@@ -2327,6 +2346,33 @@ for (const b of $$('[data-filter]'))
     $$('[data-filter]').forEach(x => x.classList.toggle('active', x === b));
     renderLibrary();
   };
+// Choosing a body sizes the model from the real car's length at the sheet's scale; width and
+// height follow that car's picture, so it is never stretched. One undoable change.
+$('#car-body').onchange = async e => {
+  const body = e.target.value;
+  try {
+    await loadCar(body);
+    const side = carData[body].side.bounds,
+      top = carData[body].top.bounds,
+      length = DM.CAR_BODIES[body].length / project.scale,
+      clamp = v => Math.min(1000, Math.max(5, Math.round(v * 10) / 10));
+    mutate(() =>
+      Object.assign(project.preview, {
+        body,
+        length: clamp(length),
+        height: clamp((length * side.h) / side.w),
+        width: clamp((length * top.h) / top.w)
+      })
+    );
+    if (project.preview.side || project.preview.top)
+      toast(
+        'Your own reference pictures are still shown. Choose Reference size → Use included car to see this car.'
+      );
+  } catch (err) {
+    fail(err);
+    render();
+  }
+};
 $('#car-scale').onchange = e => scaleDialog(e.target.value === 'custom' ? null : Number(e.target.value));
 // Custom paper asks for its size first; cancelling leaves the sheet unchanged.
 function customPaperDialog() {

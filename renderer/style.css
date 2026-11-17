@@ -3000,3 +3000,8 @@ dialog:has(.vector-view) .dialog-foot {
 .recolour-new .colour-kit {
   margin-top: 4px;
 }
+
+/* Car preview: body picker */
+.car-body-field {
+  margin-bottom: 8px;
+}

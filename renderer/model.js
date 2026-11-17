@@ -60,6 +60,15 @@
     const s = pageFormat(p);
     return p.orientation === 'landscape' ? { w: s.h, h: s.w } : { w: s.w, h: s.h };
   };
+  // Built-in car preview bodies. Length is the real car's length in mm; the model's width and
+  // height follow the image proportions, so switching body never distorts the picture.
+  const CAR_BODIES = Object.freeze({
+    gt: Object.freeze({ label: 'Modern GT', length: 4480 }),
+    'classic-gt': Object.freeze({ label: 'Classic endurance GT', length: 4180 }),
+    touring: Object.freeze({ label: 'Touring saloon', length: 4800 }),
+    rally: Object.freeze({ label: 'Rally hatchback', length: 4100 }),
+    'group-c': Object.freeze({ label: 'Group C prototype', length: 4800 })
+  });
   const fileVersion = p => (pageFormat(p) === PAGE_SIZES.a4 ? 1 : 2);
   const proofBars = p => {
     const s = size(p);
@@ -81,7 +90,7 @@
       paper: 'clear',
       whiteInk: false,
       spotName: 'RDG_WHITE',
-      preview: { view: 'side', length: 140, width: 62, height: 48, side: null, top: null },
+      preview: { view: 'side', body: 'gt', length: 140, width: 62, height: 48, side: null, top: null },
       cut: cutSettings(),
       updated: new Date().toISOString()
     };
@@ -712,6 +721,7 @@
       }
     }
     p.preview.view = p.preview.view === 'top' ? 'top' : 'side';
+    p.preview.body = Object.hasOwn(CAR_BODIES, p.preview.body) ? p.preview.body : 'gt';
     p.spotName = /^[A-Za-z][A-Za-z0-9_-]{0,40}$/.test(p.spotName) ? p.spotName : 'RDG_WHITE';
     p.cut = cutSettings(p.cut);
     return p;
@@ -816,6 +826,7 @@
     esc,
     number,
     PAGE_SIZES,
+    CAR_BODIES,
     CUSTOM_PAGE,
     customPage,
     pageFormat,
