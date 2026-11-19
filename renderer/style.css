@@ -2027,10 +2027,10 @@ dialog:has(.slice-layout) .dialog-foot {
   border-bottom: 1px solid var(--line);
 }
 button.transfer-button {
-  background: color-mix(in srgb, var(--head) 55%, var(--panel));
+  background: color-mix(in srgb, var(--ink) 4%, var(--panel));
   color: var(--ink);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 11px;
   box-shadow: none;
   min-height: 96px;
   padding: 18px;
@@ -2049,22 +2049,13 @@ button.transfer-button {
   line-height: 1.5;
   color: var(--muted);
 }
-.transfer-button.transfer-export {
-  border-left: 3px solid var(--accent);
-}
-.transfer-button.transfer-export strong {
-  color: var(--accent);
-}
 button.transfer-button:hover {
-  background: var(--head);
-  border-color: var(--muted);
-}
-button.transfer-button.transfer-export:hover {
-  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--ink) 8%, var(--panel));
+  border-color: color-mix(in srgb, var(--ink) 25%, var(--line));
 }
 dialog:has(.collection-browser) button:focus-visible,
 button.transfer-button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 dialog:has(.collection-browser) .dialog-foot {
@@ -3689,4 +3680,328 @@ dialog:has(.collection-browser) button.collection-preview {
   .rail-canvas {
     padding: 20px;
   }
+}
+
+/* SlotForge Restyle, step 3: the sheet bar as a Pit Board, the editing tools as named groups,
+   Page Notes and the update notice. */
+/* Pit Board: the sheet's name big in Barlow, its paper settings, the saved state and the actions */
+.projectbar.pitboard {
+  position: relative;
+  z-index: 5;
+  min-height: 0;
+  margin: 10px 14px 0;
+  padding: 9px 14px;
+  gap: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.pitboard .project-meta {
+  align-items: flex-end;
+  gap: 8px 14px;
+}
+.pitboard .sheet-name-control,
+.pitboard .sheet-size-picker {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+}
+.pitboard .sheet-name-control {
+  flex: 1 1 220px;
+  max-width: 420px;
+}
+.pitboard .sheet-name-control > span,
+.pitboard .sheet-size-picker > span {
+  margin: 0;
+  font:
+    700 10.5px/1.4 'Segoe UI',
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pitboard .sheet-name-control #project-name {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 0 24px 1px 0;
+  border: 0;
+  border-bottom: 1px dashed var(--line);
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  font:
+    italic 700 24px/1.15 'SF Barlow Condensed',
+    'Bahnschrift',
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.pitboard .sheet-name-control #project-name:hover {
+  border-bottom-color: var(--muted);
+}
+.pitboard .sheet-name-control #project-name::after {
+  top: 50%;
+  margin-top: -9px;
+  right: 2px;
+  color: var(--muted);
+  font:
+    400 14px 'Segoe UI',
+    sans-serif;
+}
+.pitboard .sheet-size-picker select {
+  height: 30px;
+  border-color: var(--line);
+  font-size: 12px;
+}
+.pitboard .project-meta #page-badge,
+.pitboard .project-meta #scale-badge {
+  min-height: 30px;
+  padding: 4px 10px;
+  border-color: var(--line);
+  background: transparent;
+  font-size: 12px;
+}
+.pitboard .project-meta #page-badge:hover,
+.pitboard .project-meta #scale-badge:hover {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 25%, var(--line));
+}
+.pitboard .save-status {
+  min-height: 30px;
+  font-size: 12.5px;
+  color: #3ecf8e;
+}
+.pitboard .save-status i {
+  width: 8px;
+  height: 8px;
+  box-shadow: none;
+}
+.pitboard .save-status.saving {
+  color: var(--muted);
+}
+.pitboard .save-status.saving i {
+  background: #f2b705;
+}
+.pitboard .save-status.error {
+  color: var(--accent-text, var(--accent));
+}
+.pitboard .save-status.error i {
+  background: var(--accent);
+}
+.pitboard .project-actions {
+  gap: 6px;
+}
+.pitboard .project-actions button.icon {
+  width: 32px;
+}
+.pb-vline {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 2px;
+  background: var(--line);
+}
+
+/* The editing tools under it: small quiet buttons in named groups */
+.toolbar.pb-tools {
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  min-height: 46px;
+  padding: 7px 12px;
+  background: color-mix(in srgb, var(--bg) 50%, var(--panel));
+}
+.pb-grp {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 8px;
+  border-right: 1px solid var(--line);
+}
+.pb-grp:last-child {
+  border-right: 0;
+}
+.pb-gl {
+  margin: 0 6px 0 2px;
+  font:
+    600 10px 'Segoe UI',
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.toolbar.pb-tools button,
+.pb-toggle {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 82%, var(--muted));
+  font-size: 12.5px;
+}
+.toolbar.pb-tools button:hover:not(:disabled),
+.pb-toggle:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
+}
+.toolbar.pb-tools button.icon-only,
+.toolbar.pb-tools button:not(:has(:not(svg))):empty,
+.toolbar.pb-tools button[data-action='duplicate'],
+.toolbar.pb-tools button[data-action='delete'] {
+  width: 30px;
+  padding: 0;
+}
+.toolbar.pb-tools button.active,
+.pb-toggle:has(input:checked) {
+  border: 0;
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+  color: var(--ink);
+}
+.pb-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.pb-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+.pb-toggle::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 30%, transparent);
+}
+.pb-toggle:has(input:checked)::before {
+  background: var(--accent);
+}
+.pb-toggle:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Page Note */
+.sn {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: 14px;
+  row-gap: 3px;
+  align-items: start;
+  margin: 0 0 18px;
+  padding: 14px 18px 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ink) 4%, var(--panel));
+}
+.sn-tile {
+  grid-row: 1 / span 3;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+  color: var(--accent-text, var(--accent));
+}
+.dialog-body .sn p {
+  margin: 0;
+}
+.sn-lead {
+  grid-column: 2;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.sn-more {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.dialog-body .sn .sn-use {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  color: color-mix(in srgb, var(--ink) 82%, var(--muted));
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.sn-use .icon {
+  width: 15px;
+  height: 15px;
+  color: var(--accent-text, var(--accent));
+}
+
+/* Update notice: a red download badge, the title in Barlow, a soft accent wash from the left */
+.projectbar .update-notice {
+  position: relative;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 10px 8px 62px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--accent) 14%, var(--panel)), var(--panel) 55%);
+  white-space: normal;
+}
+.projectbar .update-notice::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  margin-top: -18px;
+  border-radius: 10px;
+  background: var(--accent-fill, var(--accent))
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v11M7 10l5 5 5-5M5 20h14'/%3E%3C/svg%3E")
+    center/20px no-repeat;
+}
+.update-notice .un-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-right: auto;
+}
+.update-notice strong {
+  font:
+    italic 700 18px/1.1 'SF Barlow Condensed',
+    'Bahnschrift',
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.update-notice small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.projectbar .update-notice button {
+  min-height: 30px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+}
+
+/* badges and the quality line inside a title stay in the plain type */
+.inspector-title :is(.artwork-badge, small) {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-style: normal;
+  letter-spacing: normal;
+}
+.inspector-title small {
+  font-weight: 400;
+  text-transform: none;
+}
+.inspector-title .artwork-badge {
+  font-weight: 600;
 }

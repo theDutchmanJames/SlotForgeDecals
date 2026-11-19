@@ -96,7 +96,7 @@ async function main() {
         }))
       );
       assert.equal(styles.length, 6);
-      // Cards follow the theme: exports use the accent colour, imports the normal ink colour.
+      // Cards follow the theme: titles use the normal ink colour (the accent is only for main actions).
       const tokens = await page.evaluate(() => {
         const probe = document.createElement('span');
         document.body.append(probe);
@@ -107,7 +107,7 @@ async function main() {
       });
       for (const b of styles) {
         if (theme === 'dark') assert.notEqual(b.bg, 'rgb(255, 255, 255)', 'dark cards are not white');
-        assert.equal(b.colour, b.exporting ? tokens.accent : tokens.ink);
+        assert.equal(b.colour, tokens.ink);
       }
       assert(styles.filter(x => x.exporting).every(x => x.x > styles[0].x));
       await page.screenshot({ path: path.join(run, 'sharing-' + theme + '.png') });

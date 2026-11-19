@@ -96,6 +96,7 @@ function record() {
 function changed() {
   project.updated = new Date().toISOString();
   revision++;
+  $('#save-status').classList.add('saving');
   $('#save-status').innerHTML = '<i></i>Saving…';
   scheduleSave();
 }
@@ -133,10 +134,11 @@ async function flush() {
         await desktop.save(data);
         savedRevision = Math.max(savedRevision, target);
         if (savedRevision === revision) {
-          $('#save-status').classList.remove('error');
+          $('#save-status').classList.remove('error', 'saving');
           $('#save-status').innerHTML = '<i></i>Saved locally';
         }
       } catch (e) {
+        $('#save-status').classList.remove('saving');
         $('#save-status').classList.add('error');
         $('#save-status').innerHTML = '<i></i>Save failed';
         throw e;
@@ -152,6 +154,10 @@ function showDialog(title, subtitle, body, buttons = '', large = false) {
   $('#dialog-content').innerHTML =
     `<div class="dialog-head"><div><h2>${E(title)}</h2><p>${E(subtitle || '')}</p></div><button data-action="close" aria-label="Close dialog">✕</button></div><div class="dialog-body">${body}<p id="dialog-error" class="dialog-error" role="alert"></p></div>${buttons ? `<div class="dialog-foot">${buttons}</div>` : ''}`;
   if (!d.open) d.showModal();
+}
+// Page Note: what a window is, a few words more, and where you use it.
+function pageNote(iconName, lead, more, use) {
+  return `<div class="sn"><span class="sn-tile">${icon(iconName)}</span><p class="sn-lead">${lead}</p>${more ? `<p class="sn-more">${more}</p>` : ''}${use ? `<p class="sn-use"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14 M13 6l6 6-6 6"/></svg><span>${use}</span></p>` : ''}</div>`;
 }
 function closeDialog() {
   $('#dialog').close();
@@ -1555,7 +1561,13 @@ function sharingDialog() {
   showDialog(
     'Import & Export',
     'Bring artwork in. Share editable sheets and decals, or export a PDF for printing.',
-    '<div class="transfer-headings"><span>IMPORT</span><span>EXPORT</span></div><section class="transfer-section"><h3>SHEETS</h3><div class="transfer-grid">' +
+    pageNote(
+      'share',
+      'Import &amp; Export moves artwork, decals and sheets in and out of Decals.',
+      'Sheet and decal files stay editable when they are opened in Decals again; a PDF is for printing.',
+      'Import your own logos and pictures, share sheets or decals with another Decals user, or export the PDF for your decal paper.'
+    ) +
+      '<div class="transfer-headings"><span>IMPORT</span><span>EXPORT</span></div><section class="transfer-section"><h3>SHEETS</h3><div class="transfer-grid">' +
       button('open-sheet-file', 'Import a Sheet', 'Choose sheets and pages from an editable .sfsheet file.') +
       button(
         'export-sheet',

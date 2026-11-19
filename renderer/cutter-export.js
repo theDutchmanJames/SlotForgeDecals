@@ -288,7 +288,9 @@ Scanning a printed sheet (Direct Cut / Scan to Cut Data):
     showDialog(
       'Export for cutter',
       `Cut lines ${cut.mode === 'none' ? 'are switched off' : `${cut.mode === 'rect' ? 'are rectangles' : 'follow each decal'} with a ${cut.offset} mm offset`}. Change this under Print & cut.`,
-      `<div class="cutter-choices" role="radiogroup" aria-label="Cutting method">${Object.entries(MACHINES)
+      `${pageNote('export', 'Export for cutter saves a folder for your cutting machine.', 'Each decal becomes a 300 DPI picture with a white border along its cut line; the folder has step-by-step instructions for the software you choose.', 'Print on plain paper first, then open the folder in Silhouette Studio, Cricut Design Space or ScanNCut.')}<div class="cutter-choices" role="radiogroup" aria-label="Cutting method">${Object.entries(
+        MACHINES
+      )
         .map(
           ([key, m], n) =>
             `<label class="cutter-choice"><input type="radio" name="cutter" value="${key}" ${n === 0 ? 'checked' : ''}><strong>${m.label}</strong><small>${m.description}</small></label>`

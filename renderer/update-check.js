@@ -32,7 +32,7 @@ const UpdateUI = (() => {
 
   function noticeHTML() {
     if (!state?.notify || !state.latest) return '';
-    return `<span class="update-notice" role="status"><span>Decals ${E(state.latest.version)} is available</span><button class="primary" data-action="update-open">Download</button><button data-action="update-skip" title="Hide until a newer version appears">Not now</button></span>`;
+    return `<span class="update-notice" role="status"><span class="un-text"><strong>Decals ${E(state.latest.version)} is available</strong><small>You have ${E(state.current)}. Your sheets and decals stay in Documents/SlotForge Decals.</small></span><button class="primary" data-action="update-open">Download</button><button data-action="update-skip" title="Hide until a newer version appears">Not now</button></span>`;
   }
 
   function settingsHTML() {

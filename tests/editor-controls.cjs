@@ -332,18 +332,21 @@ async function main() {
               a.right <= b.x + 0.1 || b.right <= a.x + 0.1 || a.bottom <= b.y + 0.1 || b.bottom <= a.y + 0.1
             );
           }
-        const centers = await page
-          .locator(
-            '.sheet-name-control>span,#project-name,.sheet-size-picker>span,#sheet-size-select,#page-badge,#scale-badge'
-          )
-          .evaluateAll(els =>
-            els.map(e => {
-              const r = e.getBoundingClientRect();
-              return r.y + r.height / 2;
-            })
-          );
-        for (const center of centers)
-          assert(Math.abs(center - centers[0]) < 1, 'Sheet controls share a vertical centre');
+        // Pit Board: the small labels share a line above their controls, and the controls share a baseline.
+        const rect = s =>
+          page.locator(s).evaluate(e => {
+            const r = e.getBoundingClientRect();
+            return { top: r.top, bottom: r.bottom };
+          });
+        const nameLabel = await rect('.sheet-name-control>span'),
+          sizeLabel = await rect('.sheet-size-picker>span');
+        assert(Math.abs(nameLabel.top - sizeLabel.top) < 1, 'Sheet labels share a line');
+        const bottoms = [];
+        for (const s of ['#project-name', '#sheet-size-select', '#page-badge', '#scale-badge'])
+          bottoms.push((await rect(s)).bottom);
+        for (const bottom of bottoms)
+          assert(Math.abs(bottom - bottoms[0]) < 1.5, 'Sheet controls share a baseline: ' + bottoms);
+        assert(nameLabel.bottom <= (await rect('#project-name')).top + 0.5, 'Label above the sheet name');
         await page.screenshot({ path: path.join(run, 'editor-' + theme + '-' + width + '.png') });
       }
     await page.locator('.projectbar [data-action="export-sheet"]').click();
