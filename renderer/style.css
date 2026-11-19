@@ -6,6 +6,10 @@
   --ink: #e8e6e1;
   --muted: #98a0ab;
   --accent: #e5484d;
+  --accent-fill: #d6383e;
+  --accent-text: #f06b6f;
+  --on-accent: #fff;
+  --focus: #4c9aff;
   --green: #3ecf8e;
   --blue: #80b9e3;
   --shadow: 0 2px 0 #10141a, 0 5px 12px #0002;
@@ -35,41 +39,57 @@ button {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 7px 11px;
-  background: var(--panel);
+  min-height: 32px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--ink) 8%, var(--panel));
   color: var(--ink);
   cursor: pointer;
-  box-shadow:
-    inset 0 1px #ffffff07,
-    0 2px 2px #0002;
+  box-shadow: none;
   white-space: nowrap;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
 }
-button:hover {
-  border-color: var(--muted);
-  background: color-mix(in srgb, var(--ink) 5%, var(--panel));
+button:hover:not(:disabled) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--ink) 13%, var(--panel));
 }
-button:active {
-  transform: translateY(1px);
+button:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 17%, var(--panel));
 }
 button:disabled {
-  opacity: 0.4;
-  cursor: default;
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 button.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--accent-fill, var(--accent));
+  border-color: transparent;
+  color: var(--on-accent, #fff);
   font-weight: 600;
-  box-shadow: 0 3px 8px #e5484d15;
+}
+button.primary:hover:not(:disabled) {
+  background: var(--accent);
+}
+button.ghost {
+  background: transparent;
+  border-color: var(--line);
+}
+button.ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 25%, var(--line));
 }
 button.active {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 16%, var(--panel));
 }
 button.danger {
-  color: #ff767c;
+  background: transparent;
+  color: var(--accent-text, var(--accent));
+}
+button.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 .wide {
   width: 100%;
@@ -91,7 +111,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 input,
@@ -102,7 +122,7 @@ textarea {
   padding: 7px 9px;
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: 7px;
   color: var(--ink);
 }
 input[type='checkbox'] {
@@ -278,58 +298,72 @@ nav {
 }
 .folder {
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: 11px;
   background: var(--panel);
-  box-shadow: var(--shadow);
   flex-shrink: 0;
-  overflow: hidden;
-  --folder: #94a0b4;
-}
-.folder.blue {
-  --folder: #80b9e3;
-}
-.folder.purple {
-  --folder: #bb9fe6;
-}
-.folder.teal {
-  --folder: #60c5ae;
-}
-.folder.amber {
-  --folder: #d9b16b;
+  overflow: clip;
 }
 .folder > summary,
 .folder > h2 {
+  position: relative;
   list-style: none;
   margin: 0;
-  font-size: 12px;
   display: flex;
   align-items: center;
   gap: 7px;
-  min-height: 39px;
-  padding: 10px 12px;
-  background: color-mix(in srgb, var(--folder) 13%, var(--panel));
-  border-top: 1px solid color-mix(in srgb, var(--folder) 60%, var(--line));
-  font-weight: 650;
+  min-height: 40px;
+  padding: 9px 38px 9px 14px;
+  font:
+    italic 700 16px/1.15 'SF Barlow Condensed',
+    'Bahnschrift',
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
   cursor: pointer;
+  transition: background 0.12s;
+}
+.folder > summary::-webkit-details-marker {
+  display: none;
+}
+.folder > summary:hover {
+  background: color-mix(in srgb, var(--ink) 4%, var(--panel));
 }
 .folder > summary::before {
-  content: '▸';
-  color: var(--folder);
-  font-size: 12px;
+  content: '';
+  position: absolute;
+  right: 17px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -6px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
 }
 .folder[open] > summary::before {
-  content: '▾';
+  transform: rotate(-135deg);
+  margin-top: -2px;
 }
-.folder > h2::before {
-  content: '▾';
-  color: var(--folder);
+.folder[open] > summary,
+.folder > h2 {
+  background: color-mix(in srgb, var(--ink) 4%, var(--panel));
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.folder > h2 {
+  padding-right: 14px;
+  cursor: default;
 }
 .folder > h2 span,
 .folder summary > span {
   margin-left: auto;
   color: var(--muted);
-  font-weight: 400;
-  font-size: 10px;
+  font:
+    500 11px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+  text-transform: none;
+  letter-spacing: 0;
 }
 .folder-body {
   padding: 12px;
@@ -714,8 +748,8 @@ dialog {
   color: var(--ink);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 20px 70px #0008;
+  border-radius: 14px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
   padding: 0;
   width: min(620px, 90vw);
   max-height: 90vh;
@@ -725,7 +759,7 @@ dialog.large {
   width: min(1050px, 94vw);
 }
 dialog::backdrop {
-  background: #080c12b8;
+  background: rgba(5, 7, 10, 0.62);
   backdrop-filter: blur(2px);
 }
 .dialog-head {
@@ -737,7 +771,8 @@ dialog::backdrop {
 }
 .dialog-head h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 24px;
+  line-height: 1.1;
 }
 .dialog-head p {
   margin: 6px 0 0;
@@ -906,14 +941,16 @@ dialog::backdrop {
   font-size: 22px;
 }
 [data-theme='light'] {
-  --bg: #edf0f4;
+  --bg: #f1efea;
   --panel: #ffffff;
-  --head: #e1e5eb;
-  --line: #cbd2dc;
-  --ink: #26303d;
-  --muted: #647184;
-  --accent: #ce3540;
-  --shadow: 0 2px 0 #cbd2dc, 0 4px 10px #25344808;
+  --head: #e7e4dd;
+  --line: #d9d6cf;
+  --ink: #1d2229;
+  --muted: #656c76;
+  --accent: #c92424;
+  --accent-fill: #c92424;
+  --accent-text: #c92424;
+  --shadow: 0 2px 0 #d9d6cf, 0 4px 10px #1d222908;
   color-scheme: light;
 }
 .right-sidebar .folder-body .row > button {
@@ -1155,7 +1192,7 @@ dialog::backdrop {
   background: var(--panel);
 }
 [data-theme='light'] .sheet-scroll {
-  background: radial-gradient(ellipse at center, #f6f7f9 0%, #e1e5eb 85%);
+  background: radial-gradient(ellipse at center, #f7f6f2 0%, #e4e1da 85%);
 }
 [data-theme='light'] #toast {
   background: var(--panel);
@@ -3044,4 +3081,106 @@ dialog:has(.vector-view) .dialog-foot {
 }
 .update-error {
   color: #ff8d81;
+}
+
+/* SlotForge Restyle foundation (shared with Timing and Paddock; see their SlotForgeRestyle.md).
+   Type Trio: Barlow Condensed titles, Segoe UI text, Roboto Mono numbers. These fonts style the app
+   only; decal artwork keeps its own fonts. */
+@font-face {
+  font-family: 'SF Barlow Condensed';
+  src: url('fonts/barlowcondensed/BarlowCondensed-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SF Barlow Condensed';
+  src: url('fonts/barlowcondensed/BarlowCondensed-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SF Roboto Mono';
+  src: url('fonts/robotomono/RobotoMono[wght].ttf') format('truetype');
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+}
+:is(h1, h2, h3):not(.brand *) {
+  font-family: 'SF Barlow Condensed', 'Bahnschrift', sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.inspector-title,
+.dialog-body > h3 {
+  font-size: 18px;
+}
+.transfer-section h3 {
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+.help-topic h3 {
+  font-size: 19px;
+}
+.project-card h3,
+.collection-name h3,
+.layout-sections h3,
+.pdf-artwork-review h3 {
+  font-size: 16px;
+}
+.trace-compare h3,
+.prep-compare h3 {
+  font-size: 14px;
+}
+.error-state h1 {
+  font-size: 28px;
+}
+/* numbers that are data */
+.sheet-size,
+.sidebar-pager span,
+.collection-pager span {
+  font-family: 'SF Roboto Mono', Consolas, monospace;
+  font-weight: 500;
+}
+/* thin scroll bars in the theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent;
+}
+/* square close button in window heads */
+.dialog-head > button[data-action='close'] {
+  width: 32px;
+  padding: 0;
+  flex-shrink: 0;
+}
+/* Flag Dialog: a badge before the title of a Yes/No window says what kind it is */
+#dialog.flag .dialog-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+#dialog.flag .dialog-head h2::before {
+  content: '?';
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ink) 9%, var(--panel));
+  font-style: normal;
+}
+#dialog.flag-danger .dialog-head h2::before {
+  content: '!';
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
+  color: var(--accent-text, var(--accent));
+}
+#dialog.flag .dialog-head p:empty {
+  display: none;
+}
+#dialog.flag .dialog-body {
+  padding-left: 74px;
 }

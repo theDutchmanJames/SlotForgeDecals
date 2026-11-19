@@ -140,6 +140,7 @@ async function flush() {
 function showDialog(title, subtitle, body, buttons = '', large = false) {
   const d = $('#dialog');
   d.classList.toggle('large', large);
+  d.classList.remove('flag', 'flag-danger');
   $('#dialog-content').innerHTML =
     `<div class="dialog-head"><div><h2>${E(title)}</h2><p>${E(subtitle || '')}</p></div><button data-action="close" aria-label="Close dialog">✕</button></div><div class="dialog-body">${body}<p id="dialog-error" class="dialog-error" role="alert"></p></div>${buttons ? `<div class="dialog-foot">${buttons}</div>` : ''}`;
   if (!d.open) d.showModal();
@@ -179,7 +180,8 @@ function nameDialog(title, initial, submit) {
   $('#name-input').focus();
   $('#name-input').select();
 }
-function confirmDialog(title, text, submit, label = 'Continue') {
+// kind: 'question', or 'danger' for what cannot be undone; the window shows a matching badge.
+function confirmDialog(title, text, submit, label = 'Continue', kind = 'question') {
   showDialog(
     title,
     '',
@@ -188,6 +190,7 @@ function confirmDialog(title, text, submit, label = 'Continue') {
       E(label) +
       '</button>'
   );
+  $('#dialog').classList.add('flag', ...(kind === 'danger' ? ['flag-danger'] : []));
   $('#confirm').onclick = async () => {
     try {
       await submit();
@@ -1274,7 +1277,8 @@ async function importPackage(file, kind = 'decals') {
         page = 0;
         render();
       },
-      'Restore backup'
+      'Restore backup',
+      'danger'
     );
     return;
   }
