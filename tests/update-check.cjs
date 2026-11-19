@@ -57,7 +57,7 @@ async function main() {
   }
   const settings = async page => {
     await page.locator('[data-action="settings"]').first().click();
-    await page.waitForSelector('#update-settings dl');
+    await page.waitForSelector('#update-settings #update-newest');
   };
   const close = page => page.locator('#dialog [data-action="close"]').first().click();
 
@@ -123,7 +123,9 @@ async function main() {
     await settings(page);
     await page.locator('#update-settings [data-action="update-toggle"]').click();
     await page.waitForFunction(() =>
-      /Turn on automatic/.test(document.querySelector('#update-settings').textContent)
+      document
+        .querySelector('#update-settings [data-action="update-toggle"]')
+        ?.matches(':not(:checked)[aria-label^="Turn on automatic"]')
     );
     assert.equal(await page.locator('.update-notice').count(), 0);
     reply = { status: 500, body: {} };

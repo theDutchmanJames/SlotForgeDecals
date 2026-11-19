@@ -53,13 +53,27 @@ const UpdateUI = (() => {
     const when = s.lastCheck
       ? new Date(s.lastCheck).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
       : 'Never';
+    const row = (name, desc, control) =>
+      `<div class="ss-row"><div class="ss-t"><b>${name}</b>${desc ? `<span class="ss-desc">${desc}</span>` : ''}</div><div class="ss-c">${control}</div></div>`;
     return (
-      `<p class="hint">${E(how)} It only asks GitHub for the newest version number; nothing about you or your sheets is sent. Decals never downloads or installs anything by itself.</p>` +
+      '<div class="ss-sheet">' +
+      row(
+        `This version <span class="ss-mono">${E(s.current)}</span>`,
+        `Newest: <span id="update-newest">${E(newest)}</span> · Last checked: ${E(when)}`,
+        `${s.latest ? `<button class="primary" data-action="update-open">Download ${E(s.latest.version)}</button>` : ''}<button data-action="update-check" ${s.checking ? 'disabled' : ''}>Check now</button>`
+      ) +
+      (s.automatic
+        ? row(
+            'Check automatically',
+            E(how),
+            `<input type="checkbox" class="ss-switch" data-action="update-toggle" aria-label="${s.enabled ? 'Turn off automatic checks' : 'Turn on automatic checks'}" ${s.enabled ? 'checked' : ''}>`
+          )
+        : '') +
+      '</div>' +
       (s.lastError && !s.checking ? `<p class="hint update-error">${E(s.lastError)}</p>` : '') +
-      `<dl class="update-facts"><dt>This version</dt><dd>${E(s.current)}</dd><dt>Newest version</dt><dd id="update-newest">${E(newest)}</dd><dt>Last checked</dt><dd>${E(when)}</dd></dl>` +
-      `<div class="row">${s.latest ? `<button class="primary" data-action="update-open">Download ${E(s.latest.version)}</button>` : ''}<button data-action="update-check" ${s.checking ? 'disabled' : ''}>Check now</button>${s.automatic ? `<button data-action="update-toggle">${s.enabled ? 'Turn off automatic checks' : 'Turn on automatic checks'}</button>` : ''}</div>` +
+      `<p class="ss-note">${s.automatic ? '' : E(how) + ' '}It only asks GitHub for the newest version number; nothing about you or your sheets is sent. Decals never downloads or installs anything by itself.</p>` +
       (s.latest
-        ? '<p class="hint">Download opens the release page in your browser. Close Decals, then install the new version as before; your sheets and decals stay in Documents/SlotForge Decals.</p>'
+        ? '<p class="ss-note">Download opens the release page in your browser. Close Decals, then install the new version as before; your sheets and decals stay in Documents/SlotForge Decals.</p>'
         : '')
     );
   }
@@ -77,6 +91,9 @@ const UpdateUI = (() => {
     }
     const box = document.querySelector('#update-settings');
     if (box) box.innerHTML = settingsHTML();
+    const rail = document.querySelector('#rail-status-updates');
+    if (rail && state)
+      rail.textContent = `${state.current} · ${state.latest ? state.latest.version + ' available' : state.enabled && state.automatic ? 'automatic' : 'manual'}`;
   }
 
   const actions = {

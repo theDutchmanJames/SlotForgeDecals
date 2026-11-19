@@ -133,7 +133,7 @@ async function main() {
     await page.evaluate(() => Studio.flush());
     await page.locator('nav [data-action="settings"]').click();
     await page.waitForFunction(() =>
-      document.querySelector('#storage-usage')?.textContent.startsWith('SQLite:')
+      document.querySelector('#storage-usage .ss-stat b')?.textContent.endsWith('MB')
     );
     await page.locator('[data-action="complete-backup"]').click();
     await page.waitForFunction(() => !document.querySelector('#dialog').open);

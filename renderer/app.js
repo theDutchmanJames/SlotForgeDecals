@@ -18,7 +18,15 @@ const icons = {
   pointer: 'M5 3l14 10-7 1-4 7z',
   align: 'M4 3v18 M8 6h12 M8 12h8 M8 18h12',
   copy: 'M8 8h13v13H8z M16 8V3H3v13h5',
-  trash: 'M3 6h18 M9 6V3h6v3 M6 6l1 15h10l1-15 M10 10v7 M14 10v7'
+  trash: 'M3 6h18 M9 6V3h6v3 M6 6l1 15h10l1-15 M10 10v7 M14 10v7',
+  appearance:
+    'M12 3a9 9 0 1 0 0 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2a4 4 0 0 0 4-4c0-4.1-4-7.4-9-7.4z M7.5 12h.01 M9.5 7.5h.01 M14.5 7.5h.01',
+  workspace:
+    'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
+  backup: 'M3 4h18v5H3z M5 9v11h14V9 M10 13h4',
+  update: 'M20 11a8 8 0 0 0-14.5-4.5L3 9 M3 4v5h5 M4 13a8 8 0 0 0 14.5 4.5L21 15 M21 20v-5h-5',
+  search: 'M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13z M15.5 15.5L20 20',
+  topic: 'M5 4h14v16H5z M9 9h6 M9 13h6 M9 17h3'
 };
 function icon(name) {
   return `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${icons[name] || icons.sheet}"/></svg>`;
@@ -140,7 +148,7 @@ async function flush() {
 function showDialog(title, subtitle, body, buttons = '', large = false) {
   const d = $('#dialog');
   d.classList.toggle('large', large);
-  d.classList.remove('flag', 'flag-danger');
+  d.classList.remove('flag', 'flag-danger', 'rail-dialog');
   $('#dialog-content').innerHTML =
     `<div class="dialog-head"><div><h2>${E(title)}</h2><p>${E(subtitle || '')}</p></div><button data-action="close" aria-label="Close dialog">✕</button></div><div class="dialog-body">${body}<p id="dialog-error" class="dialog-error" role="alert"></p></div>${buttons ? `<div class="dialog-foot">${buttons}</div>` : ''}`;
   if (!d.open) d.showModal();
@@ -1425,24 +1433,113 @@ async function exportPDF(proof = false, confirmed = false) {
     busy = false;
   }
 }
+// App Settings: a side list of the sections next to one scrolling column of slim setting rows.
+function settingsRow(name, desc, control, extra = '') {
+  return `<div class="ss-row ${extra}"><div class="ss-t"><b>${name}</b>${desc ? `<span class="ss-desc">${desc}</span>` : ''}</div><div class="ss-c">${control}</div></div>`;
+}
+function settingsSection(id, iconName, title, lead, body) {
+  return `<section class="ss-section" id="settings-${id}" aria-labelledby="settings-${id}-title"><header class="ss-head"><span class="ss-headico">${icon(iconName)}</span><div><h3 id="settings-${id}-title">${title}</h3><p>${lead}</p></div></header>${body}</section>`;
+}
 function settingsDialog() {
+  const sections = [
+    ['appearance', 'appearance', 'Appearance', 'How Decals looks on this computer.'],
+    ['workspace', 'workspace', 'Workspace', 'Where your sheets, decals and artwork are kept.'],
+    ['backup', 'backup', 'Backup &amp; Recovery', 'Copies of everything, and ways to get a sheet back.'],
+    ['updates', 'update', 'Updates', 'Checks whether a newer Decals has been published.']
+  ];
+  const bodies = {
+    appearance: `<div class="ss-sheet">${settingsRow('Theme', 'Dark or light windows and panels. Sheets always print the same.', `<span class="seg" role="group" aria-label="Theme"><button data-theme-pick="dark">Dark</button><button data-theme-pick="light">Light</button></span><select id="theme-setting" hidden aria-hidden="true" tabindex="-1"><option value="dark">SlotForge Dark</option><option value="light">SlotForge Light</option></select>`)}</div>`,
+    workspace: `<div class="ss-sheet">${settingsRow('Workspace folder', `<code class="ss-path">${E(rootPath)}</code>`, '<button data-action="folder">Open folder</button>')}${settingsRow('Database', 'Sheets, decals, artwork and history are stored in decals.sqlite in this folder.', '')}<div class="ss-stats" id="storage-usage" role="status"><span class="hint">Reading storage usage…</span></div></div><p class="ss-note">Installing a new version never replaces this folder. Three previous workspace versions are kept inside the database, and older files stay unchanged as recovery copies.</p>`,
+    backup: `<div class="ss-sheet">${settingsRow('Complete backup', 'Every saved sheet with its history, your decal library and all artwork, in one file.', '<button data-action="complete-backup">Export Complete Backup</button>')}${settingsRow('Restore a complete backup', 'Replaces the workspace with the backup. A recovery copy is kept first.', '<button data-action="complete-restore">Restore Complete Backup</button>')}${settingsRow('Recover a sheet', 'Bring back an earlier version of a sheet or a recovered copy.', '<button data-action="recover-workspace">Recover a sheet</button>')}${settingsRow('Sheet Library', 'Every saved sheet, with its versions.', '<button data-action="projects">Open Sheet Library</button>')}</div><h4 class="ss-gh">Only if you need it</h4><details class="settings-advanced ss-sheet" id="legacy-backups"><summary>Older backup format (.sfbackup)</summary>${settingsRow('Workspace backup', 'Only for exchanging with older Decals versions. Contains the current sheet and up to 1,000 library decals, not every saved sheet.', '<button data-action="backup">Export Workspace Backup</button><button data-action="restore-backup">Restore Workspace Backup</button>')}</details>`,
+    updates:
+      '<div id="update-settings"></div><p class="ss-note">Decal artwork stays on your computer. No account is needed; the internet is only used to check for new versions.</p>'
+  };
   showDialog(
     'App settings',
     'Your workspace belongs to you.',
-    `<div class="field"><label>Appearance</label><select id="theme-setting"><option value="dark">SlotForge Dark</option><option value="light">SlotForge Light</option></select></div><div class="notice"><strong>Persistent local workspace</strong><br>${E(rootPath)}<br><br>Application updates do not replace this folder. Sheets, decals, artwork and history are stored in decals.sqlite. Three previous workspace versions are retained inside the database. Legacy files are kept unchanged as migration-time recovery copies.</div><p id="storage-usage" class="hint">Reading storage usage…</p><h3>Backup &amp; Recovery</h3><div class="row"><button data-action="complete-backup">Export Complete Backup</button><button data-action="complete-restore">Restore Complete Backup</button></div><p class="hint">A complete backup contains every saved sheet, its history, your decal library and all artwork.</p><div class="row"><button data-action="projects">Open Sheet Library</button><button data-action="recover-workspace">Recover a sheet</button><button data-action="folder">Open workspace folder</button></div><details class="settings-advanced" id="legacy-backups"><summary>Older backup format (.sfbackup)</summary><p class="hint">Only for exchanging with older Decals versions. Contains the current sheet and up to 1,000 library decals, not every saved sheet.</p><div class="row"><button data-action="backup">Export Workspace Backup</button><button data-action="restore-backup">Restore Workspace Backup</button></div></details><h3>Updates</h3><div id="update-settings"></div><p class="hint" style="margin-top:18px">Decal artwork stays on your computer. No account is needed; the internet is only used to check for new versions.</p>`,
-    '<button class="primary" data-action="close">Done</button>'
+    `<div class="rail-shell settings-shell"><nav class="rail" aria-label="Settings sections">${sections.map(([id, ic, title]) => `<button class="rail-item" data-rail="settings-${id}">${icon(ic)}<span><span class="rail-name">${title}</span><small id="rail-status-${id}"></small></span></button>`).join('')}</nav><div class="rail-canvas">${sections.map(([id, ic, title, lead]) => settingsSection(id, ic, title, lead, bodies[id])).join('')}</div></div>`,
+    '<button class="primary" data-action="close">Done</button>',
+    true
   );
+  $('#dialog').classList.add('rail-dialog');
+  railShell($('.settings-shell'));
+  const status = (id, text) => {
+    const el = $('#rail-status-' + id);
+    if (el) el.textContent = text;
+  };
+  const themeStatus = () => {
+    for (const b of $$('[data-theme-pick]'))
+      b.setAttribute('aria-pressed', String(b.dataset.themePick === settings.theme));
+    status('appearance', settings.theme === 'light' ? 'Light' : 'Dark');
+  };
+  status('backup', 'Complete backups · recovery');
   desktop
     .storageStats()
     .then(s => {
       const el = $('#storage-usage');
-      if (el)
-        el.textContent = `SQLite: ${(s.bytes / 1024 / 1024).toFixed(1)} MB · ${s.decals} saved decals · ${s.sheets} saved sheets · ${s.assets} unique artwork assets · ${s.history} saved versions`;
+      if (!el) return;
+      const mb = (s.bytes / 1024 / 1024).toFixed(1) + ' MB';
+      el.innerHTML = [
+        ['Database', mb],
+        ['Saved decals', s.decals],
+        ['Saved sheets', s.sheets],
+        ['Artwork assets', s.assets],
+        ['Saved versions', s.history]
+      ]
+        .map(([k, v]) => `<div class="ss-stat"><small>${k}</small><b>${E(String(v))}</b></div>`)
+        .join('');
+      status('workspace', `${mb} · ${s.sheets} sheets · ${s.decals} decals`);
     })
     .catch(fail);
   UpdateUI.show();
   $('#theme-setting').value = settings.theme;
-  $('#theme-setting').onchange = e => setTheme(e.target.value);
+  $('#theme-setting').onchange = e => {
+    setTheme(e.target.value);
+    themeStatus();
+  };
+  for (const b of $$('[data-theme-pick]'))
+    b.onclick = () => {
+      $('#theme-setting').value = b.dataset.themePick;
+      $('#theme-setting').dispatchEvent(new Event('change'));
+    };
+  themeStatus();
+}
+// A side list that scrolls its column to a section and marks the section in view.
+function railShell(shell) {
+  const canvas = shell.querySelector('.rail-canvas'),
+    items = [...shell.querySelectorAll('[data-rail]')];
+  const target = b => document.getElementById(b.dataset.rail);
+  const mark = () => {
+    const visible = items.filter(b => !b.hidden && target(b) && !target(b).hidden);
+    if (!visible.length) return;
+    const top = canvas.getBoundingClientRect().top + 40;
+    let current = visible[0];
+    for (const b of visible) if (target(b).getBoundingClientRect().top <= top) current = b;
+    // At the very end the last short section cannot reach the top: mark it anyway.
+    if (canvas.scrollTop > 0 && canvas.scrollTop + canvas.clientHeight >= canvas.scrollHeight - 2)
+      current = visible[visible.length - 1];
+    for (const b of items) b.setAttribute('aria-current', String(b === current));
+  };
+  let pending = false;
+  canvas.addEventListener(
+    'scroll',
+    () => {
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(() => {
+        pending = false;
+        mark();
+      });
+    },
+    { passive: true }
+  );
+  for (const b of items)
+    b.onclick = () => {
+      canvas.scrollTo({ top: target(b).offsetTop - canvas.firstElementChild.offsetTop, behavior: 'smooth' });
+      for (const x of items) x.setAttribute('aria-current', String(x === b));
+    };
+  mark();
+  return { mark };
 }
 function sharingDialog() {
   const button = (action, title, description, exporting = false) =>
@@ -1527,13 +1624,12 @@ function helpDialog() {
   showDialog(
     'Your decal workshop',
     'SlotForge Decals' + (appVersion ? ' · ' + appVersion : ''),
-    `<div class="help-layout"><nav class="help-nav" aria-label="Help topics"><input id="help-search" type="search" placeholder="Search help…" aria-label="Search help">${HELP_TOPICS.map((t, n) => `<button data-help-topic="${n}">${E(t[0])}</button>`).join('')}</nav><div class="help-content" id="help-content">${HELP_TOPICS.map((t, n) => `<section class="help-topic" id="help-topic-${n}"><h3>${E(t[0])}</h3>${t[1]}</section>`).join('')}<p class="hint help-empty" hidden>No help topics match your search.</p><p class="hint">Source and third-party notices are included with the app.</p></div></div>`,
+    `<div class="rail-shell help-shell"><nav class="rail" aria-label="Help topics"><span class="rail-search">${icon('search')}<input id="help-search" type="search" placeholder="Search help…" aria-label="Search help"></span>${HELP_TOPICS.map((t, n) => `<button class="rail-item" data-help-topic="${n}" data-rail="help-topic-${n}">${icon('topic')}<span class="rail-name">${E(t[0])}</span></button>`).join('')}</nav><div class="rail-canvas help-reader" id="help-content">${HELP_TOPICS.map((t, n) => `<section class="help-topic" id="help-topic-${n}"><h3>${E(t[0])}</h3>${t[1]}</section>`).join('')}<p class="hint help-empty" hidden>No help topics match your search.</p><p class="hint help-source">Source and third-party notices are included with the app.</p></div></div>`,
     '<button class="primary" data-action="close">Start creating</button>',
     true
   );
-  for (const b of $$('[data-help-topic]'))
-    b.onclick = () =>
-      $('#help-topic-' + b.dataset.helpTopic).scrollIntoView({ block: 'start', behavior: 'smooth' });
+  $('#dialog').classList.add('rail-dialog');
+  const rail = railShell($('.help-shell'));
   $('#help-search').oninput = e => {
     const q = e.target.value.trim().toLowerCase();
     let shown = 0;
@@ -1548,6 +1644,8 @@ function helpDialog() {
       shown += match;
     });
     $('.help-empty').hidden = shown > 0;
+    $('#help-content').scrollTop = 0;
+    rail.mark();
   };
 }
 function welcome() {
