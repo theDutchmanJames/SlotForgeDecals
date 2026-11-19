@@ -250,6 +250,7 @@ async function start() {
     render();
     $('#save-status').innerHTML = '<i></i>Saved locally';
     if (!loaded.data) welcome();
+    startUpdates();
     // Load the path library once the editor is idle, so the Path Tool opens without a wait.
     requestIdleCallback(() => PathTools.ready().catch(() => {}), { timeout: 4000 });
   } catch (e) {
@@ -1446,6 +1447,32 @@ function settingsRow(name, desc, control, extra = '') {
 function settingsSection(id, iconName, title, lead, body) {
   return `<section class="ss-section" id="settings-${id}" aria-labelledby="settings-${id}-title"><header class="ss-head"><span class="ss-headico">${icon(iconName)}</span><div><h3 id="settings-${id}-title">${title}</h3><p>${lead}</p></div></header>${body}</section>`;
 }
+// The update window and Settings → Updates (update-ui.js, from SlotForge Circuit). Its section is
+// made once and moved into Settings each time Settings opens.
+let updateCard = null;
+function startUpdates() {
+  const holder = document.createElement('div');
+  UpdateUI.start({
+    settings: holder,
+    say: (message, isError) => toast(message, isError),
+    appName: 'Decals',
+    keeps: 'your sheets and decals stay in Documents/SlotForge Decals'
+  });
+  updateCard = holder.firstElementChild;
+  desktop.onUpdateChange?.(updateRail);
+}
+function updateRail() {
+  const el = $('#rail-status-updates');
+  if (!el) return;
+  desktop
+    .updateCheck('status')
+    .then(answer => {
+      const s = answer?.value;
+      if (s && el.isConnected)
+        el.textContent = `${s.current} · ${s.latest ? s.latest.version + ' available' : s.enabled && s.automatic ? 'checks at start' : 'manual'}`;
+    })
+    .catch(() => {});
+}
 function settingsDialog() {
   const sections = [
     ['appearance', 'appearance', 'Appearance', 'How Decals looks on this computer.'],
@@ -1497,7 +1524,8 @@ function settingsDialog() {
       status('workspace', `${mb} · ${s.sheets} sheets · ${s.decals} decals`);
     })
     .catch(fail);
-  UpdateUI.show();
+  if (updateCard) $('#update-settings').append(updateCard);
+  updateRail();
   $('#theme-setting').value = settings.theme;
   $('#theme-setting').onchange = e => {
     setTheme(e.target.value);
@@ -1625,7 +1653,7 @@ const HELP_TOPICS = [
   ],
   [
     'Updates',
-    '<p>About 15 seconds after it starts, Decals asks GitHub for the newest published release, at most twice a day. Only the version number is requested; nothing about you or your sheets is sent. When a newer version exists, a notice appears above the sheet bar with <strong>Download</strong>, which opens the release page in your browser, and <strong>Not now</strong>, which hides it until an even newer version appears.</p><p>Decals never downloads or installs anything by itself. Close Decals, then install the new version as before; your sheets and decals stay in Documents/SlotForge Decals. <strong>App Settings → Updates</strong> shows the result, has <strong>Check now</strong> and turns automatic checks off.</p>'
+    '<p>About 5 seconds after it starts, Decals asks GitHub once for the newest published release. Nothing about you or your sheets is sent. When a newer version exists, a window shows it with what is new and the file for your copy of Decals.</p><p><strong>Download</strong> saves that file in your Downloads folder and checks it against the release; <strong>Show in folder</strong> then shows where it is. <strong>Skip this version</strong> hides the window until an even newer version appears; closing it hides it until Decals starts again.</p><p>Decals never opens or installs what it downloads. Close Decals, then install the new version as before; your sheets and decals stay in Documents/SlotForge Decals. <strong>App Settings → Updates</strong> shows the versions, has <strong>Check now</strong> and turns the check at start off.</p>'
   ],
   [
     'Keyboard shortcuts',
@@ -2728,7 +2756,7 @@ document.addEventListener('keydown', e => {
     }
     return;
   }
-  if (e.target.matches('input,textarea,select') || $('#dialog').open) return;
+  if (e.target.matches('input,textarea,select') || document.querySelector('dialog[open]')) return; // also the update window
   const ctrl = e.ctrlKey || e.metaKey;
   let action;
   if (ctrl && e.key.toLowerCase() === 'z') action = e.shiftKey ? 'redo' : 'undo';

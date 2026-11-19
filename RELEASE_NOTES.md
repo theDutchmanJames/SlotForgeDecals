@@ -2,6 +2,13 @@
 
 A new look, shared with SlotForge Timing and Paddock. Everything works as before; it is calmer, clearer and easier to read.
 
+## What's new
+
+- **New look:** calmer titles, flat buttons and one red accent, shared with SlotForge Timing and Paddock.
+- **Sheet bar:** the sheet name large above the sheet, and the tools grouped as Select, Edit and Arrange.
+- **Settings and Help:** a side list with a status for each part, and one slim row per setting.
+- **Update window:** a new version now shows what is new and downloads the right file for your computer.
+
 ## The new look
 
 - **Titles** are set in Barlow Condensed and **numbers** (sizes, counts, versions) in Roboto Mono. Both fonts are bundled and only style the app: your sheets and their fonts are untouched.
@@ -19,11 +26,17 @@ A new look, shared with SlotForge Timing and Paddock. Everything works as before
 
 ## Settings, Help and the libraries
 
-- **App Settings** has a side list (Appearance, Workspace, Backup & Recovery, Updates) with a status line for each, and every setting is one slim row. The theme is a Dark/Light switch, storage is shown as small tiles, and automatic update checks have an on/off switch.
+- **App Settings** has a side list (Appearance, Workspace, Backup & Recovery, Updates) with a status line for each, and every setting is one slim row. The theme is a Dark/Light switch, storage is shown as small tiles, and the check for a new version at start has an on/off switch.
 - **Help** has the same side list with search, and each topic reads as one calm column.
 - **Sheet Library** and **Decal Library** have one toolbar with search, sort, a Grid/List switch and the page buttons. Each card shows its preview edge to edge, with its buttons in a strip at the bottom.
 - **Import & Export** and **Export for cutter** start with a short note on what the window does and when to use it.
-- The **update notice** has a download badge and says which version you have.
+
+## Update window
+
+- About 5 seconds after Decals starts, it asks GitHub once whether a newer version is out. If there is one, a window shows the version, what is new in it, and the file for your copy (installer, portable app, disk image, AppImage or .deb).
+- **Download** saves that file in your Downloads folder and checks it against the release; **Show in folder** then shows where it is. Decals never opens or installs it: close Decals and install it yourself.
+- **Skip this version** hides the window until a newer version appears. **Settings → Updates** has Check now, and an on/off switch for the check at start.
+- The Windows downloads are now named `Setup-x64.exe` and `Portable-x64.exe`, as in the other SlotForge apps.
 
 ## Updating and installing
 
@@ -31,7 +44,7 @@ Your saved sheets and decals remain in **Documents/SlotForge Decals**, outside t
 
 | Computer | Installer | Portable |
 | --- | --- | --- |
-| Windows x64 | windows-x64-setup.exe | windows-x64-portable.exe |
+| Windows x64 | Setup-x64.exe | Portable-x64.exe |
 | Intel Mac | mac-x64.dmg | mac-x64.zip |
 | Linux x64 | linux-amd64.deb | linux-x86_64.AppImage |
 | Linux ARM64 | linux-arm64.deb | linux-arm64.AppImage |
@@ -40,6 +53,6 @@ The Windows installer installs for your user account only, lets you choose the f
 
 ## Verification and sources
 
-Local verification passed **143 unit tests** and **29 desktop suites** in both themes, including the layout of the new sheet bar, Settings, Help and the libraries. The packaged Windows build passed the packaged acceptance suites. All test workspaces are isolated from user data.
+Local verification passed **149 unit tests** and **29 desktop suites** in both themes, including the layout of the new sheet bar, Settings, Help and the libraries, and the update window with a stand-in for GitHub. The packaged Windows build passed the packaged acceptance suites. All test workspaces are isolated from user data.
 
 Licensed under **AGPL-3.0-or-later**; application source, corresponding Ghostscript and MuPDF sources, revision records and build instructions accompany the release. Bundled components retain their notices in THIRD-PARTY-NOTICES.txt.

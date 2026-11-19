@@ -1,4 +1,3 @@
-// Ported from SlotForge Paddock's update-check tests.
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -7,9 +6,8 @@ const os = require('node:os');
 const path = require('node:path');
 const U = require('../src/update-check.cjs');
 
-const HOME = 'https://github.com/theDutchmanJames/SlotForgeDecals';
-const REPO = 'theDutchmanJames/SlotForgeDecals';
-const HOUR = 60 * 60 * 1000;
+const HOME = 'https://github.com/theDutchmanJames/SlotForgeCircuit';
+const REPO = 'theDutchmanJames/SlotForgeCircuit';
 
 function answer(body, status = 200) {
   return {
@@ -18,7 +16,22 @@ function answer(body, status = 200) {
     text: async () => (typeof body === 'string' ? body : JSON.stringify(body))
   };
 }
+const files = tag => {
+  const v = tag.replace(/^v/, '');
+  return [
+    'Setup-x64.exe',
+    'Portable-x64.exe',
+    'mac-universal.dmg',
+    'linux-x86_64.AppImage',
+    'linux-amd64.deb'
+  ].map((end, i) => ({
+    name: `SlotForgeCircuit-${v}-${end}`,
+    size: 1000 + i,
+    digest: `sha256:${'a'.repeat(64)}`
+  }));
+};
 const latest = (tag, extra = {}) => ({
+  assets: files(tag),
   tag_name: tag,
   html_url: `${HOME}/releases/tag/${tag}`,
   name: `Release ${tag}`,
@@ -28,8 +41,16 @@ const latest = (tag, extra = {}) => ({
   ...extra
 });
 
-function fixture(t, { current = '1.6.0', reply = () => answer(latest('v1.7.0')), automatic = true } = {}) {
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'decals-update-'));
+function fixture(
+  t,
+  {
+    current = '1.6.0',
+    reply = () => answer(latest('v1.7.0')),
+    automatic = true,
+    edition = { platform: 'win32', arch: 'x64' }
+  } = {}
+) {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'circuit-update-'));
   t.after(() => fs.rmSync(profile, { recursive: true, force: true }));
   const clock = { now: Date.UTC(2026, 10, 17, 12) };
   const calls = [];
@@ -39,6 +60,8 @@ function fixture(t, { current = '1.6.0', reply = () => answer(latest('v1.7.0')),
       current,
       homepage: HOME,
       automatic,
+      edition,
+      downloads: path.join(profile, 'Downloads'),
       now: () => clock.now,
       fetch: async (url, init) => {
         calls.push({ url, init });
@@ -64,7 +87,7 @@ test('finds a newer release and asks GitHub only for the latest release', async 
   const s = await f.u.check();
   assert.equal(f.calls.length, 1);
   assert.equal(f.calls[0].url, `https://api.github.com/repos/${REPO}/releases/latest`);
-  assert.equal(f.calls[0].init.headers['User-Agent'], 'SlotForge-Decals/1.6.0');
+  assert.equal(f.calls[0].init.headers['User-Agent'], 'SlotForge-Circuit/1.6.0');
   assert.equal(s.latest.version, '1.7.0');
   assert.equal(s.checking, false, 'the returned status is final');
   assert.equal(s.notify, true);
@@ -85,7 +108,7 @@ test('same or older release: up to date, no notice', async t => {
   }
 });
 
-test('after updating Decals the stored newer release no longer shows', async t => {
+test('after updating Circuit the stored newer release no longer shows', async t => {
   const f = fixture(t);
   await f.u.check();
   const updated = new U.UpdateCheck({
@@ -100,7 +123,7 @@ test('after updating Decals the stored newer release no longer shows', async t =
   assert.equal(updated.status().upToDate, true);
 });
 
-test('"Not now" hides the notice until an even newer version appears', async t => {
+test('Skip hides the pop-up until an even newer version appears', async t => {
   let tag = 'v1.7.0';
   const f = fixture(t, { reply: () => answer(latest(tag)) });
   await f.u.check();
@@ -110,52 +133,31 @@ test('"Not now" hides the notice until an even newer version appears', async t =
   assert.equal(s.latest.version, '1.7.0', 'still offered in Settings');
   assert.equal(f.make().status().notify, false);
   tag = 'v1.8.0';
-  f.clock.now += 13 * HOUR;
-  const later = await f.u.tick();
+  const later = await f.u.startupCheck();
   assert.equal(later.latest.version, '1.8.0');
   assert.equal(later.notify, true);
 });
 
-test('automatic checks: at most every 12 hours, every 3 after a failure, never when off or in development', async t => {
-  let fail = false;
-  const f = fixture(t, { reply: () => (fail ? Promise.reject(Error('offline')) : answer(latest('v1.7.0'))) });
-  await f.u.tick();
+test('checks once at start when it is on, never when off or in development; Check now always works', async t => {
+  const f = fixture(t);
+  const s1 = await f.u.startupCheck();
   assert.equal(f.calls.length, 1);
-  f.clock.now += 11 * HOUR;
-  assert.equal(await f.u.tick(), null);
-  assert.equal(f.calls.length, 1);
-  f.clock.now += 2 * HOUR;
-  fail = true;
-  assert.equal(await f.u.tick(), null, 'failures are not thrown from the timer');
+  assert.equal(s1.notify, true);
+  // Every start checks again; there is no timer in between.
+  await f.make().startupCheck();
   assert.equal(f.calls.length, 2);
-  assert.match(f.u.status().lastError, /could not reach GitHub/);
-  assert.equal(f.u.status().latest.version, '1.7.0', 'the last good answer is kept');
-  f.clock.now += 2 * HOUR;
-  await f.u.tick();
-  assert.equal(f.calls.length, 2);
-  f.clock.now += 2 * HOUR;
-  fail = false;
-  await f.u.tick();
-  assert.equal(f.calls.length, 3);
-  assert.equal(f.u.status().lastError, null);
   f.u.setEnabled(false);
-  f.clock.now += 24 * HOUR;
-  await f.u.tick();
-  assert.equal(f.calls.length, 3);
-  assert.equal(f.u.status().notify, false, 'no notice when turned off');
+  assert.equal(await f.make().startupCheck(), null);
+  assert.equal(f.calls.length, 2);
+  assert.equal(f.u.status().notify, false, 'no pop-up when turned off');
+  const offline = fixture(t, { reply: () => Promise.reject(Error('offline')) });
+  assert.equal(await offline.u.startupCheck(), null, 'a failure at start is not thrown');
+  assert.match(offline.u.status().lastError, /could not reach GitHub/);
   const dev = fixture(t, { automatic: false });
-  await dev.u.tick();
+  await dev.u.startupCheck();
   assert.equal(dev.calls.length, 0);
   await dev.u.check();
   assert.equal(dev.calls.length, 1, 'Check now still works');
-});
-
-test('a last check dated in the future (wrong clock) does not stop checks', async t => {
-  const f = fixture(t);
-  f.u.state.lastCheck = Date.UTC(2036, 0, 1);
-  f.u.state.lastAttempt = Date.UTC(2036, 0, 1);
-  await f.u.tick();
-  assert.equal(f.calls.length, 1);
 });
 
 test('rejects unexpected answers without changing the known release', async t => {
@@ -204,19 +206,23 @@ test('the page to open is built from this repository and the version only', asyn
   assert.equal(U.pageUrl(REPO, '1.7.0'), `${HOME}/releases/tag/1.7.0`);
 });
 
-test('a just-published release waits an hour before the notice, so every download is attached', async t => {
+test('the pop-up waits until the file for this copy is attached to the release', async t => {
+  let assets = files('v1.7.0').filter(a => /Setup|Portable/.test(a.name));
   const f = fixture(t, {
-    reply: () =>
-      answer(latest('v1.7.0', { published_at: new Date(Date.UTC(2026, 10, 17, 11, 30)).toISOString() }))
+    edition: { platform: 'darwin', arch: 'arm64' },
+    reply: () => answer(latest('v1.7.0', { assets }))
   });
-  const s = await f.u.check();
+  let s = await f.u.check();
   assert.equal(s.latest.version, '1.7.0', 'Settings already shows it');
+  assert.equal(s.latest.file, null);
   assert.equal(s.notify, false);
-  f.clock.now += 31 * 60 * 1000;
-  assert.equal(f.u.status().notify, true);
+  assets = files('v1.7.0');
+  s = await f.u.check();
+  assert.equal(s.latest.file.name, 'SlotForgeCircuit-1.7.0-mac-universal.dmg');
+  assert.equal(s.notify, true);
 });
 
-test('"Not now" stays quiet if the newest release is withdrawn and an older one becomes latest', async t => {
+test('Skip stays quiet if the newest release is withdrawn and an older one becomes latest', async t => {
   let tag = 'v1.8.0';
   const f = fixture(t, { reply: () => answer(latest(tag)) });
   await f.u.check();
@@ -227,8 +233,8 @@ test('"Not now" stays quiet if the newest release is withdrawn and an older one 
   assert.equal(s.notify, false);
 });
 
-test('a missing or odd homepage never stops Decals from opening', async t => {
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'decals-update-'));
+test('a missing or odd homepage never stops Circuit from opening', async t => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'circuit-update-'));
   t.after(() => fs.rmSync(profile, { recursive: true, force: true }));
   const u = new U.UpdateCheck({
     profile,
@@ -240,7 +246,7 @@ test('a missing or odd homepage never stops Decals from opening', async t => {
   });
   assert.match(u.status().lastError, /does not know/);
   assert.equal(u.status().automatic, false);
-  assert.equal(await u.tick(), null);
+  assert.equal(await u.startupCheck(), null);
   await assert.rejects(u.check(), /does not know/);
   assert.equal(U.repository(HOME + '#readme'), REPO);
 });
@@ -254,7 +260,7 @@ test('a timeout or a quit abandons the check with a clear message', async t => {
   f.u.stop();
   await assert.rejects(pending, /could not reach GitHub/);
   await assert.rejects(f.u.check(), /closing/);
-  assert.equal(await f.u.tick(), null);
+  assert.equal(await f.u.startupCheck(), null);
 });
 
 test('a result that cannot be saved to disk is still used for this session', async t => {
@@ -272,19 +278,193 @@ test('setting validation', t => {
   assert.equal(f.make().status().enabled, false);
 });
 
-test('the API origin can be pointed at a local test server', async t => {
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'decals-update-'));
+test("What's new: only that section of the release notes, as a few plain lines", () => {
+  const body = [
+    'A small update.',
+    '',
+    "## What's new",
+    '',
+    '- **One car per lane:** Live preview drives a car on every lane, up to 8.',
+    '  Lane 1 stays red.',
+    '- A [link](https://evil.example) and `code` and <img src=x onerror=alert(1)> words',
+    '',
+    '## Verification',
+    '',
+    '- 57 unit test files passed.'
+  ].join('\n');
+  assert.deepEqual(U.whatsNew(body), [
+    {
+      title: 'One car per lane',
+      text: 'Live preview drives a car on every lane, up to 8. Lane 1 stays red.'
+    },
+    { text: 'A link and code and words' }
+  ]);
+  assert.deepEqual(U.whatsNew('No section here.'), []);
+  assert.equal(U.whatsNew('### What’s new\n' + '- x\n'.repeat(20)).length, 6, 'at most six lines');
+  assert.ok(U.whatsNew("## What's new\n- " + 'y'.repeat(2000))[0].text.length <= 280, 'long lines are cut');
+});
+
+test('the download is the file for this copy of Circuit', () => {
+  const r = U.release(latest('v1.7.0'));
+  const pick = edition => U.fileFor(r, edition)?.name.replace('SlotForgeCircuit-1.7.0-', '');
+  assert.equal(pick({ platform: 'win32', arch: 'x64' }), 'Setup-x64.exe');
+  assert.equal(pick({ platform: 'win32', arch: 'x64', portable: true }), 'Portable-x64.exe');
+  assert.equal(pick({ platform: 'darwin', arch: 'arm64' }), 'mac-universal.dmg');
+  assert.equal(pick({ platform: 'linux', arch: 'x64', appImage: true }), 'linux-x86_64.AppImage');
+  assert.equal(pick({ platform: 'linux', arch: 'x64' }), 'linux-amd64.deb');
+  assert.equal(pick({ platform: 'win32', arch: 'arm64' }), undefined, 'no arm64 Windows build');
+  // Odd or other names are never offered.
+  const odd = U.release(
+    latest('v1.7.0', {
+      assets: [
+        { name: '../SlotForgeCircuit-1.7.0-Setup-x64.exe', size: 5 },
+        { name: 'SlotForgeCircuit-1.6.0-Setup-x64.exe', size: 5 },
+        { name: 'SlotForgeCircuit-1.7.0-Setup-x64.exe', size: -1 }
+      ]
+    })
+  );
+  assert.deepEqual(odd.assets, []);
+  assert.equal(
+    U.fileUrl(REPO, 'v1.7.0', 'SlotForgeCircuit-1.7.0-Setup-x64.exe'),
+    `${HOME}/releases/download/v1.7.0/SlotForgeCircuit-1.7.0-Setup-x64.exe`
+  );
+});
+
+// A download answer that sends `bytes` in two pieces.
+const stream = bytes => ({
+  ok: true,
+  status: 200,
+  body: {
+    getReader() {
+      const parts = [bytes.subarray(0, 3), bytes.subarray(3)];
+      return { read: async () => (parts.length ? { done: false, value: parts.shift() } : { done: true }) };
+    }
+  }
+});
+const sha = bytes => require('node:crypto').createHash('sha256').update(bytes).digest('hex');
+
+test('Download saves the checked file in Downloads and nowhere else', async t => {
+  const bytes = Buffer.from('circuit installer');
+  const release = latest('v1.7.0', {
+    assets: [
+      { name: 'SlotForgeCircuit-1.7.0-Setup-x64.exe', size: bytes.length, digest: `sha256:${sha(bytes)}` }
+    ]
+  });
+  const f = fixture(t, {
+    reply: url => (url.includes('/releases/download/') ? stream(bytes) : answer(release))
+  });
+  await f.u.check();
+  const s = await f.u.startDownload();
+  assert.equal(f.calls[1].url, `${HOME}/releases/download/v1.7.0/SlotForgeCircuit-1.7.0-Setup-x64.exe`);
+  assert.equal(s.download.state, 'done');
+  const saved = path.join(f.profile, 'Downloads', 'SlotForgeCircuit-1.7.0-Setup-x64.exe');
+  assert.equal(f.u.downloadedFile(), saved);
+  assert.deepEqual(fs.readFileSync(saved), bytes);
+  assert.deepEqual(fs.readdirSync(path.join(f.profile, 'Downloads')), [
+    'SlotForgeCircuit-1.7.0-Setup-x64.exe'
+  ]);
+});
+
+test('a download that does not match the release is removed', async t => {
+  const bytes = Buffer.from('circuit installer');
+  for (const [asset, message] of [
+    [{ size: bytes.length, digest: `sha256:${'0'.repeat(64)}` }, /does not match/],
+    [{ size: bytes.length + 5, digest: `sha256:${sha(bytes)}` }, /incomplete/],
+    [{ size: 4 }, /larger/]
+  ]) {
+    const release = latest('v1.7.0', {
+      assets: [{ name: 'SlotForgeCircuit-1.7.0-Setup-x64.exe', ...asset }]
+    });
+    const f = fixture(t, {
+      reply: url => (url.includes('/releases/download/') ? stream(bytes) : answer(release))
+    });
+    await f.u.check();
+    await assert.rejects(f.u.startDownload(), message);
+    assert.equal(f.u.status().download.state, 'failed');
+    assert.deepEqual(fs.readdirSync(path.join(f.profile, 'Downloads')), [], 'nothing is left behind');
+    assert.throws(() => f.u.downloadedFile(), /no longer there/);
+  }
+});
+
+test('a download can be cancelled, and there is none without a file for this copy', async t => {
+  const release = latest('v1.7.0');
+  const f = fixture(t, {
+    reply: (url, init) =>
+      url.includes('/releases/download/')
+        ? Promise.resolve({
+            ok: true,
+            status: 200,
+            body: {
+              getReader: () => ({
+                read: () =>
+                  new Promise((_, reject) =>
+                    init.signal.addEventListener('abort', () => reject(Error('aborted')))
+                  )
+              })
+            }
+          })
+        : answer(release)
+  });
+  await f.u.check();
+  const pending = f.u.startDownload();
+  await new Promise(r => setTimeout(r, 10));
+  assert.equal(f.u.status().download.state, 'downloading');
+  f.u.cancelDownload();
+  await assert.rejects(pending, /cancelled/);
+  assert.equal(f.u.status().download.state, 'idle');
+  const none = fixture(t, { edition: { platform: 'win32', arch: 'arm64' } });
+  await none.u.check();
+  await assert.rejects(none.u.startDownload(), /no download for this copy/);
+});
+
+test("What's new and the files are remembered, and checked again when read back", async t => {
+  const f = fixture(t, {
+    reply: () => answer(latest('v1.7.0', { body: "## What's new\n- **Lanes:** more cars" }))
+  });
+  await f.u.check();
+  const again = f.make().status();
+  assert.deepEqual(again.latest.notes, [{ title: 'Lanes', text: 'more cars' }]);
+  assert.equal(again.latest.file.name, 'SlotForgeCircuit-1.7.0-Setup-x64.exe');
+  const file = path.join(f.profile, 'update-check.json');
+  const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
+  saved.latest.assets = [{ name: '../../evil.exe', size: 5 }];
+  saved.latest.notes = [{ text: 5 }, { text: '<b>ok</b>' }];
+  fs.writeFileSync(file, JSON.stringify(saved));
+  const read = f.make().status();
+  assert.equal(read.latest.file, null);
+  assert.deepEqual(read.latest.notes, [{ text: 'ok' }]);
+});
+
+test('another SlotForge app uses the same code with its own names', async t => {
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'circuit-update-'));
   t.after(() => fs.rmSync(profile, { recursive: true, force: true }));
   const calls = [];
   const u = new U.UpdateCheck({
     profile,
-    current: '0.3.0',
-    homepage: require('../package.json').homepage,
-    api: 'http://127.0.0.1:9',
-    fetch: async url => (calls.push(url), answer(latest('v0.4.0')))
+    current: '2.3.0',
+    homepage: 'https://github.com/someone/SlotForgeTiming',
+    appName: 'Timing',
+    artifactPrefix: 'SlotForgeTiming',
+    userAgent: 'SlotForge-Timing',
+    edition: { platform: 'win32', arch: 'x64', portable: true },
+    fetch: async (url, init) => {
+      calls.push({ url, init });
+      return answer({
+        tag_name: 'v2.4.0',
+        draft: false,
+        prerelease: false,
+        assets: [
+          { name: 'SlotForgeCircuit-2.4.0-Portable-x64.exe', size: 9 },
+          { name: 'SlotForgeTiming-2.4.0-Portable-x64.exe', size: 9 }
+        ]
+      });
+    }
   });
-  assert.equal((await u.check()).latest.version, '0.4.0');
-  assert.deepEqual(calls, ['http://127.0.0.1:9/repos/theDutchmanJames/SlotForgeDecals/releases/latest']);
-  // The page is always built from this app's repository, whatever server answered.
-  assert.equal(u.releaseUrl(), 'https://github.com/theDutchmanJames/SlotForgeDecals/releases/tag/v0.4.0');
+  const s = await u.check();
+  assert.equal(calls[0].url, 'https://api.github.com/repos/someone/SlotForgeTiming/releases/latest');
+  assert.equal(calls[0].init.headers['User-Agent'], 'SlotForge-Timing/2.3.0');
+  assert.equal(s.latest.file.name, 'SlotForgeTiming-2.4.0-Portable-x64.exe', 'only its own files');
+  assert.equal(s.kindLabel, 'Windows · portable app');
+  u.stop();
+  await assert.rejects(u.check(), /Timing is closing/);
 });

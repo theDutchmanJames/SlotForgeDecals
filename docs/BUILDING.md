@@ -49,7 +49,7 @@ Run only the command for the current operating system and architecture. Each pla
 
 | Platform | Installer | Portable |
 | --- | --- | --- |
-| Windows | `-windows-x64-setup.exe` (NSIS, per-user, choosable folder) | `-windows-x64-portable.exe` |
+| Windows | `-Setup-x64.exe` (NSIS, per-user, choosable folder) | `-Portable-x64.exe` |
 | macOS | `.dmg` | `.zip` |
 | Linux | `.deb` | `.AppImage` |
 

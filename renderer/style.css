@@ -2970,47 +2970,6 @@ dialog:has(.vector-view) .dialog-foot {
 .car-body-field {
   margin-bottom: 8px;
 }
-/* Update notice (top bar) and App settings → Updates */
-.update-notice {
-  display: flex;
-  flex-basis: 100%;
-  order: -1;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 6px 4px 10px;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--blue);
-  border-radius: 6px;
-  background: var(--head);
-  font-size: 12px;
-  white-space: nowrap;
-}
-.update-notice button {
-  padding: 3px 10px;
-  font-size: 11px;
-}
-.update-notice > span {
-  margin-right: auto;
-}
-#update-settings .row {
-  margin-bottom: 8px;
-}
-.update-facts {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 4px 14px;
-  margin: 8px 0 12px;
-}
-.update-facts dt {
-  color: var(--muted);
-}
-.update-facts dd {
-  margin: 0;
-}
-.update-error {
-  color: #ff8d81;
-}
-
 /* SlotForge Restyle foundation (shared with Timing and Paddock; see their SlotForgeRestyle.md).
    Type Trio: Barlow Condensed titles, Segoe UI text, Roboto Mono numbers. These fonts style the app
    only; decal artwork keeps its own fonts. */
@@ -3451,9 +3410,6 @@ input.ss-switch:checked {
 input.ss-switch:checked::after {
   left: 16px;
 }
-#update-settings .update-error {
-  margin: -4px 2px 12px;
-}
 
 /* Help Reader: one calm column */
 .help-reader > * {
@@ -3683,7 +3639,7 @@ dialog:has(.collection-browser) button.collection-preview {
 }
 
 /* SlotForge Restyle, step 3: the sheet bar as a Pit Board, the editing tools as named groups,
-   Page Notes and the update notice. */
+   and Page Notes. */
 /* Pit Board: the sheet's name big in Barlow, its paper settings, the saved state and the actions */
 .projectbar.pitboard {
   position: relative;
@@ -3944,54 +3900,6 @@ dialog:has(.collection-browser) button.collection-preview {
   color: var(--accent-text, var(--accent));
 }
 
-/* Update notice: a red download badge, the title in Barlow, a soft accent wash from the left */
-.projectbar .update-notice {
-  position: relative;
-  gap: 10px;
-  min-height: 52px;
-  padding: 8px 10px 8px 62px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: linear-gradient(100deg, color-mix(in srgb, var(--accent) 14%, var(--panel)), var(--panel) 55%);
-  white-space: normal;
-}
-.projectbar .update-notice::before {
-  content: '';
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  width: 36px;
-  height: 36px;
-  margin-top: -18px;
-  border-radius: 10px;
-  background: var(--accent-fill, var(--accent))
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v11M7 10l5 5 5-5M5 20h14'/%3E%3C/svg%3E")
-    center/20px no-repeat;
-}
-.update-notice .un-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin-right: auto;
-}
-.update-notice strong {
-  font:
-    italic 700 18px/1.1 'SF Barlow Condensed',
-    'Bahnschrift',
-    sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-.update-notice small {
-  color: var(--muted);
-  font-size: 12px;
-}
-.projectbar .update-notice button {
-  min-height: 30px;
-  padding: 4px 12px;
-  font-size: 12.5px;
-}
-
 /* badges and the quality line inside a title stay in the plain type */
 .inspector-title :is(.artwork-badge, small) {
   font-family: 'Segoe UI', system-ui, sans-serif;
@@ -4004,4 +3912,76 @@ dialog:has(.collection-browser) button.collection-preview {
 }
 .inspector-title .artwork-badge {
   font-weight: 600;
+}
+
+/* The update window and Settings → Updates (update-ui.js and update-window.css, from SlotForge
+   Circuit): the few Circuit names they use, mapped onto Decals' own tokens and styles. */
+:root {
+  --ui-focus: var(--focus);
+  --ui-success: #3ecf8e;
+  --font-numbers: 'SF Roboto Mono', Consolas, monospace;
+}
+[data-theme='light'] {
+  --ui-success: #1d8a5a;
+}
+.ss-ctl {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.ss-val {
+  font: 500 13px var(--font-numbers);
+}
+.ss-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ss-pill.good {
+  border-color: color-mix(in srgb, var(--ui-success) 45%, var(--line));
+  background: color-mix(in srgb, var(--ui-success) 10%, transparent);
+  color: var(--ui-success);
+}
+.ss-pill.needs {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent-text, var(--accent));
+}
+.ss-note.warn {
+  color: var(--accent-text, var(--accent));
+}
+/* The Settings section already has its Updates heading */
+#update-settings .update-card > h2 {
+  display: none;
+}
+dialog.update-dialog .dialog-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+dialog.update-dialog .dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 22px -34px -28px;
+  padding: 14px 34px;
+  border-top: 1px solid var(--line);
+}
+dialog.update-dialog .btn.quiet {
+  width: 32px;
+  padding: 0;
+  flex-shrink: 0;
+}
+dialog.update-dialog .update-facts .ss-row {
+  min-height: 42px;
+  padding: 8px 16px;
 }

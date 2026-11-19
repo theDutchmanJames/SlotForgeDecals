@@ -223,7 +223,7 @@ Every platform has an **installer** and a **portable** version. Installers add D
 
 | Your computer | Installer | Portable |
 | --- | --- | --- |
-| **Windows · Intel/AMD 64-bit** | `SlotForgeDecals-…-windows-x64-setup.exe` | `SlotForgeDecals-…-windows-x64-portable.exe` |
+| **Windows · Intel/AMD 64-bit** | `SlotForgeDecals-…-Setup-x64.exe` | `SlotForgeDecals-…-Portable-x64.exe` |
 | **Mac · Apple Silicon (M1 or newer)** | `SlotForgeDecals-…-mac-arm64.dmg` | `SlotForgeDecals-…-mac-arm64.zip` |
 | **Mac · Intel** | `SlotForgeDecals-…-mac-x64.dmg` | `SlotForgeDecals-…-mac-x64.zip` |
 | **Linux · Intel/AMD 64-bit** | `SlotForgeDecals-…-linux-amd64.deb` | `SlotForgeDecals-…-linux-x86_64.AppImage` |
@@ -233,9 +233,9 @@ Apple Silicon downloads are added after their separate build passes.
 
 ### Windows
 
-**Installer:** run the `-setup.exe` and follow the steps. You can choose the installation folder; Decals installs for your user account only, without administrator rights, and adds Start menu and desktop shortcuts. Remove it via **Settings → Apps → Installed apps**. Uninstalling never deletes your sheets and decals in Documents.
+**Installer:** run the `-Setup-x64.exe` and follow the steps. You can choose the installation folder; Decals installs for your user account only, without administrator rights, and adds Start menu and desktop shortcuts. Remove it via **Settings → Apps → Installed apps**. Uninstalling never deletes your sheets and decals in Documents.
 
-**Portable:** save the `-portable.exe` in a folder you want to keep, then double-click it. It extracts its runtime automatically each time it starts; nothing is installed.
+**Portable:** save the `-Portable-x64.exe` in a folder you want to keep, then double-click it. It extracts its runtime automatically each time it starts; nothing is installed.
 
 Windows releases are unsigned and may show an unknown-publisher warning. Smart App Control can block unsigned downloads entirely; it has no per-app exception. Check that the download came from this repository. Trusted Windows signing is not available in this release.
 
@@ -261,7 +261,7 @@ Start with the example sheet or a blank page. Choose your paper size, import art
 
 ### Updating and building from source
 
-Back up your work, close Decals, then run the newer installer (it replaces the installed version) or replace the portable file. Your workspace remains separate from the app. About 15 seconds after starting, installed and portable copies ask GitHub whether a newer release has been published (at most twice a day) and show a notice with **Download**, which opens the release page, and **Not now**. Decals never downloads or installs updates by itself; turn the check off or run it by hand in **App Settings → Updates**. See the [release notes](RELEASE_NOTES.md) for changes.
+Back up your work, close Decals, then run the newer installer (it replaces the installed version) or replace the portable file. Your workspace remains separate from the app. About 5 seconds after starting, installed and portable copies ask GitHub once whether a newer release has been published. If so, a window shows what is new, with **Download**, which saves the file for your copy in Downloads and checks it, and **Skip this version**. Decals never opens or installs what it downloads; turn the check off or run it by hand in **App Settings → Updates**. See the [release notes](RELEASE_NOTES.md) for changes.
 
 Developers can follow the [build instructions](docs/BUILDING.md) for local setup and native packaging. Official Windows, macOS and Linux packages are built and tested by GitHub Actions before publication.
 

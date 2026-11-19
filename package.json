@@ -96,10 +96,10 @@
       "signExecutable": false
     },
     "portable": {
-      "artifactName": "SlotForgeDecals-${version}-windows-${arch}-portable.${ext}"
+      "artifactName": "SlotForgeDecals-${version}-Portable-${arch}.${ext}"
     },
     "nsis": {
-      "artifactName": "SlotForgeDecals-${version}-windows-${arch}-setup.${ext}",
+      "artifactName": "SlotForgeDecals-${version}-Setup-${arch}.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowElevation": true,

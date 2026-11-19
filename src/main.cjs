@@ -47,47 +47,75 @@ else {
         return fn(arg);
       });
     handle('load', async () => ({ ...(await workspace.read()), root, version: app.getVersion() }));
-    // "A new version is available" (ported from Paddock): installed and portable apps ask GitHub
-    // about 15 seconds after startup and then at most every 12 hours; development copies only check
-    // when asked in Settings. Test runs never reach GitHub: they may point it at a local server.
-    const testApi = process.env.SLOTFORGE_TEST_PROFILE
+    // "A new version is available" (from SlotForge Circuit, docs/update-check-handoff.md): installed
+    // and portable apps ask GitHub once, 5 seconds after starting; a newer version opens a window with
+    // What's new, Skip and Download. Development copies only check when asked in Settings.
+    // Test runs never reach GitHub: they may point it at a local server (SLOTFORGE_UPDATE_API).
+    const testing = !!process.env.SLOTFORGE_TEST_PROFILE;
+    const testApi = testing
       ? /^http:\/\/127\.0\.0\.1:\d+$/.exec(process.env.SLOTFORGE_UPDATE_API || '')?.[0]
       : null;
     updateCheck = new updates.UpdateCheck({
       profile: app.getPath('userData'),
       current: app.getVersion(),
       homepage: require('../package.json').homepage,
-      fetch: (url, init) => net.fetch(url, init),
-      api: testApi || undefined,
-      automatic: process.env.SLOTFORGE_TEST_PROFILE ? !!testApi : app.isPackaged,
+      appName: 'Decals',
+      artifactPrefix: 'SlotForgeDecals',
+      userAgent: 'SlotForge-Decals',
+      fetch: (url, init) =>
+        net.fetch(testApi ? url.replace(/^https:\/\/(?:api\.)?github\.com/, testApi) : url, init),
+      automatic: app.isPackaged && !testing && !process.env.SLOTFORGE_NO_UPDATE_CHECK,
+      edition: {
+        platform: process.platform,
+        arch: process.arch,
+        portable: !!process.env.PORTABLE_EXECUTABLE_FILE,
+        appImage: !!process.env.APPIMAGE
+      },
+      downloads: testing
+        ? path.join(process.env.SLOTFORGE_EXPORT_DIR || app.getPath('userData'), 'downloads')
+        : app.getPath('downloads'),
       onChange: () => {
-        if (win && !win.isDestroyed()) win.webContents.send('update-status');
+        if (win && !win.isDestroyed()) win.webContents.send('update:changed');
       }
     });
-    if (process.env.SLOTFORGE_TEST_PROFILE && !testApi)
-      Object.assign(updateCheck, { repo: null, unavailable: 'Update checks are off in test runs.' });
-    updateTimer = setTimeout(
-      () => {
-        void updateCheck.tick();
-        updateTimer = setInterval(() => void updateCheck.tick(), 60 * 60 * 1000);
-        updateTimer.unref();
-      },
-      (testApi && Number(process.env.SLOTFORGE_UPDATE_DELAY)) || 15000
-    );
+    if (testing) {
+      if (!testApi)
+        Object.assign(updateCheck, { repo: null, unavailable: 'Update checks are off in test runs.' });
+      global.updateCheck = updateCheck; // the desktop test stands in for the check at start
+    }
+    updateTimer = setTimeout(() => void updateCheck.startupCheck(), 5 * 1000);
     updateTimer.unref();
-    handle('update-check', async request => {
-      const action = request?.action;
-      if (action === 'status') return updateCheck.status();
-      if (action === 'check') return updateCheck.check();
-      if (action === 'enable') return updateCheck.setEnabled(request.enabled);
-      if (action === 'skip') return updateCheck.skip(request.version);
-      if (action === 'open') {
-        const url = updateCheck.releaseUrl();
-        if (process.env.SLOTFORGE_TEST_PROFILE) global.openedUpdatePage = url;
-        else await shell.openExternal(url);
-        return { opened: true };
+    ipcMain.handle('update:action', async (e, action, payload) => {
+      // Only the app's own page may ask.
+      if (e.sender !== win.webContents || e.senderFrame !== win.webContents.mainFrame)
+        return { error: 'Unknown page.' };
+      try {
+        if (action === 'status') return { ok: true, value: updateCheck.status() };
+        if (action === 'check') return { ok: true, value: await updateCheck.check() };
+        if (action === 'enable') return { ok: true, value: updateCheck.setEnabled(payload?.enabled) };
+        if (action === 'skip') return { ok: true, value: updateCheck.skip(payload?.version) };
+        if (action === 'download') {
+          // Not awaited: progress and the result reach the window through update:changed.
+          updateCheck.startDownload().catch(() => {});
+          return { ok: true, value: updateCheck.status() };
+        }
+        if (action === 'cancel') return { ok: true, value: updateCheck.cancelDownload() };
+        if (action === 'show') {
+          const file = updateCheck.downloadedFile();
+          if (testing) global.shownUpdateFile = file;
+          else shell.showItemInFolder(file);
+          return { ok: true, value: { shown: true } };
+        }
+        if (action === 'open') {
+          const url = updateCheck.releaseUrl();
+          if (testing) global.openedUpdatePage = url;
+          else await shell.openExternal(url);
+          return { ok: true, value: { opened: true } };
+        }
+        throw Error('Unknown update action.');
+      } catch (err) {
+        return { error: err.message, code: err.code };
       }
-      throw Error('Unknown update action.');
     });
     handle('save', data => {
       if (data?.libraryMode !== 'external') throw Error('Invalid editor snapshot.');
@@ -359,7 +387,6 @@ else {
   });
   app.on('before-quit', () => {
     clearTimeout(updateTimer);
-    clearInterval(updateTimer);
     updateCheck?.stop();
   });
   app.on('window-all-closed', () => app.quit());

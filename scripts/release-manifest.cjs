@@ -11,7 +11,7 @@ function installerNames(version, platform, arch) {
   );
   // Windows ships a portable EXE and an NSIS setup installer; Mac a DMG installer and portable ZIP; Linux a portable AppImage and DEB installer.
   if (platform === 'windows')
-    return ['portable', 'setup'].map(kind => `SlotForgeDecals-${version}-windows-${arch}-${kind}.exe`);
+    return ['Portable', 'Setup'].map(kind => `SlotForgeDecals-${version}-${kind}-${arch}.exe`);
   return (platform === 'mac' ? ['dmg', 'zip'] : ['AppImage', 'deb']).map(
     ext =>
       `SlotForgeDecals-${version}-${platform}-${platform === 'linux' && arch === 'x64' ? (ext === 'deb' ? 'amd64' : 'x86_64') : arch}.${ext}`
