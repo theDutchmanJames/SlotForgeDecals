@@ -1,54 +1,33 @@
-# SlotForge Decals 0.3.0
+# SlotForge Decals 0.4.0
 
-Print & cut for cutting machines and hand cutting, a Windows installer, faster everyday editing and a tidier workshop.
+A new look, shared with SlotForge Timing and Paddock. Everything works as before; it is calmer, clearer and easier to read.
 
-## Print & cut
+## The new look
 
-- A new **Print & cut** panel sets how decals are cut out: lines that **follow each decal's shape** or a **rectangle**, with an offset around the artwork (default 1 mm). Nearby parts such as letters share one cut line and holes are not cut. Dashed lines on the sheet show the result, and any decal can override the sheet setting.
-- **Export for cutter…** saves a folder with step-by-step instructions for **Silhouette Studio** (including the free Basic edition), **Cricut Design Space** or **Brother ScanNCut**. Each decal becomes a 300 DPI PNG with a white border along its cut line: inkjets print white as no ink, while the cutter software traces the border. Sheet files keep the exact layout: a page PNG with DXF cut lines for Silhouette, or an SVG with print and cut layers. The cutter software adds its own registration marks.
-- **Print cut lines in the PDF** adds thin lines for cutting by hand or scanning a printed sheet with a ScanNCut.
-- These files are checked for size and structure but have not yet been tested on every machine. Print on plain paper first.
+- **Titles** are set in Barlow Condensed and **numbers** (sizes, counts, versions) in Roboto Mono. Both fonts are bundled and only style the app: your sheets and their fonts are untouched.
+- **One accent colour.** Red now marks only the main action of a window (such as Export PDF), the selected item and focus. Buttons are flat; delete is red text instead of a red block.
+- **Neutral folders** in the side panels, with the title in capitals and a chevron on the right. An open folder has a thin red mark.
+- **Windows** have a larger title with a line under it. Yes/No windows show a badge: **?** for a question, a red **!** for something that cannot be undone.
+- The **light theme** uses warmer greys.
 
-## More ways to create
+## The sheet bar and tools
 
-- **Batch racing numbers:** fill in *More numbers* (for example 1-30, 44, 51) in Racing Number Plates to create a plate or matching pair for every car at once; they fill free space and add pages as needed.
-- **Recolour…** lists every colour in the selected decals, including inside SVG artwork, named colours and default black, and replaces the ones you change: handy for team variants.
-- **Add mirrored copy (other side)** flips directional graphics such as arrows and stripes for the other side of the car. Editable text stays readable; lettering inside imported logos is mirrored too.
-- **US Letter** and **custom paper sizes** (50–600 mm) join A4, A5 and Photo 4×6 in.
-- **Four new cars** in the car preview: classic endurance GT, touring saloon, rally hatchback and Group C prototype, each with side and top views. Choosing a car sizes the model from the real car's length at your scale.
+- The **sheet name** is shown large above the sheet, with the paper size, orientation and scale beside it.
+- The **saved state** is coloured: green when saved, yellow while saving, red if saving failed.
+- Undo and Redo are compact icon buttons; **Export PDF** is the one main button.
+- The editing tools above the sheet are grouped as **Select**, **Edit** and **Arrange**. **Snap** lights up when it is on.
 
-## Everyday editing
+## Settings, Help and the libraries
 
-- **Copy, cut and paste** decals with Ctrl+C / Ctrl+X / Ctrl+V, also between sheets. Paste a copied image, a screenshot or SVG code to import it.
-- **Choose installed font…** lists every font on your computer with a preview and embeds the chosen one in the sheet, so PDFs and shared sheets keep it.
-- Every colour field has an **eyedropper** and quick **swatches** of your recent colours and the colours on the sheet.
-- New artwork is placed in **free space** on the page instead of on top of existing decals.
-- **Opacity** is a percentage slider with a live preview, and **undo** keeps 200 steps.
-
-## A tidier workshop
-
-- The **car preview** stays pinned at the top of the right panel while you edit a decal.
-- **Import & Export** and the library windows follow the dark and light theme.
-- Toolbar buttons that need a selection are greyed out with a hint until they can be used.
-- **Help** is split into searchable topics with a keyboard-shortcut table.
-- The PDF review lists one row per decal, merges identical copies and names any bitmap parts.
-- The older .sfbackup format moved into a collapsible section of Settings.
-
-## Faster with big workspaces
-
-- Decals starts in about half the time, and saving no longer slows down as the workspace grows: on a test workspace with 2,000 decals and 300 sheets, autosave went from about 1 second to 60 ms.
-- Saved sheets open faster, and the Sheet Library shows its previews almost instantly.
-- Dragging, box-selecting and zooming stay smooth on busy pages with many logos and cut lines.
-
-## Update notice
-
-- About 15 seconds after starting, Decals asks GitHub whether a newer version has been published, at most twice a day. Only the version number is requested; nothing about you or your sheets is sent.
-- A newer version shows a notice above the sheet bar: **Download** opens the release page in your browser, **Not now** hides it until an even newer version appears. Decals never downloads or installs anything by itself.
-- **App Settings → Updates** shows the result, has **Check now** and turns automatic checks off.
+- **App Settings** has a side list (Appearance, Workspace, Backup & Recovery, Updates) with a status line for each, and every setting is one slim row. The theme is a Dark/Light switch, storage is shown as small tiles, and automatic update checks have an on/off switch.
+- **Help** has the same side list with search, and each topic reads as one calm column.
+- **Sheet Library** and **Decal Library** have one toolbar with search, sort, a Grid/List switch and the page buttons. Each card shows its preview edge to edge, with its buttons in a strip at the bottom.
+- **Import & Export** and **Export for cutter** start with a short note on what the window does and when to use it.
+- The **update notice** has a download badge and says which version you have.
 
 ## Updating and installing
 
-Your saved sheets and decals remain in **Documents/SlotForge Decals**, outside the application. Sheets that use US Letter, a custom size or cut-line settings need Decals 0.3.0 or newer. Back up first through **Settings → Backup & Recovery → Export Complete Backup**.
+Your saved sheets and decals remain in **Documents/SlotForge Decals**, outside the application. Sheets from 0.4.0 open in 0.3.0 and the other way round: only the look of the app changed. Back up first through **Settings → Backup & Recovery → Export Complete Backup**.
 
 | Computer | Installer | Portable |
 | --- | --- | --- |
@@ -61,6 +40,6 @@ The Windows installer installs for your user account only, lets you choose the f
 
 ## Verification and sources
 
-Local verification passed **143 unit tests** and **29 desktop suites**, including new checks for print & cut packages (DPI, millimetre sizes, DXF and SVG), copy and paste, clipboard images, installed fonts, recolouring, mirrored copies, batch numbers, custom paper and the update notice. The packaged Windows build passed the packaged acceptance suites. All test workspaces are isolated from user data.
+Local verification passed **143 unit tests** and **29 desktop suites** in both themes, including the layout of the new sheet bar, Settings, Help and the libraries. The packaged Windows build passed the packaged acceptance suites. All test workspaces are isolated from user data.
 
 Licensed under **AGPL-3.0-or-later**; application source, corresponding Ghostscript and MuPDF sources, revision records and build instructions accompany the release. Bundled components retain their notices in THIRD-PARTY-NOTICES.txt.
