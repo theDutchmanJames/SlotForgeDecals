@@ -217,6 +217,15 @@ The gear in the top bar opens the **Settings** page (redesigned in November 2026
 - **Help:** every topic as a chip with short three-step how-tos, each with **Show me**, which takes you to the place it describes; a search that answers straight away; and the full topic one click away. The question mark in the top bar opens it.
 - **Fonts:** type your own text and see it in every font. *In this sheet* lists the embedded fonts with how many texts use them, and removes ones nothing uses any more; *On this computer* filters bold, condensed or script fonts and uses one for the selected text. **Add a font file…** embeds a .ttf or .otf.
 
+### Questions, progress and notices
+
+The small windows were redesigned in November 2026 as one family:
+
+- **Before something big**, such as deleting a sheet or restoring a backup, a card shows what *will happen* next to what *stays safe*, with buttons named after the action (*Keep it* / *Delete sheet*). Esc always changes nothing.
+- **Long jobs** such as a complete backup list their steps as they go, without a made-up percentage.
+- **When something goes wrong**, the card starts with *Your work is safe* and what Decals already did, then what you can do, with *Copy details* for support.
+- **Notices** stack above the status bar. Changes you can take back, such as deleting decals, recolouring or repeating, have an **Undo** button right there; a deleted sheet offers **Recover…**.
+
 ### Keep a library and share editable designs
 
 Explicitly **Save decal to library** to keep a reusable design with a name and tags. **Decal Library** is a page of its own (redesigned in November 2026):

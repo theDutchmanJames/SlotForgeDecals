@@ -328,11 +328,23 @@ const Workshop = (() => {
         if (side?.id === e.id) side = null;
         picked.delete(e.id);
         settings.pinnedSheets = (settings.pinnedSheets || []).filter(id => id !== e.id);
-        toast(e.name + ' deleted. Recover a sheet… brings it back.');
+        toast(e.name + ' deleted.', false, {
+          action: { label: 'Recover…', run: () => show({ recover: true }) }
+        });
         render();
       },
-      'Delete',
-      'danger'
+      'Delete sheet',
+      'danger',
+      {
+        sub: `${e.count ?? '?'} decals · ${e.pages || 1} ${(e.pages || 1) === 1 ? 'page' : 'pages'}`,
+        will: ['It leaves your sheets'],
+        safe: [
+          'Recover a sheet… brings it back, with its history',
+          'Your decal library is untouched',
+          'PDFs and files you exported'
+        ],
+        keep: 'Keep it'
+      }
     );
   }
   function pin(e) {

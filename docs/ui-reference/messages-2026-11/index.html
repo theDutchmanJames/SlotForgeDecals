@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Small windows redesign</title>
+<!-- Preview only: nothing is wired up. Two concepts for confirmations, progress, errors and notices. -->
+<style>
+@font-face{font-family:'SF Barlow Condensed';src:url('../../../renderer/fonts/barlowcondensed/BarlowCondensed-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic}
+@font-face{font-family:'SF Roboto Mono';src:url('../../../renderer/fonts/robotomono/RobotoMono[wght].ttf') format('truetype');font-weight:100 700}
+:root{--bg:#14181e;--canvas:#101318;--panel:#1d232b;--raised:#252c36;--ink:#e8e6e1;--ink2:#c4c8ce;--muted:#98a0ab;--faint:#6b7380;--line:#323946;--line2:#272d37;--accent:#e5484d;--ok:#3ecf8e;--blue:#2f8cff;--gold:#f0b429;
+  --cond:'SF Barlow Condensed','Bahnschrift',sans-serif;--mono:'SF Roboto Mono',Consolas,monospace;--ui:'Segoe UI',system-ui,sans-serif;color-scheme:dark}
+[data-theme=light]{--bg:#f1efea;--canvas:#e4e1da;--panel:#fff;--raised:#f3f1ec;--ink:#1d2229;--ink2:#3a414c;--muted:#656c76;--faint:#8a929d;--line:#d9d6cf;--line2:#e6e3dd;--accent:#c92424;--ok:#1f9a62;--blue:#1f6fd6;--gold:#b7820a;color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--ui);overflow:hidden}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+h1,h2,h3,h4{font-family:var(--cond);font-style:italic;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0}
+.muted{color:var(--muted)}.faint{color:var(--faint)}.grow{flex:1}.mono{font-family:var(--mono);font-weight:500}
+.row{display:flex;align-items:center;gap:8px}
+.switch{position:relative;z-index:50;display:flex;align-items:center;gap:14px;height:46px;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--line2)}
+.switch b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.switch p{margin:0 0 0 auto;font-size:12px;color:var(--faint);max-width:560px;line-height:1.3}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+.seg button{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:26px;padding:0 11px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.seg button.on{background:color-mix(in srgb,var(--ink) 12%,var(--panel));color:var(--ink);font-weight:600}
+.opt{position:absolute;inset:46px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 13px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);font-size:13px;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+.btn.sm{height:27px;padding:0 9px;font-size:12px}
+.btn.big{height:40px;padding:0 18px;font-size:14px}
+.btn.light{background:#fff;color:#111;border-color:#fff}
+.app{position:absolute;inset:0;display:flex;flex-direction:column}
+.top{height:56px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 14px;flex:none;position:relative;z-index:4}
+.logo{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;font:700 italic 17px var(--cond)}
+.brand{font:700 italic 21px var(--cond)}
+.sheetname{display:flex;flex-direction:column;margin-left:14px}
+.sheetname b{font:700 italic 19px var(--cond);text-transform:uppercase}
+.sheetname small{color:var(--muted);font-size:11px}
+.nav{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:10px;margin-left:24px}
+.nav span{padding:5px 12px;border-radius:7px;color:var(--muted)}
+.nav span.on{background:color-mix(in srgb,var(--ink) 11%,var(--panel));color:var(--ink);font-weight:600}
+.ib{position:relative;width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:9px;background:none;color:var(--ink2)}
+.ib .dot{position:absolute;right:4px;top:4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center}
+.ib.on{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.body{flex:1;position:relative;display:flex;min-height:0}
+/* background: the Workshop */
+.ws{flex:1;padding:24px 30px;overflow:hidden}
+.ws h1{font-size:30px;margin-bottom:16px}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.card{border:1px solid var(--line);border-radius:13px;background:var(--panel);overflow:hidden}
+.card .th{height:150px;background:color-mix(in srgb,var(--ink) 5%,transparent);display:grid;place-items:center}
+.card .th i{width:70px;height:96px;background:#fff;border-radius:2px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.card .mt{padding:10px 12px}
+.card .mt b{display:block}.card .mt small{color:var(--muted);font-size:12px}
+.card.gone{opacity:.25;outline:2px dashed var(--line);outline-offset:-2px}
+.card.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.scrim{position:absolute;inset:0;background:rgba(8,10,14,.6);z-index:6}
+[data-theme=light] .scrim{background:rgba(60,55,45,.35)}
+/* ===== A ===== */
+.board{position:absolute;left:50%;top:-1px;transform:translateX(-50%);z-index:7;width:620px;border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:0 0 16px 16px;background:var(--panel);box-shadow:0 22px 60px rgba(0,0,0,.5);padding:18px 22px;display:flex;flex-direction:column;gap:12px}
+.board h2{font-size:22px}
+.board .facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.board .facts div{padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--ink) 5%,transparent);font-size:12.5px}
+.board .facts b{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.board .facts ul{margin:0;padding-left:16px}
+.type{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.type .inp{flex:1;height:32px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--accent);border-radius:8px;background:var(--bg);color:var(--ink);font-family:var(--mono)}
+.snack{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:14px;padding:10px 10px 10px 16px;border-radius:12px;background:#11151b;color:#fff;box-shadow:0 12px 34px rgba(0,0,0,.5);white-space:nowrap}
+[data-theme=light] .snack{background:#1d2229}
+.snack .timer{width:22px;height:22px;border-radius:50%;background:conic-gradient(#fff 0 68%,rgba(255,255,255,.2) 0)}
+.progress{position:absolute;left:740px;right:190px;top:-56px;height:56px;display:flex;align-items:center;gap:12px;padding:0 14px;z-index:5}
+.pbar{flex:1;height:6px;border-radius:3px;background:color-mix(in srgb,var(--ink) 12%,transparent);overflow:hidden}
+.pbar i{display:block;height:100%;width:62%;background:var(--blue);border-radius:3px}
+.stack{position:absolute;right:18px;bottom:18px;z-index:7;display:flex;flex-direction:column;gap:10px;width:380px}
+.note{border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:12px;background:var(--panel);box-shadow:0 12px 34px rgba(0,0,0,.4);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.note.err{border-left-color:var(--accent)}
+.note.ok{border-left-color:var(--ok)}
+.note b{font-size:13.5px}
+.note p{margin:0;color:var(--muted);font-size:12.5px}
+.tray{position:absolute;right:120px;top:60px;z-index:8;width:400px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.tray header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line2)}
+.tray .m{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line2)}
+.tray .m i{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none;background:var(--blue)}
+.tray .m.err i{background:var(--accent)}.tray .m.ok i{background:var(--ok)}
+.tray .m small{display:block;color:var(--muted);font-size:11.5px}
+.rename{display:flex;align-items:center;gap:6px;margin-left:14px;padding:4px 6px 4px 10px;border:1px solid var(--blue);border-radius:9px;background:var(--bg)}
+.rename input{border:0;background:none;outline:0;font:700 italic 19px var(--cond);text-transform:uppercase;width:240px}
+/* ===== B ===== */
+.win{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:7;width:520px;border:1px solid var(--line);border-radius:18px;background:var(--panel);box-shadow:0 30px 80px rgba(0,0,0,.55);overflow:hidden}
+.win .hd{display:flex;gap:16px;padding:22px 24px 6px}
+.win .ico{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;flex:none}
+.win .ico svg{width:24px;height:24px}
+.win .ico.danger{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.win .ico.info{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue)}
+.win .ico.warn{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold)}
+.win h2{font-size:24px;line-height:1.05}
+.win .sub{color:var(--muted);margin-top:4px}
+.win .bd{padding:10px 24px 18px;display:flex;flex-direction:column;gap:12px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cols div{padding:11px 12px;border-radius:11px;font-size:12.5px}
+.cols div b{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
+.cols .will{background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.cols .will b{color:var(--accent)}
+.cols .safe{background:color-mix(in srgb,var(--ok) 10%,transparent)}
+.cols .safe b{color:var(--ok)}
+.cols ul{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:3px}
+.win .ft{display:flex;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid var(--line2);background:color-mix(in srgb,var(--ink) 3%,transparent)}
+kbd{font:500 11px var(--mono);padding:1px 6px;border:1px solid var(--line);border-radius:5px;color:var(--muted)}
+.steps{display:flex;flex-direction:column;gap:8px}
+.steps div{display:flex;align-items:center;gap:10px;font-size:13px}
+.steps i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:11px;flex:none;border:2px solid var(--line)}
+.steps .d i{background:var(--ok);border-color:var(--ok);color:#fff}
+.steps .n i{border-color:var(--blue);border-top-color:transparent}
+.steps .n{font-weight:600}
+.steps .w{color:var(--muted)}
+.trouble{padding:12px;border-radius:11px;background:color-mix(in srgb,var(--ok) 10%,transparent);font-size:12.5px}
+.trouble b{display:block;color:var(--ok);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+details.det summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.det pre{margin:8px 0 0;padding:10px;border-radius:8px;background:var(--bg);font:500 11px var(--mono);color:var(--ink2);white-space:pre-wrap}
+.chips{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:7;display:flex;flex-direction:column;align-items:center;gap:8px}
+.chip{display:flex;align-items:center;gap:12px;padding:9px 10px 9px 14px;border-radius:12px;background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.4);white-space:nowrap}
+.chip .s{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+</style>
+</head>
+<body>
+<div class="switch">
+  <b>Option</b><div class="seg" id="opt"><button data-v="A">A · No more pop-ups</button><button data-v="B">B · Better windows</button></div>
+  <b>State</b><div class="seg" id="state"></div>
+  <b>Theme</b><div class="seg" id="theme"><button data-v="dark">Dark</button><button data-v="light">Light</button></div>
+  <p id="blurb"></p>
+</div>
+<div class="opt" id="stage"></div>
+<svg width="0" height="0" style="position:absolute"><defs>
+ <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+ <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></symbol>
+ <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></symbol>
+ <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7M10 20a2 2 0 0 0 4 0"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+ <symbol id="i-undo" viewBox="0 0 24 24"><path d="M8 4 3 9l5 5M3 9h11a6 6 0 0 1 0 12h-3"/></symbol>
+ <symbol id="i-restore" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+ <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></symbol>
+ <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+ <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></symbol>
+</defs></svg>
+<script>
+const I = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const STATES = {
+  A: [['undo', 'Undo, not “are you sure”'], ['confirm', 'Only when it cannot be undone'], ['progress', 'Progress in the top bar'], ['error', 'Errors that stay'], ['rename', 'Rename in place']],
+  B: [['confirm', 'Decision card'], ['progress', 'Progress with steps'], ['error', 'Trouble card'], ['notice', 'Notices with Undo']]
+};
+const BLURB = {
+  A: 'Undo instead of asking; it only asks when something cannot be undone. Progress in the top bar, errors as cards, a tray keeps them.',
+  B: 'Clear windows: what will happen and what stays safe, long jobs with their steps, trouble that says your work is safe, notices with Undo.'
+};
+const q = new URLSearchParams(location.search);
+let opt = q.get('opt') || 'A', state = q.get('state'), theme = q.get('theme') || 'dark';
+const NAMES = ['Club racing · No. 27', 'Endurance 2026', 'Forge team car', 'Rally night', 'Test sheet'];
+const workshop = (gone = -1, on = -1) => `<div class="ws"><h1>Your sheets</h1><div class="cards">${NAMES.map((n, k) => `<div class="card ${k === gone ? 'gone' : ''} ${k === on ? 'on' : ''}"><div class="th"><i></i></div><div class="mt"><b>${n}</b><small>${k + 2} decals · edited ${k + 1} days ago</small></div></div>`).join('')}</div></div>`;
+const topbar = (opts = {}) => `<div class="top"><div class="logo">D</div><span class="brand">DECALS</span>${opts.rename ? `<span class="rename">${I('pen')}<input value="Club racing · No. 27"><button class="btn sm primary">Save</button><button class="btn sm ghost">Esc</button></span>` : `<span class="sheetname"><b>Club racing · No. 27</b><small>${opts.saving ? 'Saving…' : 'Saved locally'} · A4 · 1:32</small></span>`}<div class="nav">${['Workshop', 'Editor', 'Car', 'Decal Library', 'Print & share'].map((n, k) => `<span class="${k === (opts.nav ?? 0) ? 'on' : ''}">${n.replace('&', '&amp;')}</span>`).join('')}</div><span class="grow"></span>${opt === 'A' ? `<button class="ib ${opts.tray ? 'on' : ''}">${I('bell')}${opts.count ? `<span class="dot">${opts.count}</span>` : ''}</button>` : ''}<button class="ib">${I('gear')}</button><button class="btn primary">Export PDF</button></div>`;
+
+function A(s) {
+  let body = workshop(), extra = '', top = {};
+  if (s === 'undo') {
+    body = workshop(1);
+    extra = `<div class="snack">${I('trash')}<span><b>Endurance 2026</b> moved to deleted sheets</span><span class="timer"></span><button class="btn sm light">${I('undo')} Undo</button><button class="btn sm ghost" style="color:#fff">${I('x')}</button></div>`;
+  }
+  if (s === 'confirm') {
+    body = workshop();
+    extra = `<div class="scrim" style="top:56px"></div><div class="board" style="top:56px"><div class="row">${I('restore')}<h2>Restore a complete backup?</h2><span class="grow"></span><span class="muted mono" style="font-size:11.5px">from 3 Nov 2026 · 41 MB</span></div>
+      <div class="facts"><div><b>Replaces</b><ul><li>All 24 sheets and their history</li><li>The library: 66 decals</li></ul></div><div><b>Kept safe first</b><ul><li>A recovery copy of today’s workspace</li><li>Restore that copy any time from Settings</li></ul></div></div>
+      <div class="type">This cannot be undone with Ctrl+Z. Type <b style="color:var(--ink)">RESTORE</b> to go on:<span class="inp">REST|</span></div>
+      <div class="row"><span class="faint" style="font-size:11.5px">Esc keeps everything as it is</span><span class="grow"></span><button class="btn">Keep my work</button><button class="btn primary" style="opacity:.5">Restore the backup</button></div></div>`;
+  }
+  if (s === 'progress') {
+    top = { saving: true };
+    extra = `<div class="progress"><span class="mono" style="font-size:12px;color:var(--blue)">62 %</span><div class="pbar"><i></i></div><span style="font-size:12.5px">Backing up · verifying the copy</span><button class="btn sm ghost">Cancel</button></div>
+      <div class="stack"><div class="note"><b>Backing up everything</b><p>You can keep working; changes from now on are in the next backup.</p></div></div>`;
+  }
+  if (s === 'error') {
+    top = { count: 2 };
+    extra = `<div class="stack"><div class="note err"><div class="row"><b class="grow">Your latest changes could not be saved</b><button class="btn sm ghost">${I('x')}</button></div><p>The disk is full. Nothing is lost: your sheet is still open, and Decals keeps trying every 30 seconds.</p><div class="row"><button class="btn sm primary">Try again now</button><button class="btn sm">Save a copy elsewhere…</button><button class="btn sm ghost">${I('copy')} Details</button></div></div>
+      <div class="note ok"><b>PDF saved</b><p>Club racing · No. 27.pdf · print at 100 %</p><div class="row"><button class="btn sm">Show in folder</button></div></div></div>`;
+  }
+  if (s === 'rename') {
+    top = { rename: true, tray: true, count: 2 };
+    extra = `<div class="tray"><header>${I('bell')}<h3 style="font-size:15px">Messages</h3><span class="grow"></span><button class="btn sm ghost">Clear</button></header>
+      <div class="m err"><i></i><div class="grow"><b>Changes could not be saved</b><small>2 min ago · solved: saved at 14:02</small></div></div>
+      <div class="m ok"><i></i><div class="grow"><b>PDF saved</b><small>5 min ago · Club racing · No. 27.pdf</small></div><button class="btn sm ghost">Show</button></div>
+      <div class="m"><i></i><div class="grow"><b>Endurance 2026 deleted</b><small>12 min ago</small></div><button class="btn sm ghost">Undo</button></div>
+      <div class="m ok"><i></i><div class="grow"><b>Backup made and verified</b><small>Today 13:40 · 41 MB</small></div></div></div>`;
+  }
+  return `<div class="app">${topbar(top)}<div class="body">${body}${extra}</div></div>`;
+}
+
+function B(s) {
+  let extra = '', body = workshop(-1, s === 'confirm' ? 1 : -1);
+  if (s === 'confirm') extra = `<div class="scrim"></div><div class="win"><div class="hd"><span class="ico danger">${I('trash')}</span><div><h2>Delete “Endurance 2026”?</h2><div class="sub">8 decals on 2 pages · last edited 3 days ago</div></div></div>
+      <div class="bd"><div class="cols"><div class="will"><b>Will happen</b><ul><li>It leaves your sheets</li><li>Its PDFs and copies stay where they are</li></ul></div><div class="safe"><b>Stays safe</b><ul><li>Recover a sheet… brings it back, with its history</li><li>Library decals are untouched</li></ul></div></div></div>
+      <div class="ft"><kbd>Esc</kbd><span class="faint" style="font-size:12px">keeps it</span><span class="grow"></span><button class="btn">Keep it</button><button class="btn primary">${I('trash')} Delete sheet</button></div></div>`;
+  if (s === 'progress') extra = `<div class="scrim"></div><div class="win"><div class="hd"><span class="ico info">${I('box')}</span><div><h2>Backing up everything</h2><div class="sub">24 sheets, 66 decals, all artwork and fonts</div></div></div>
+      <div class="bd"><div class="steps"><div class="d"><i>✓</i>Saving open changes</div><div class="d"><i>✓</i>Copying the database · 41 MB</div><div class="n"><i></i>Checking the copy can be restored</div><div class="w"><i></i>Done</div></div><div class="row"><div style="flex:1;height:6px;border-radius:3px;background:color-mix(in srgb,var(--ink) 12%,transparent);overflow:hidden"><i style="display:block;width:70%;height:100%;background:var(--blue)"></i></div><span class="mono muted" style="font-size:12px">about 20 s left</span></div></div>
+      <div class="ft"><span class="faint" style="font-size:12px">Nothing changes in your work while this runs.</span><span class="grow"></span><button class="btn">Cancel</button></div></div>`;
+  if (s === 'error') extra = `<div class="scrim"></div><div class="win"><div class="hd"><span class="ico warn">${I('warn')}</span><div><h2>Your latest changes could not be saved</h2><div class="sub">The disk is full (12 MB free).</div></div></div>
+      <div class="bd"><div class="trouble"><b>Your work is safe</b>The sheet is still open with every change. The last saved version is from 14:02, and Decals tries again every 30 seconds.</div>
+      <div style="font-size:12.5px"><b>What you can do</b><ul style="margin:6px 0 0;padding-left:18px;color:var(--ink2)"><li>Free some space, then <b>Try again</b>.</li><li>Or save a copy of this sheet somewhere else.</li></ul></div>
+      <details class="det"><summary>Details for support</summary><pre>ENOSPC: no space left on device, write\nDocuments/SlotForge Decals/decals.sqlite-wal · Decals 0.5.0 · Windows</pre></details></div>
+      <div class="ft"><button class="btn ghost">${I('copy')} Copy details</button><span class="grow"></span><button class="btn">Save a copy…</button><button class="btn primary">Try again</button></div></div>`;
+  if (s === 'notice') {
+    body = workshop(1);
+    extra = `<div class="chips"><div class="chip"><span class="s" style="background:var(--blue)"></span><span><b>Endurance 2026</b> deleted</span><button class="btn sm">${I('undo')} Undo</button></div><div class="chip"><span class="s"></span><span><b>PDF saved</b> · print at 100 %</span><button class="btn sm ghost">Show in folder</button></div></div>`;
+  }
+  return `<div class="app">${topbar()}<div class="body">${body}${extra}</div></div>`;
+}
+function draw() {
+  document.documentElement.dataset.theme = theme;
+  const st = STATES[opt];
+  if (!st.some(x => x[0] === state)) state = st[0][0];
+  document.getElementById('state').innerHTML = st.map(([v, l]) => `<button data-v="${v}">${l}</button>`).join('');
+  for (const [id, v] of [['opt', opt], ['state', state], ['theme', theme]])
+    for (const b of document.querySelectorAll(`#${id} button`)) b.classList.toggle('on', b.dataset.v === v);
+  document.getElementById('blurb').textContent = BLURB[opt];
+  document.getElementById('stage').innerHTML = opt === 'A' ? A(state) : B(state);
+}
+document.querySelector('.switch').addEventListener('click', e => {
+  const b = e.target.closest('button[data-v]');
+  if (!b) return;
+  const g = b.parentElement.id;
+  if (g === 'opt') { opt = b.dataset.v; state = null; }
+  if (g === 'state') state = b.dataset.v;
+  if (g === 'theme') theme = b.dataset.v;
+  draw();
+});
+draw();
+</script>
+</body>
+</html>

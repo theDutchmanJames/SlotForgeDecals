@@ -388,7 +388,12 @@ const Shelf = (() => {
           if (!focus) $('#shelf-insp').hidden = true;
         }),
       'Delete',
-      'danger'
+      'danger',
+      {
+        will: [list.length === 1 ? 'It leaves your library' : `${list.length} decals leave your library`],
+        safe: ['Sheets that use them keep their own copies', 'Exported decal packs'],
+        keep: 'Keep them'
+      }
     );
   }
   async function addToSheet(ids) {

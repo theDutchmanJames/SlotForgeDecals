@@ -27,11 +27,14 @@ async function projectRun(fn) {
   projectTask = true;
   const owned = !$('#dialog').open;
   if (owned)
-    showDialog(
-      'Saving your sheet',
-      'Please wait…',
-      '<p class="hint" id="project-task-note">Keeping your work in the local workspace.</p>'
-    );
+    Messages.progress({
+      title: 'Saving your sheet',
+      sub: 'In your workspace on this computer',
+      icon: 'save',
+      steps: ['Keeping your work in the local workspace'],
+      note: 'This takes a moment for big sheets.',
+      id: 'project-task-note'
+    });
   $('#dialog-content').inert = true;
   try {
     return await fn();
@@ -243,13 +246,17 @@ async function recoveryPreview(entry) {
       p = DM.validateProject(data.project);
     Art.inspectItems(p.items);
     const thumbnail = await projectThumbnail(p);
-    showDialog(
-      'Recover this sheet?',
-      p.name,
-      `<div class="recovery-preview"><img src="${E(thumbnail)}" alt="Recovered sheet preview"><div><p><strong>${p.count ?? p.items.length} decals · ${p.pages} ${E(DM.pageFormat(p).label)} ${p.pages === 1 ? 'page' : 'pages'}</strong></p><p class="hint">${E(projectDate(p.updated))}</p><p>A separate recovered copy will open. Your current sheet is saved first. Your library and preferences are kept.</p></div></div>`,
-      '<button data-action="projects">Back to the Workshop</button><button id="recover-project" class="primary">Open recovered copy</button>',
-      true
-    );
+    Messages.decide({
+      title: 'Recover this sheet?',
+      sub: p.name,
+      kind: 'restore',
+      icon: 'history',
+      body: `<div class="recovery-preview"><img src="${E(thumbnail)}" alt="Recovered sheet preview"><div><p><strong>${p.count ?? p.items.length} decals · ${p.pages} ${E(DM.pageFormat(p).label)} ${p.pages === 1 ? 'page' : 'pages'}</strong></p><p class="hint">${E(projectDate(p.updated))}</p></div></div>`,
+      will: ['A separate recovered copy opens'],
+      safe: ['Your current sheet is saved first', 'Your library and preferences'],
+      buttons:
+        '<button data-action="projects">Back to the Workshop</button><button id="recover-project" class="primary">Open recovered copy</button>'
+    });
     // Keep the reviewed snapshot in memory: rotating workspace backup filenames cannot change it.
     $('#recover-project').onclick = () => projectRun(() => switchProject(p, { recovered: true })).catch(fail);
   });

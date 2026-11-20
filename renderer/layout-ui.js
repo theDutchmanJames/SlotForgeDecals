@@ -294,7 +294,7 @@ const LayoutTab = (() => {
   const act = (fn, message) => {
     try {
       fn();
-      if (message) toast(message);
+      if (message) toast(message, false, { undo: true });
     } catch (e) {
       fail(e);
     }
@@ -346,7 +346,7 @@ const LayoutTab = (() => {
                   ? Layout.distribute(project, ids, axis)
                   : Layout.mirror(project, ids, axis);
           }),
-        operation === 'mirror' ? 'Mirrored in place. Ctrl+Z undoes it.' : ''
+        operation === 'mirror' ? 'Mirrored in place.' : ''
       );
     }
     if (b.id === 'space-apply')
@@ -385,7 +385,7 @@ const LayoutTab = (() => {
           project = result.project;
           selected = new Set(result.ids);
         });
-        toast(`Added ${result.added} ${result.added === 1 ? 'copy' : 'copies'}. Ctrl+Z undoes it.`);
+        toast(`Added ${result.added} ${result.added === 1 ? 'copy' : 'copies'}.`, false, { undo: true });
       });
     if (b.id === 'grid-fill')
       return act(() => {
@@ -393,7 +393,9 @@ const LayoutTab = (() => {
         if (!result.added) throw Error('There is no free space for another copy on this page.');
         mutate(() => (project = result.project));
         toast(
-          `Filled the free space with ${result.copies} ${result.copies === 1 ? 'copy' : 'copies'}. Ctrl+Z undoes it.`
+          `Filled the free space with ${result.copies} ${result.copies === 1 ? 'copy' : 'copies'}.`,
+          false,
+          { undo: true }
         );
       });
     if (b.dataset.moveTo !== undefined || b.id === 'move-new')
@@ -415,7 +417,7 @@ const LayoutTab = (() => {
           if (state.scope === 'all') page = 0;
           if (state.scope !== 'selection') selected.clear();
         });
-        toast('Arranged at original sizes. Locked decals stayed in place.');
+        toast('Arranged at original sizes. Locked decals stayed in place.', false, { undo: true });
       });
   });
   document.addEventListener('input', ev => {

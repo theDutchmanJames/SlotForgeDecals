@@ -35,6 +35,7 @@ const suites = [
   'car-page',
   'print-page',
   'settings-page',
+  'messages',
   'update-check'
 ];
 for (const suite of suites) {

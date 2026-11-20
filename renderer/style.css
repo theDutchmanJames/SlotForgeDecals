@@ -704,31 +704,7 @@ dialog::backdrop {
   max-height: 45vh;
   overflow: auto;
 }
-#toast {
-  position: fixed;
-  bottom: 45px;
-  left: 50%;
-  transform: translate(-50%, 20px);
-  background: #303945;
-  border: 1px solid #536172;
-  border-left: 3px solid var(--green);
-  box-shadow: 0 6px 28px #0006;
-  border-radius: 7px;
-  padding: 11px 18px;
-  font-size: 12px;
-  opacity: 0;
-  pointer-events: none;
-  transition: 0.2s;
-  max-width: 70vw;
-  z-index: 1000;
-}
-#toast.visible {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-#toast.error {
-  border-left-color: var(--accent);
-}
+
 .large .car-stage {
   min-height: 250px;
 }
@@ -906,15 +882,6 @@ dialog::backdrop {
 }
 [data-theme='light'] .sheet-scroll {
   background: radial-gradient(ellipse at center, #f7f6f2 0%, #e4e1da 85%);
-}
-[data-theme='light'] #toast {
-  background: var(--panel);
-  color: var(--ink);
-  border-color: var(--muted);
-  border-left-color: var(--green);
-}
-[data-theme='light'] #toast.error {
-  border-left-color: var(--accent);
 }
 
 [data-theme='light'] .ruler-x,
@@ -2317,34 +2284,6 @@ dialog:has(.vector-view) .dialog-foot {
   width: 32px;
   padding: 0;
   flex-shrink: 0;
-}
-/* Flag Dialog: a badge before the title of a Yes/No window says what kind it is */
-#dialog.flag .dialog-head h2 {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-#dialog.flag .dialog-head h2::before {
-  content: '?';
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--ink) 9%, var(--panel));
-  font-style: normal;
-}
-#dialog.flag-danger .dialog-head h2::before {
-  content: '!';
-  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
-  color: var(--accent-text, var(--accent));
-}
-#dialog.flag .dialog-head p:empty {
-  display: none;
-}
-#dialog.flag .dialog-body {
-  padding-left: 74px;
 }
 
 /* SlotForge Restyle, step 2: Gear Selector, side lists (Settings, Help), Settings Sheet, Help Reader,
@@ -8214,4 +8153,297 @@ button.sp-font:disabled {
 .sp-flist {
   max-height: 560px;
   overflow-y: auto;
+}
+/* The small windows (remake option B, docs/ui-reference/messages-2026-11): decision, progress and
+   trouble cards, and notices with Undo above the status bar. */
+.notices {
+  position: fixed;
+  left: 50%;
+  bottom: 45px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 70vw;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 0;
+  padding: 9px 10px 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 10px 30px #0006;
+  font-size: 12.5px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  pointer-events: auto;
+}
+.notice:empty {
+  display: none;
+}
+.notice.visible {
+  opacity: 1;
+  transform: none;
+}
+.notice .dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--green);
+}
+.notice.error {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+}
+.notice.error .dot {
+  background: var(--accent);
+}
+.notice button {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+#dialog.msg {
+  width: min(540px, calc(100vw - 40px));
+  border-radius: 18px;
+}
+#dialog.msg .msg-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px 22px 8px 24px;
+  border-bottom: 0;
+}
+#dialog.msg .msg-head > div {
+  flex: 1;
+  min-width: 0;
+}
+#dialog.msg .msg-head h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.05;
+}
+#dialog.msg .msg-head p {
+  margin: 5px 0 0;
+  color: var(--muted);
+}
+#dialog.msg .msg-head p:empty {
+  display: none;
+}
+.msg-ico {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ink) 9%, var(--panel));
+  color: var(--ink);
+}
+.msg-ico .icon {
+  width: 24px;
+  height: 24px;
+}
+.msg-ico.danger {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent-text);
+}
+.msg-ico.info,
+.msg-ico.restore {
+  background: color-mix(in srgb, var(--blue) 18%, transparent);
+  color: var(--blue);
+}
+.msg-ico.warn {
+  background: color-mix(in srgb, #f0b429 18%, transparent);
+  color: #f0b429;
+}
+#dialog.msg .msg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 24px 18px;
+}
+#dialog.msg .msg-body > p {
+  margin: 0;
+}
+.msg-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.msg-cols > div,
+.msg-safe {
+  padding: 11px 12px;
+  border-radius: 11px;
+  font-size: 12.5px;
+}
+.msg-cols b,
+.msg-safe b,
+.msg-todo b {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.msg-cols ul,
+.msg-todo ul {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding-left: 16px;
+}
+.msg-cols .will {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.msg-cols .will b {
+  color: var(--accent-text);
+}
+.msg-cols .safe,
+.msg-safe {
+  background: color-mix(in srgb, var(--green) 11%, transparent);
+}
+.msg-cols .safe b,
+.msg-safe b {
+  color: var(--green);
+}
+.msg-todo {
+  font-size: 12.5px;
+}
+.msg-todo b {
+  color: var(--muted);
+}
+.msg-details summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.msg-details pre {
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font:
+    500 11px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+#dialog.msg .msg-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+}
+.msg-foot kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  font:
+    500 11px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.msg-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+.msg-foot button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.msg-foot .danger-fill {
+  border-color: var(--accent-fill);
+  background: var(--accent-fill);
+}
+.msg-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.msg-steps div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.msg-steps i {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-style: normal;
+}
+.msg-steps .done i {
+  border-color: var(--green);
+  background: var(--green);
+}
+.msg-steps .now {
+  font-weight: 600;
+}
+.msg-steps .now i {
+  border-color: var(--blue);
+  border-top-color: transparent;
+  animation: msg-spin 0.9s linear infinite;
+}
+.msg-steps .wait {
+  color: var(--muted);
+}
+@keyframes msg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.msg-bar {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+  overflow: hidden;
+}
+.msg-bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 35%;
+  border-radius: 3px;
+  background: var(--blue);
+  animation: msg-slide 1.4s ease-in-out infinite;
+}
+@keyframes msg-slide {
+  from {
+    left: -35%;
+  }
+  to {
+    left: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .msg-steps .now i,
+  .msg-bar i {
+    animation: none;
+  }
+}
+#dialog.msg .recovery-preview {
+  margin: 0;
 }

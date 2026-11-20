@@ -232,9 +232,15 @@ const PrintPage = (() => {
 
   const fixIt = w => {
     const [kind] = w.fix;
-    if (kind === 'margin') return mutate(() => (project = Layout.intoMargins(project, w.item.id)));
-    if (kind === 'spacing')
-      return mutate(() => (project = Layout.toFreeSpot(project, (w.other || w.item).id)));
+    if (kind === 'margin') {
+      mutate(() => (project = Layout.intoMargins(project, w.item.id)));
+      return toast(`${w.item.name} moved inside the margin.`, false, { undo: true });
+    }
+    if (kind === 'spacing') {
+      const moving = w.other || w.item;
+      mutate(() => (project = Layout.toFreeSpot(project, moving.id)));
+      return toast(`${moving.name} moved to free space.`, false, { undo: true });
+    }
     if (kind === 'white') {
       mutate(() => (project.whiteInk = true));
       return show('print');

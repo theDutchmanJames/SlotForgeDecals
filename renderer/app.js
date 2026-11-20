@@ -79,12 +79,9 @@ const assetsSnapshot = () => ({
   libraryMode: 'external',
   settings: DM.clone(settings)
 });
-function toast(text, error = false) {
-  const el = $('#toast');
-  el.textContent = text;
-  el.className = 'visible' + (error ? ' error' : '');
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => (el.className = ''), error ? 6500 : 3500);
+// Notices above the status bar (messages.js). opts: { undo: true } or { action: { label, run } }.
+function toast(text, error = false, opts = {}) {
+  Messages.notice(text, { ...opts, error });
 }
 function fail(e) {
   console.error(e);
@@ -152,7 +149,7 @@ async function flush() {
 function showDialog(title, subtitle, body, buttons = '', large = false) {
   const d = $('#dialog');
   d.classList.toggle('large', large);
-  d.classList.remove('flag', 'flag-danger', 'rail-dialog');
+  d.classList.remove('msg', 'msg-decide', 'msg-progress', 'msg-trouble');
   $('#dialog-content').innerHTML =
     `<div class="dialog-head"><div><h2>${E(title)}</h2><p>${E(subtitle || '')}</p></div><button data-action="close" aria-label="Close dialog">✕</button></div><div class="dialog-body">${body}<p id="dialog-error" class="dialog-error" role="alert"></p></div>${buttons ? `<div class="dialog-foot">${buttons}</div>` : ''}`;
   if (!d.open) d.showModal();
@@ -194,24 +191,17 @@ function nameDialog(title, initial, submit) {
   $('#name-input').select();
 }
 // kind: 'question', or 'danger' for what cannot be undone; the window shows a matching badge.
-function confirmDialog(title, text, submit, label = 'Continue', kind = 'question') {
-  showDialog(
+// A decision card (messages.js). extra: { sub, will: [], safe: [], keep } says what will happen and
+// what stays safe; without it the text is shown as it is.
+function confirmDialog(title, text, submit, label = 'Continue', kind = 'question', extra = {}) {
+  Messages.decide({
     title,
-    '',
-    `<p>${E(text)}</p>`,
-    '<button data-action="close">Cancel</button><button class="primary" id="confirm">' +
-      E(label) +
-      '</button>'
-  );
-  $('#dialog').classList.add('flag', ...(kind === 'danger' ? ['flag-danger'] : []));
-  $('#confirm').onclick = async () => {
-    try {
-      await submit();
-      closeDialog();
-    } catch (e) {
-      $('#dialog-error').textContent = e.message;
-    }
-  };
+    text: extra.will || extra.safe ? '' : text,
+    submit,
+    confirm: label,
+    kind,
+    ...extra
+  });
 }
 function validateWorkspace(data) {
   const v = DM.validateWorkspace(data);
@@ -1327,7 +1317,19 @@ async function importPackage(file, kind = 'decals') {
         render();
       },
       'Restore backup',
-      'danger'
+      'danger',
+      {
+        sub: raw.project?.name ? 'With the sheet “' + raw.project.name + '”' : '',
+        will: [
+          'The open sheet is replaced by the one in the backup',
+          'Your decal library is replaced by the backup’s'
+        ],
+        safe: [
+          'A complete recovery backup of today’s workspace is made first',
+          'Every saved sheet in the Workshop'
+        ],
+        keep: 'Keep my work'
+      }
     );
     return;
   }
@@ -1454,7 +1456,7 @@ const HELP_TOPICS = [
     '<p>The <strong>top bar</strong> shows the sheet’s name with its saved state and paper; the arrow next to it renames, saves, starts a new sheet or opens a saved one. <strong>Export PDF</strong> is on the right; its arrow lists the cutter file, the sizing proof, sharing the sheet and the print notes.</p><p>The <strong>tools</strong> are down the left edge: Select, Image, Text, Number, Shape, Path, Merge, Slice and Arrange. Snap at the bottom rounds moves to whole millimetres.</p><p>The <strong>left panel</strong> has three tabs: your decal <strong>Library</strong>, the <strong>Layers</strong> of this page (top first, with a lock for each) and the <strong>Pages</strong>. The <strong>right panel</strong> has <strong>Decal</strong> for the selection and <strong>Sheet &amp; paper</strong> for paper size, scale, margins, white ink and cut lines.</p><p>Select decals and a small bar appears above them: size, Duplicate, Other side, Repeat, Arrange…, Group and Delete. The <strong>Fit check</strong> in the corner shows the selection on the car; hide it with its arrow.</p><p><strong>Ctrl+K</strong> finds any tool, decal on the sheet or setting by name.</p>'
   ],
   [
-    'Import & prepare artwork',
+    'Import & prepare artwork<p><strong>Notices</strong> appear above the status bar: after deleting decals, recolouring or repeating, their <strong>Undo</strong> button takes that change back. Questions before something big show what will happen and what stays safe; Esc changes nothing. If something goes wrong, the window says first that your work is safe, then what you can do.</p>',
     '<p>Import PNG, JPEG, WebP, SVG, EPS or PDF artwork with Import an Image, by dropping a file on the sheet, or by pasting (Ctrl+V) a copied image, screenshot or SVG code. New artwork is placed in free space on the page.</p><p>Every import opens the <strong>import bay</strong>, with its steps down the left; every step but the last is optional. <strong>Choose pages</strong> shows each page of a PDF or EPS: each chosen page becomes its own decal, cropped to its artwork unless you keep the whole page. <strong>Clean up</strong> (bitmaps) crops by dragging on the picture and makes the background see-through: choose Pick background and click it, or accept the plain background Decals found. Drag the line under the picture to compare it with the original. <strong>Image or vector</strong> keeps the bitmap or traces it as a logo or with fine detail; replace traced colours or click unwanted shapes away. <strong>Size &amp; place</strong> shows the decal on your car while you set its millimetres, with quick sizes such as Door number or Bonnet, the file’s own size, a size from another scale, and one, two (both sides) or four copies.</p><p>Later, select a decal and choose <strong>Crop &amp; remove background</strong> or <strong>Trace image to vector</strong> to open the same window at that step; apply to the decal or add a copy. The original image is kept for restoration. SVG filters and external resources need preparation in another editor.</p><p><strong>Edit Vector Artwork</strong> removes unwanted shapes, such as white backgrounds, from imported vectors while keeping the original for restoring.</p>'
   ],
   [
@@ -1811,7 +1813,7 @@ function recolourTo(to) {
   recolourFrom = next;
   recolourFor = [...ids].join(',');
   render();
-  toast(`Changed ${from} to ${next}. Ctrl+Z takes it back.`);
+  toast(`Changed ${from} to ${next}.`, false, { undo: true });
 }
 document.addEventListener('click', e => {
   const from = e.target.closest('[data-recolour-from]'),
@@ -2119,7 +2121,13 @@ const actions = {
         'Open example sheet?',
         'Your current sheet is saved in Sheets first. Your library is kept and starter decals are added.',
         open,
-        'Open example'
+        'Open example',
+        'question',
+        {
+          will: ['The example sheet opens', 'Its starter decals are added to your library'],
+          safe: ['Your current sheet is saved in Sheets first', 'Everything already in your library'],
+          keep: 'Not now'
+        }
       );
     } else return open();
   },
@@ -2146,37 +2154,61 @@ const actions = {
   'complete-backup': async () => {
     CanvasTools.resolve();
     await flush();
-    showDialog(
-      'Exporting complete backup',
-      'All saved sheets, decals, artwork and history.',
-      '<p class="hint">Verifying your backup. Please wait…</p>'
-    );
+    const run = Messages.progress({
+      title: 'Backing up everything',
+      sub: 'All saved sheets, decals, artwork and history',
+      steps: [
+        'Saving open changes',
+        'Choose where to save the backup',
+        'Copying the database and checking the copy'
+      ],
+      note: 'Nothing changes in your work while this runs.'
+    });
     try {
+      run.step(1);
       const file = await desktop.completeBackup();
-      closeDialog();
+      run.close();
       if (file) {
         toast('Complete backup saved and verified.');
         SettingsPage.backedUp();
       }
     } catch (e) {
-      closeDialog();
-      throw e;
+      Messages.trouble({
+        title: 'The backup could not be made',
+        cause: e.message,
+        safe: 'Nothing in your workspace changed. Your sheets and library are as they were.',
+        todo: [
+          'Choose another folder or drive with free space, then try again.',
+          'Or keep working: Decals saves your sheet as you go.'
+        ],
+        details: Messages.detailsOf(e),
+        buttons:
+          '<button data-action="close">Close</button><button class="primary" data-action="complete-backup">Try again</button>'
+      });
     }
   },
   'complete-restore': async () => {
     CanvasTools.resolve();
     await flush();
-    showDialog(
-      'Restoring complete backup',
-      'Your current workspace will be backed up first.',
-      '<p class="hint">Choose and confirm a complete backup in the file dialog.</p>'
-    );
+    const run = Messages.progress({
+      title: 'Restoring a complete backup',
+      sub: 'Your current workspace is backed up first',
+      icon: 'history',
+      steps: [
+        'Saving open changes',
+        'Choose and confirm the backup in the file window',
+        'Restoring, after a recovery copy of today’s workspace'
+      ],
+      note: 'If you cancel in the file window, nothing changes.'
+    });
+    run.step(1);
     try {
       const loaded = await desktop.completeRestore();
       if (!loaded) {
         closeDialog();
         return;
       }
+      run.step(2);
       Library.setCount(loaded.libraryCount);
       const data = loaded.data || {
           format: 'slotforge-decals-workspace',
@@ -2199,8 +2231,18 @@ const actions = {
       render();
       toast('Complete backup restored. The previous workspace is kept in Backups.');
     } catch (e) {
-      closeDialog();
-      throw e;
+      Messages.trouble({
+        title: 'The backup could not be restored',
+        cause: e.message,
+        safe: 'Your workspace is as it was before. Nothing was replaced.',
+        todo: [
+          'Check that the file is a complete backup (.sfdbbackup) and not damaged.',
+          'Restore another backup, or keep working as you are.'
+        ],
+        details: Messages.detailsOf(e),
+        buttons:
+          '<button data-action="close">Close</button><button class="primary" data-action="complete-restore">Choose another backup</button>'
+      });
     }
   },
   'rescue-sheet': async () => {
@@ -2226,11 +2268,14 @@ const actions = {
     if (!Number.isInteger(n)) throw Error('Copies must be a whole number.');
     duplicate(n);
   },
-  delete: () =>
+  delete: () => {
+    const n = project.items.filter(i => selected.has(i.id) && !i.locked).length;
     mutate(() => {
       project.items = project.items.filter(i => !selected.has(i.id) || i.locked);
       selected.clear();
-    }),
+    });
+    if (n) toast(`${n === 1 ? 'Decal' : n + ' decals'} deleted.`, false, { undo: true });
+  },
   group: () => {
     const list = items();
     if (list.length < 2) throw Error('Select at least two decals with Shift-click.');
@@ -2815,12 +2860,18 @@ desktop.onClose(async () => {
     await flush();
     desktop.closeReady();
   } catch (e) {
-    showDialog(
-      'Your latest changes could not be saved',
-      e.message,
-      '<p>Keep the app open and export your unsaved sheet before closing.</p>',
-      '<button data-action="rescue-sheet">Export Unsaved Sheet</button><button data-action="backup">Export workspace backup</button><button data-action="close">Keep working</button>'
-    );
+    Messages.trouble({
+      title: 'Your latest changes could not be saved',
+      cause: e.message,
+      safe: 'Decals is still open with every change on screen. Nothing has been closed.',
+      todo: [
+        'Export the unsaved sheet as a file, so the changes are kept.',
+        'Or make a workspace backup, then try closing again.'
+      ],
+      details: Messages.detailsOf(e),
+      buttons:
+        '<button data-action="close">Keep working</button><button data-action="backup">Export workspace backup</button><button class="primary" data-action="rescue-sheet">Export Unsaved Sheet</button>'
+    });
   }
 });
 window.Studio = {
