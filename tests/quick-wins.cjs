@@ -111,7 +111,9 @@ const path = require('node:path'),
   await page.waitForSelector('#dialog[open]');
   const dialogTitle = await page.locator('#dialog h2').first().textContent();
   log('pasting an image opened:', dialogTitle);
-  await page.locator('#dialog .dialog-foot .primary').click();
+  // A bitmap opens the import bay at Clean up: go straight to sizing and place it.
+  await page.locator('[data-bay-step="size"]').click();
+  await page.locator('#place-import').click();
   await page.waitForFunction(n => Studio.project.items.length === n, before + 3);
   assert.equal((await P()).items.at(-1).kind, 'image');
   log('pasted image added as an image decal');

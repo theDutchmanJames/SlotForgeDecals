@@ -1301,40 +1301,41 @@ async function dataURL(file) {
 async function importFiles(files) {
   for (const file of files) {
     if (file.size > 25 * 1024 * 1024) throw Error('Choose artwork smaller than 25 MB.');
-    const ext = file.name.split('.').pop().toLowerCase();
-    let art,
+    const ext = file.name.split('.').pop().toLowerCase(),
+      name = file.name.replace(/\.[^.]+$/, '');
+    let art = null,
       widthMm = null,
-      heightMm = null,
-      warning = '';
+      warning = '',
+      pages = 0,
+      payload = null;
     if (ext === 'svg' || ext === 'eps' || ext === 'pdf') {
       let source;
       if (ext === 'svg') source = await file.text();
       else {
         toast('Converting artwork locally…');
-        const payload = { bytes: new Uint8Array(await file.arrayBuffer()), format: ext };
-        let result = await desktop.convert(payload);
-        if (!result.svg) {
-          const chosen = await askPDFPage(result.pages);
-          if (chosen === null) continue;
-          result = await desktop.convert({ ...payload, page: chosen });
+        payload = { bytes: new Uint8Array(await file.arrayBuffer()), format: ext };
+        const result = await desktop.convert(payload);
+        // Several pages: the import bay shows them all to choose from.
+        if (!result.svg) pages = result.pages;
+        else {
+          source = result.svg;
+          widthMm = result.widthMm;
         }
-        source = result.svg;
-        widthMm = result.widthMm;
-        heightMm = result.heightMm;
       }
-      const imported = Art.sanitize(source);
-      widthMm = widthMm || imported.widthMm;
-      heightMm = heightMm || imported.heightMm;
-      art = DM.item('svg', {
-        svg: imported.svg,
-        ratio: imported.viewBox[2] / imported.viewBox[3],
-        mixed: imported.mixed
-      });
-      warning = imported.mixed
-        ? 'Contains embedded images: those parts remain raster.'
-        : imported.complexity > 3500
-          ? `${imported.complexity.toLocaleString()} vector objects. Original detail is preserved.`
-          : '';
+      if (!pages) {
+        const imported = Art.sanitize(source);
+        widthMm = widthMm || imported.widthMm;
+        art = DM.item('svg', {
+          svg: imported.svg,
+          ratio: imported.viewBox[2] / imported.viewBox[3],
+          mixed: imported.mixed
+        });
+        warning = imported.mixed
+          ? 'Contains embedded images: those parts remain raster.'
+          : imported.complexity > 3500
+            ? `${imported.complexity.toLocaleString()} vector objects. Original detail is preserved.`
+            : '';
+      }
     } else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
       const src = await dataURL(file),
         img = new Image();
@@ -1353,106 +1354,32 @@ async function importFiles(files) {
         ratio: img.naturalWidth / img.naturalHeight
       });
     } else throw Error('Choose PNG, SVG, EPS, PDF, JPEG or WebP artwork.');
-    art.name = file.name.replace(/\.[^.]+$/, '');
-    art.w = widthMm && widthMm <= 1000 ? widthMm : 25;
-    art.h = art.w / art.ratio;
-    const result = await sizingDialog(art, widthMm, heightMm, warning);
-    if (result)
-      mutate(() => {
-        const k = project.scale / result.referenceScale;
-        for (const key of ['length', 'width', 'height']) project.preview[key] *= k;
-        for (const i of project.items)
-          for (const pos of Object.values(i.carPositions || {})) {
-            pos.x *= k;
-            pos.y *= k;
-          }
-        project.scale = result.referenceScale;
-        place(result);
-      });
+    if (art) {
+      art.name = name;
+      art.w = widthMm && widthMm <= 1000 ? widthMm : 25;
+      art.h = art.w / art.ratio;
+    }
+    const result = await ImportBay.importArt({ art, name, sourceW: widthMm, warning, pages, payload });
+    if (!result) continue;
+    mutate(() => {
+      const k = project.scale / result.referenceScale;
+      for (const key of ['length', 'width', 'height']) project.preview[key] *= k;
+      for (const i of project.items)
+        for (const pos of Object.values(i.carPositions || {})) {
+          pos.x *= k;
+          pos.y *= k;
+        }
+      project.scale = result.referenceScale;
+      const ids = [];
+      for (const placed of result.arts) {
+        place(placed);
+        ids.push(placed.id);
+      }
+      selected = new Set(ids);
+    });
+    if (result.copies === 2) actions['mirror-pair']();
+    if (result.copies === 4) duplicate(3);
   }
-}
-function askPDFPage(count) {
-  return new Promise(resolve => {
-    showDialog(
-      'Choose a PDF page',
-      `${count} pages found. Import one page as a decal.`,
-      `<div class="field"><label>Page number</label><input id="pdf-page" type="number" min="1" max="${count}" value="1"></div>`,
-      '<button id="cancel-page">Cancel</button><button id="choose-page" class="primary">Import page</button>'
-    );
-    const finish = v => {
-      $('#dialog').removeEventListener('close', cancel);
-      closeDialog();
-      resolve(v);
-    };
-    const cancel = () => resolve(null);
-    $('#dialog').addEventListener('close', cancel, { once: true });
-    $('#cancel-page').onclick = () => finish(null);
-    $('#choose-page').onclick = () => {
-      const n = Number($('#pdf-page').value);
-      if (!Number.isInteger(n) || n < 1 || n > count) {
-        $('#dialog-error').textContent = 'Choose a valid page.';
-        return;
-      }
-      finish(n);
-    };
-  });
-}
-function sizingDialog(art, sourceW, sourceH, warning) {
-  return new Promise(resolve => {
-    showDialog(
-      'Size your decal',
-      'Choose its printed width. The car preview helps you review the fit.',
-      `<div class="import-preview"><img src="${Art.url(Art.standalone(art))}"></div><div class="fields2"><div class="field"><label>Target scale</label><select id="import-target">${[
-        24,
-        32,
-        43,
-        64,
-        project.scale
-      ]
-        .filter((n, i, a) => a.indexOf(n) === i)
-        .map(n => `<option value="${n}" ${n === project.scale ? 'selected' : ''}>1:${n}</option>`)
-        .join(
-          ''
-        )}</select></div><div class="field"><label>Printed width (mm)</label><input id="import-width" type="number" min=".1" max="1000" step=".1" value="${art.w.toFixed(2)}"></div></div><div class="field"><label>Sizing method</label><select id="import-method"><option value="width">I will set the printed width</option>${sourceW ? '<option value="source">Use the file’s physical size</option>' : ''}<option value="scale">Convert from another model scale</option></select></div><div id="original-scale-fields" class="fields2" hidden><div class="field"><label>Original scale denominator</label><input id="original-scale" type="number" min="1" max="1000" value="32"></div><div class="field"><label>Width at original scale (mm)</label><input id="original-width" type="number" min=".1" max="1000" value="${art.w.toFixed(2)}"></div></div><p class="hint" id="import-size-info"></p>${warning ? `<div class="notice warn-notice">${E(warning)}</div>` : ''}<p class="hint">${sourceW ? 'Physical width detected: ' + sourceW.toFixed(2) + ' mm.' : 'No confirmed physical dimensions. Scale alone cannot determine a logo’s size.'} The target scale becomes the car preview scale; existing decals keep their printed sizes. You can adjust the fit after placing it.</p>`,
-      '<button id="cancel-import">Cancel</button><button class="primary" id="place-import">Add to sheet</button>'
-    );
-    const update = () => {
-      const method = $('#import-method').value;
-      $('#original-scale-fields').hidden = method !== 'scale';
-      $('#import-width').disabled = method !== 'width';
-      if (method === 'source') $('#import-width').value = sourceW.toFixed(2);
-      if (method === 'scale')
-        $('#import-width').value = (
-          (Number($('#original-width').value) * Number($('#original-scale').value)) /
-          Number($('#import-target').value)
-        ).toFixed(2);
-      const w = Number($('#import-width').value);
-      $('#import-size-info').textContent = `Printed size: ${w.toFixed(2)} × ${(w / art.ratio).toFixed(2)} mm`;
-    };
-    for (const id of ['import-method', 'import-target', 'original-scale', 'original-width', 'import-width'])
-      $('#' + id).oninput = update;
-    update();
-    const cancel = () => resolve(null),
-      finish = v => {
-        $('#dialog').removeEventListener('close', cancel);
-        closeDialog();
-        resolve(v);
-      };
-    $('#dialog').addEventListener('close', cancel, { once: true });
-    $('#cancel-import').onclick = () => finish(null);
-    $('#place-import').onclick = () => {
-      try {
-        const w = DM.number($('#import-width').value, 0.1, 1000, 'Width'),
-          h = DM.number(w / art.ratio, 0.1, 1000, 'Height');
-        art.w = w;
-        art.h = h;
-        art.referenceScale = Number($('#import-target').value);
-        finish(art);
-      } catch (e) {
-        $('#dialog-error').textContent = e.message;
-      }
-    };
-  });
 }
 async function importPackage(file, kind = 'decals') {
   if (file.size > 160e6) throw Error('Package exceeds 160 MB.');
@@ -1815,7 +1742,7 @@ const HELP_TOPICS = [
   ],
   [
     'Import & prepare artwork',
-    '<p>Import PNG, JPEG, WebP, SVG, EPS or PDF artwork with Import an Image, by dropping a file on the sheet, or by pasting (Ctrl+V) a copied image, screenshot or SVG code. New artwork is placed in free space on the page.</p><p>Select a bitmap and use <strong>Crop &amp; remove background</strong> to prepare it. Preview against transparent, light or dark backgrounds; the original is retained.</p><p>Choose <strong>Trace image to vector</strong> to review an SVG approximation of a PNG, JPEG or WebP. Adjust colours, detail and transparency, then replace traced colours or remove unwanted shapes before applying. Zoom both previews to compare details. The original image is kept for restoration. SVG filters and external resources need preparation in another editor.</p><p><strong>Edit Vector Artwork</strong> removes unwanted shapes, such as white backgrounds, from imported vectors while keeping the original for restoring.</p>'
+    '<p>Import PNG, JPEG, WebP, SVG, EPS or PDF artwork with Import an Image, by dropping a file on the sheet, or by pasting (Ctrl+V) a copied image, screenshot or SVG code. New artwork is placed in free space on the page.</p><p>Every import opens the <strong>import bay</strong>, with its steps down the left; every step but the last is optional. <strong>Choose pages</strong> shows each page of a PDF or EPS: each chosen page becomes its own decal, cropped to its artwork unless you keep the whole page. <strong>Clean up</strong> (bitmaps) crops by dragging on the picture and makes the background see-through: choose Pick background and click it, or accept the plain background Decals found. Drag the line under the picture to compare it with the original. <strong>Image or vector</strong> keeps the bitmap or traces it as a logo or with fine detail; replace traced colours or click unwanted shapes away. <strong>Size &amp; place</strong> shows the decal on your car while you set its millimetres, with quick sizes such as Door number or Bonnet, the file’s own size, a size from another scale, and one, two (both sides) or four copies.</p><p>Later, select a decal and choose <strong>Crop &amp; remove background</strong> or <strong>Trace image to vector</strong> to open the same window at that step; apply to the decal or add a copy. The original image is kept for restoration. SVG filters and external resources need preparation in another editor.</p><p><strong>Edit Vector Artwork</strong> removes unwanted shapes, such as white backgrounds, from imported vectors while keeping the original for restoring.</p>'
   ],
   [
     'Text, shapes & paths',
@@ -2225,34 +2152,45 @@ function recolourDialog() {
     }
   };
 }
-function prepareSelected() {
+// Clean up or Image or vector on a decal of the sheet: the import bay at that step.
+async function editInBay(step) {
   const item = current();
-  if (item?.kind !== 'image') throw Error('Select a PNG, JPEG or WebP image.');
-  if (item.locked) throw Error('Unlock this decal before preparing it.');
-  ImagePrepUI.open(DM.clone(item), (prepared, copy) => {
-    mutate(() => {
-      const index = project.items.findIndex(i => i.id === item.id);
-      if (index < 0) throw Error('The source decal is no longer on this sheet.');
-      if (project.items[index].locked) throw Error('Unlock this decal before changing it.');
-      if (copy) {
-        if (project.items.length >= 2000) throw Error('A project supports up to 2,000 decals.');
-        prepared.id = DM.uid();
-        prepared.name = item.name + ' · prepared';
-        prepared.x += 4;
-        prepared.y += 4;
-        delete prepared.carPositions;
-        delete prepared.libraryId;
-        project.items.push(prepared);
-      } else project.items[index] = prepared;
-      selected = new Set([prepared.id]);
-    });
-    toast(
-      copy
-        ? 'Prepared copy added. Your source decal is unchanged.'
-        : 'Image prepared. The original is retained for restoration.'
-    );
+  if (!item) throw Error('Select a decal first.');
+  if (step === 'clean' && item.kind !== 'image') throw Error('Select a PNG, JPEG or WebP image.');
+  if (step === 'trace' && item.kind !== 'image' && !item.traceSource)
+    throw Error('Select an image to trace.');
+  if (item.locked) throw Error('Unlock this decal before changing it.');
+  const result = await ImportBay.edit(DM.clone(item), step);
+  if (!result) return;
+  const art = result.art,
+    vector = art.kind === 'svg' && !item.traceSource;
+  mutate(() => {
+    const index = project.items.findIndex(i => i.id === item.id);
+    if (index < 0) throw Error('The source decal is no longer on this sheet.');
+    if (project.items[index].locked) throw Error('Unlock this decal before changing it.');
+    if (result.copy) {
+      if (project.items.length >= 2000) throw Error('A project supports up to 2,000 decals.');
+      art.id = DM.uid();
+      art.name = item.name + (art.kind === 'svg' ? ' · vector' : ' · prepared');
+      art.x += 4;
+      art.y += 4;
+      delete art.carPositions;
+      delete art.libraryId;
+      project.items.push(art);
+    } else project.items[index] = art;
+    selected = new Set([art.id]);
   });
+  toast(
+    result.copy
+      ? art.kind === 'svg'
+        ? 'Vector copy added. Save it to your library when ready.'
+        : 'Prepared copy added. Your source decal is unchanged.'
+      : vector || art.kind === 'svg'
+        ? 'Vector trace applied. The original image is kept for restoration.'
+        : 'Image prepared. The original is retained for restoration.'
+  );
 }
+const prepareSelected = () => editInBay('clean');
 function restorePrepared() {
   const item = current();
   if (item?.kind !== 'image' || !item.imageSource) throw Error('Select a prepared image.');
@@ -2262,31 +2200,7 @@ function restorePrepared() {
   });
   toast('Original image restored at the current printed artwork scale.');
 }
-function traceSelected() {
-  const item = current();
-  if (!item) throw Error('Select an image to trace.');
-  if (item.locked) throw Error('Unlock this decal before tracing.');
-  TraceUI.open(DM.clone(item), (vector, copy) => {
-    mutate(() => {
-      const index = project.items.findIndex(i => i.id === item.id);
-      if (index < 0) throw Error('The source decal is no longer on this sheet.');
-      if (copy) {
-        vector.id = DM.uid();
-        vector.name = item.name + ' · vector';
-        vector.x += 4;
-        vector.y += 4;
-        delete vector.libraryId;
-        project.items.push(vector);
-      } else project.items[index] = vector;
-      selected = new Set([vector.id]);
-    });
-    toast(
-      copy
-        ? 'Vector copy added. Save it to your library when ready.'
-        : 'Vector trace applied. The original image is kept for restoration.'
-    );
-  });
-}
+const traceSelected = () => editInBay('trace');
 function restoreImage() {
   const item = current();
   if (!item?.traceSource) throw Error('This decal has no retained original image.');

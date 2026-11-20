@@ -1,6 +1,9 @@
-/* Trace refinements stay in the preview until applied. */
+/* Image or vector (import bay, docs/ui-reference/artwork-2026-11): keep a bitmap, or trace it to
+   vector shapes and refine them. Refinements stay in the preview until the bay uses or applies them.
+   hooks.change(valid) runs when a usable vector appears or goes; options.keepImage starts on
+   "Keep as image" so nothing is traced until a trace is chosen. */
 window.TraceUI = {
-  open(item, onApply) {
+  mount(host, item, hooks = {}, options = {}) {
     const source =
       item.kind === 'image'
         ? { src: item.src, pixelsW: item.pixelsW, pixelsH: item.pixelsH }
@@ -13,28 +16,39 @@ window.TraceUI = {
       removeWhite: false,
       ...item.traceSettings
     };
-    showDialog(
-      'Trace & refine',
-      item.name + ' · ' + item.w.toFixed(1) + ' × ' + item.h.toFixed(1) + ' mm',
-      '<div class="trace-view-tools"><label>Compare detail <select id="trace-zoom" aria-label="Comparison zoom"><option value="1">Fit</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label><span class="hint">Scroll either preview to compare the same area.</span></div>' +
-        '<div class="trace-compare"><section><h3>Original image</h3><div id="trace-original-view" class="trace-image trace-viewport"><div id="trace-original-zoom" class="trace-zoom-content"><img id="trace-original" alt="Original imported image"></div></div></section><section><h3>Vector preview <span id="trace-badge">Preparing…</span></h3><div id="trace-vector-view" class="trace-image trace-viewport"><div id="trace-vector-zoom" class="trace-zoom-content"><div id="trace-preview" hidden></div><span id="trace-placeholder">Preparing your preview…</span></div></div></section></div>' +
-        '<fieldset id="trace-shape-tools" class="trace-shape-tools" disabled><span id="trace-selected">Click a vector shape to select it.</span><button id="trace-prev-shape" title="Select previous shape">Previous</button><button id="trace-next-shape" title="Select next shape">Next</button><button id="trace-remove-shape" class="danger" disabled>Remove shape</button></fieldset>' +
-        '<div class="trace-refinement-head"><strong>Traced colours</strong><button id="trace-edit-undo" disabled>Undo refinement</button><button id="trace-edit-redo" disabled>Redo</button></div><fieldset id="trace-palette" class="trace-palette" disabled></fieldset>' +
-        '<p class="hint">Change a colour to replace it throughout the trace. Click unwanted shapes to remove them; enclosed cut-outs stay part of their shape. Previous/Next can select tiny shapes.</p>' +
-        '<details class="trace-generation" open><summary>Tracing settings</summary><div class="trace-controls"><div class="field"><label for="trace-colors">Maximum colours</label><input id="trace-colors" type="number" min="1" max="16" value="' +
-        initial.colors +
-        '"></div><div class="field"><label for="trace-detail">Detail</label><select id="trace-detail"><option value="smooth">Smooth · fewer shapes</option><option value="balanced">Balanced</option><option value="fine">Fine · small details</option></select></div><div class="field"><label for="trace-threshold">Transparency threshold</label><input id="trace-threshold" type="number" min="1" max="254" value="' +
-        initial.threshold +
-        '"></div></div>' +
-        '<label class="check trace-white"><input id="trace-white" type="checkbox" ' +
-        (initial.removeWhite ? 'checked' : '') +
-        '>Remove white background connected to the image edges</label><p class="hint">Re-tracing starts again from the retained image and replaces manual refinements in this preview. Undo refinement can restore the previous result.</p></details>' +
-        '<p id="trace-status" class="hint" role="status" aria-live="polite">Tracing runs locally on your computer.</p><p class="hint">Best for logos, numbers and flat colours. Tracing approximates pixels; gradients and shadows become solid shapes. The original image is kept for restoration.</p>',
-      '<button data-action="close">Cancel</button><button id="trace-update">Re-trace image</button><button id="trace-copy" disabled>Add vector copy</button><button class="primary" id="trace-apply" disabled>Replace with vector</button>',
-      true
-    );
-    const dialog = document.querySelector('#dialog'),
-      q = s => dialog.querySelector(s);
+    const canKeep = item.kind === 'image';
+    let choice = canKeep && options.keepImage ? 'image' : initial.detail === 'fine' ? 'fine' : 'logo';
+    const choiceCard = (id, title, text) =>
+      `<button class="bay-choice" data-trace-choice="${id}" aria-pressed="false"><span class="bay-radio"></span><span><b>${title}</b><small>${text}</small></span></button>`;
+    const ppi = item.kind === 'image' ? Math.round((item.pixelsW / item.w) * 25.4) : 0;
+    host.innerHTML =
+      '<div class="bay-stage"><div class="bay-tb"><div class="seg" role="group" aria-label="Compare"><button data-trace-compare="side" aria-pressed="true">Side by side</button><button data-trace-compare="overlay" aria-pressed="false">Overlay</button></div><span class="spacer"></span><div class="trace-view-tools"><label>Compare detail <select id="trace-zoom" aria-label="Comparison zoom"><option value="1">Fit</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label></div></div><div class="bay-view"><div class="trace-compare" data-compare="side"><section><h3>Original image</h3><div id="trace-original-view" class="trace-image trace-viewport"><div id="trace-original-zoom" class="trace-zoom-content"><img id="trace-original" alt="Original imported image"></div></div></section><section><h3>Vector preview <span id="trace-badge">Preparing…</span></h3><div id="trace-vector-view" class="trace-image trace-viewport"><div id="trace-vector-zoom" class="trace-zoom-content"><div id="trace-preview" hidden></div><span id="trace-placeholder">Preparing your preview…</span></div></div></section><input id="trace-wipe" class="prep-wipe" type="range" min="0" max="100" value="50" aria-label="Compare the image and the vector"></div></div>' +
+      '<div class="bay-under">' +
+      '<fieldset id="trace-shape-tools" class="trace-shape-tools" disabled><span id="trace-selected">Click a vector shape to select it.</span><button id="trace-prev-shape" title="Select previous shape">Previous</button><button id="trace-next-shape" title="Select next shape">Next</button><button id="trace-remove-shape" class="danger" disabled>Remove shape</button></fieldset>' +
+      '<div class="trace-refinement-head"><strong>Traced colours</strong><button id="trace-edit-undo" disabled>Undo refinement</button><button id="trace-edit-redo" disabled>Redo</button></div><fieldset id="trace-palette" class="trace-palette" disabled></fieldset>' +
+      '<p class="hint">Change a colour to replace it everywhere. Click an unwanted shape in the vector to remove it; Previous/Next reach tiny ones.</p></div></div>' +
+      '<aside class="bay-side"><h3>Image or vector?</h3><div class="bay-choices">' +
+      (canKeep
+        ? choiceCard(
+            'image',
+            'Keep as image',
+            'Best for photos and soft shading.' +
+              (ppi ? ' ' + ppi + ' PPI at ' + item.w.toFixed(1) + ' mm.' : '')
+          )
+        : '') +
+      choiceCard('logo', 'Trace: logo', 'Flat colours become clean shapes, sharp at any size.') +
+      choiceCard('fine', 'Trace: fine detail', 'More shapes for small lettering and thin lines.') +
+      '</div><details class="trace-generation bay-more"><summary>Tracing settings</summary><div class="trace-controls"><div class="field"><label for="trace-colors">Maximum colours</label><input id="trace-colors" type="number" min="1" max="16" value="' +
+      initial.colors +
+      '"></div><div class="field"><label for="trace-detail">Detail</label><select id="trace-detail"><option value="smooth">Smooth · fewer shapes</option><option value="balanced">Balanced</option><option value="fine">Fine · small details</option></select></div><div class="field"><label for="trace-threshold">Transparency threshold</label><input id="trace-threshold" type="number" min="1" max="254" value="' +
+      initial.threshold +
+      '"></div></div>' +
+      '<label class="check trace-white"><input id="trace-white" type="checkbox" ' +
+      (initial.removeWhite ? 'checked' : '') +
+      '>Remove white background connected to the image edges</label><p class="hint">Re-tracing starts again from the kept image and replaces refinements in this preview; Undo refinement brings them back.</p></details>' +
+      '<button id="trace-update">Re-trace</button><p id="trace-status" class="bay-quality" role="status" aria-live="polite">Tracing runs locally on your computer.</p><p class="hint">Tracing approximates pixels: gradients and shadows become solid shapes. The original image is kept.</p><p class="dialog-error bay-error" role="alert"></p></aside>';
+    const dialog = host,
+      q = s => host.querySelector(s);
     q('#trace-original').src = source.src;
     q('#trace-detail').value = initial.detail;
     let worker = null,
@@ -58,16 +72,10 @@ window.TraceUI = {
       disposed = true;
       sequence++;
       stop();
-      observer.disconnect();
       resizeObserver.disconnect();
-      dialog.removeEventListener('close', dispose);
-      dialog.removeEventListener('keydown', keys);
+      document.removeEventListener('keydown', keys);
     };
-    const observer = new MutationObserver(() => {
-      if (!q('#trace-original')) dispose();
-    });
-    observer.observe(document.querySelector('#dialog-content'), { childList: true });
-    dialog.addEventListener('close', dispose);
+    const setError = text => (q('.bay-error').textContent = text || '');
     const capture = () =>
       editor && result ? { result: { ...DM.clone(result), svg: editor.svg() }, selected } : null;
     const remember = state => {
@@ -78,7 +86,7 @@ window.TraceUI = {
       redo = [];
     };
     function buttons() {
-      q('#trace-apply').disabled = q('#trace-copy').disabled = !valid || colorPending;
+      hooks.change?.(choice === 'image' || (valid && !colorPending));
       q('#trace-palette').disabled = q('#trace-shape-tools').disabled = !valid;
       q('#trace-edit-undo').disabled = !undo.length;
       q('#trace-edit-redo').disabled = !redo.length;
@@ -167,12 +175,12 @@ window.TraceUI = {
           if (!/^#[a-f\d]{6}$/.test(next)) {
             colorPending = true;
             input.setAttribute('aria-invalid', 'true');
-            q('#dialog-error').textContent = 'Enter a six-digit colour such as #e5484d.';
+            setError('Enter a six-digit colour such as #e5484d.');
             buttons();
             return;
           }
           colorPending = false;
-          q('#dialog-error').textContent = '';
+          setError('');
           if (next !== old) commit(() => editor.recolor(old, next));
           else {
             input.removeAttribute('aria-invalid');
@@ -225,10 +233,10 @@ window.TraceUI = {
         const before = capture();
         fn();
         remember(before);
-        q('#dialog-error').textContent = '';
+        setError('');
         renderEditor();
       } catch (error) {
-        q('#dialog-error').textContent = error.message;
+        setError(error.message);
       }
     }
     function restore(state) {
@@ -242,7 +250,7 @@ window.TraceUI = {
       q('#trace-detail').value = result.settings.detail;
       q('#trace-threshold').value = result.settings.threshold;
       q('#trace-white').checked = result.settings.removeWhite;
-      q('#dialog-error').textContent = '';
+      setError('');
       renderEditor();
     }
     q('#trace-edit-undo').onclick = () => {
@@ -278,7 +286,7 @@ window.TraceUI = {
       });
     q('#trace-remove-shape').onclick = remove;
     function keys(e) {
-      if (e.target.matches('input,textarea,select')) return;
+      if (disposed || !host.isConnected || e.target.matches('input,textarea,select')) return;
       if (e.key === 'Delete' && valid && selected >= 0) {
         e.preventDefault();
         remove();
@@ -288,7 +296,7 @@ window.TraceUI = {
         q(e.shiftKey ? '#trace-edit-redo' : '#trace-edit-undo').click();
       }
     }
-    dialog.addEventListener('keydown', keys);
+    document.addEventListener('keydown', keys);
     const invalidate = () => {
       sequence++;
       stop();
@@ -306,7 +314,7 @@ window.TraceUI = {
         previous = capture();
       valid = false;
       buttons();
-      q('#dialog-error').textContent = '';
+      setError('');
       q('#trace-badge').textContent = 'Tracing…';
       q('#trace-status').textContent = 'Tracing locally… You can change settings or cancel while it runs.';
       try {
@@ -334,7 +342,7 @@ window.TraceUI = {
           stop();
           valid = false;
           buttons();
-          q('#dialog-error').textContent = message;
+          setError(message);
           q('#trace-badge').textContent = 'No result';
           q('#trace-status').textContent = 'Your artwork has not changed.';
         };
@@ -373,37 +381,70 @@ window.TraceUI = {
           stop();
           valid = false;
           buttons();
-          q('#dialog-error').textContent = error.message;
+          setError(error.message);
           q('#trace-badge').textContent = 'No result';
         }
       }
     }
-    const apply = copy => {
-      if (!valid || colorPending || !result) return;
-      try {
-        const vector = {
-          ...DM.clone(item),
-          kind: 'svg',
-          svg: editor.svg(),
-          mixed: false,
-          traceSource: DM.clone(source),
-          traceSettings: result.settings
-        };
-        if (result.regenerated) delete vector.vectorSource;
-        delete vector.src;
-        delete vector.pixelsW;
-        delete vector.pixelsH;
-        onApply(vector, copy);
-        dispose();
-        closeDialog();
-      } catch (error) {
-        q('#dialog-error').textContent = error.message;
-      }
+    const vector = () => {
+      if (choice === 'image') return null;
+      if (!valid || colorPending || !result) throw Error('Wait for the trace, or choose Keep as image.');
+      const vector = {
+        ...DM.clone(item),
+        kind: 'svg',
+        svg: editor.svg(),
+        mixed: false,
+        traceSource: DM.clone(source),
+        traceSettings: result.settings
+      };
+      if (result.regenerated) delete vector.vectorSource;
+      delete vector.src;
+      delete vector.pixelsW;
+      delete vector.pixelsH;
+      return vector;
     };
-    q('#trace-apply').onclick = () => apply(false);
-    q('#trace-copy').onclick = () => apply(true);
     q('#trace-update').onclick = update;
-    if (item.traceSource) {
+    // Keep as image, Trace: logo or Trace: fine detail.
+    function choose(next, run = true) {
+      choice = next;
+      for (const b of host.querySelectorAll('[data-trace-choice]'))
+        b.setAttribute('aria-pressed', String(b.dataset.traceChoice === choice));
+      host.querySelector('.bay-stage').classList.toggle('keep-image', choice === 'image');
+      if (choice === 'image') {
+        sequence++;
+        stop();
+        q('#trace-badge').textContent = 'Kept as image';
+        q('#trace-status').textContent =
+          'The image is used as it is.' + (ppi ? ' ' + ppi + ' PPI at this size.' : '');
+        buttons();
+        return;
+      }
+      const fine = choice === 'fine';
+      q('#trace-detail').value = fine
+        ? 'fine'
+        : q('#trace-detail').value === 'fine'
+          ? 'balanced'
+          : q('#trace-detail').value;
+      if (fine && Number(q('#trace-colors').value) < 8) q('#trace-colors').value = 8;
+      if (run) update();
+      else buttons();
+    }
+    for (const b of host.querySelectorAll('[data-trace-choice]'))
+      b.onclick = () => choose(b.dataset.traceChoice);
+    for (const b of host.querySelectorAll('[data-trace-compare]'))
+      b.onclick = () => {
+        q('.trace-compare').dataset.compare = b.dataset.traceCompare;
+        for (const x of host.querySelectorAll('[data-trace-compare]'))
+          x.setAttribute('aria-pressed', String(x === b));
+        zoom();
+      };
+    const wipe = () => q('.trace-compare').style.setProperty('--wipe', q('#trace-wipe').value + '%');
+    q('#trace-wipe').oninput = wipe;
+    wipe();
+    choose(choice, false);
+    if (choice === 'image') {
+      q('#trace-placeholder').textContent = 'Choose Trace: logo to see the vector here.';
+    } else if (item.traceSource) {
       try {
         editor = TraceRefine.load(item.svg);
         const vb = Art.sanitize(item.svg).viewBox;
@@ -411,11 +452,12 @@ window.TraceUI = {
         valid = true;
         renderEditor();
       } catch (error) {
-        q('#dialog-error').textContent = error.message;
+        setError(error.message);
         q('#trace-badge').textContent = 'Re-trace to refine';
-        q('#trace-placeholder').textContent = 'Use Re-trace image to create editable paths.';
+        q('#trace-placeholder').textContent = 'Use Re-trace to create editable paths.';
         buttons();
       }
     } else update();
+    return { vector, choice: () => choice, dispose, refresh: buttons };
   }
 };

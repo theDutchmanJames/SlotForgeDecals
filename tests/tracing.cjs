@@ -49,6 +49,8 @@ async function main() {
     const chooser = page.waitForEvent('filechooser');
     await page.locator('#workshop [data-ws="image"]').click();
     await (await chooser).setFiles(fixture);
+    // A bitmap opens the import bay at Clean up; the step rail goes straight to sizing.
+    await page.locator('[data-bay-step="size"]').click();
     await page.locator('#import-width').fill('18');
     await page.locator('#place-import').click();
     await page.waitForFunction(() => Studio.project.items.length === 1);
@@ -61,6 +63,7 @@ async function main() {
       {},
       { timeout: 50000 }
     );
+    await page.locator('.trace-generation summary').click();
     await page.locator('#trace-colors').fill('2');
     assert.ok(await page.locator('#trace-apply').isDisabled());
     await page.locator('#trace-update').click();

@@ -44,7 +44,14 @@ Visit each app's repository for its features, downloads and getting-started guid
 
 ### Bring your own artwork
 
-**Start with the logos, numbers and graphics you want on your car.** Import **PNG, JPEG, WebP, SVG, EPS and PDF**, or drag a file onto the sheet. For a multi-page PDF, choose the page you want to import.
+**Start with the logos, numbers and graphics you want on your car.** Import **PNG, JPEG, WebP, SVG, EPS and PDF**, or drag a file onto the sheet. Every import opens the **import bay** (redesigned in November 2026), one window with its steps down the left:
+
+- **Choose pages:** for a PDF or EPS with several pages, every page as a thumbnail. Each chosen page becomes its own decal, cropped to its artwork or kept as the whole page.
+- **Clean up** (bitmaps): crop by dragging on the picture and make the background see-through. A plain background is found for you; drag the line under the picture to compare with the original.
+- **Image or vector** (bitmaps): keep the bitmap, or trace it as a logo or with fine detail.
+- **Size & place:** the decal on your car while you set its millimetres, with quick sizes for a door number, bonnet, side logo or windscreen, the file's own size, a size from another scale (such as a full-size car), and one, two (both sides) or four copies. Bitmaps show their print quality as you size them.
+
+Every step but the last is optional. The Decal tab's **Crop & remove background** and **Trace image to vector** open the same window on a decal already on the sheet.
 
 Supported SVG paths, gradients, clipping, masks and symbols retain their vector detail. EPS and PDF conversion runs locally through bundled Ghostscript and MuPDF. Complex vector files with unsupported effects may need preparation in their original editor; external resources and unsafe content are rejected with an explanation.
 
@@ -54,9 +61,9 @@ The app identifies artwork as **Raster**, **Vector**, **Traced vector** or a mix
 
 Crop a photograph or logo, remove a plain background colour connected to its edges, and trim empty transparent borders. Preview against transparent, light or dark backgrounds. Cropping preserves the artwork's physical scale, and the original image remains available for restoration.
 
-Use **Trace image to vector** to turn a bitmap into editable vector paths:
+Use **Trace image to vector** (or the import bay's Image or vector step) to turn a bitmap into editable vector paths:
 
-- Compare the original and traced previews, with linked zoom and scrolling.
+- Compare the original and traced previews side by side or as an overlay, with linked zoom and scrolling.
 - Adjust the colour count, detail level and transparency threshold.
 - Refine the result by replacing colours or removing unwanted shapes.
 - Apply it to the existing decal or add a separate vector copy.

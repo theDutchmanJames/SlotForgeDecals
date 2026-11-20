@@ -85,6 +85,7 @@ async function main() {
       'base64'
     );
     await page.locator('#art-file').setInputFiles({ name: 'Pixel.png', mimeType: 'image/png', buffer: png });
+    await page.locator('[data-bay-step="size"]').click();
     await page.locator('#place-import').click();
     await page.waitForFunction(() => Studio.project.items.length === 3);
     assert.ok(await page.evaluate(() => DM.warnings(Studio.project).some(w => w.type === 'resolution')));

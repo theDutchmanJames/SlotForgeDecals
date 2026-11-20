@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adding artwork redesign</title>
+<!-- Preview only: one made-up logo, nothing is wired up. Two concepts for importing, cleaning up, tracing and sizing artwork. -->
+<style>
+@font-face{font-family:'SF Barlow Condensed';src:url('../../../renderer/fonts/barlowcondensed/BarlowCondensed-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic}
+@font-face{font-family:'SF Roboto Mono';src:url('../../../renderer/fonts/robotomono/RobotoMono[wght].ttf') format('truetype');font-weight:100 700}
+:root{--bg:#14181e;--canvas:#101318;--panel:#1d232b;--raised:#252c36;--ink:#e8e6e1;--ink2:#c4c8ce;--muted:#98a0ab;--faint:#6b7380;--line:#323946;--line2:#272d37;--accent:#e5484d;--ok:#3ecf8e;--amber:#edbd6a;--blue:#79b5ed;--teal:#5cc8c0;
+  --cond:'SF Barlow Condensed','Bahnschrift',sans-serif;--mono:'SF Roboto Mono',Consolas,monospace;--ui:'Segoe UI',system-ui,sans-serif;color-scheme:dark}
+[data-theme=light]{--bg:#f1efea;--canvas:#e4e1da;--panel:#fff;--raised:#f3f1ec;--ink:#1d2229;--ink2:#3a414c;--muted:#656c76;--faint:#8a929d;--line:#d9d6cf;--line2:#e6e3dd;--accent:#c92424;--ok:#1f9a62;--amber:#a7741c;--blue:#236db4;--teal:#17807a;color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--ui);overflow:hidden}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+h1,h2,h3,h4{font-family:var(--cond);font-style:italic;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0}
+.eye{font:600 10px var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}.faint{color:var(--faint)}.grow{flex:1}.mono{font-family:var(--mono);font-weight:500}
+.row{display:flex;align-items:center;gap:8px}
+.switch{position:relative;z-index:50;display:flex;align-items:center;gap:14px;height:46px;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--line2)}
+.switch b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.switch p{margin:0 0 0 auto;font-size:12px;color:var(--faint)}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+.seg button{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.seg button.on{background:color-mix(in srgb,var(--ink) 12%,var(--panel));color:var(--ink);font-weight:600}
+.seg.sm button{height:22px;padding:0 8px;font-size:12px}
+.opt{position:absolute;inset:46px 0 0;display:flex;flex-direction:column}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 13px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);font-size:13px;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+.btn.sm{height:27px;padding:0 9px;font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border:1px solid var(--line);border-radius:14px;background:none;color:var(--ink2);font-size:12px}
+.chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--ink);font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:10px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.pill.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.pill.blue{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue)}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;color:var(--muted)}
+.inp{display:flex;align-items:center;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--bg) 70%,var(--panel))}
+.inp input,.inp select{flex:1;min-width:0;border:0;background:none;outline:0;font-family:var(--mono)}
+.inp span{color:var(--faint);font-size:11.5px}
+.slider{position:relative;height:4px;border-radius:2px;background:var(--line);margin:10px 0}
+.slider i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--accent)}
+.slider b{position:absolute;top:-6px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.checker{background-color:#fff;background-image:linear-gradient(45deg,#e3e3e3 25%,transparent 25%),linear-gradient(-45deg,#e3e3e3 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e3e3e3 75%),linear-gradient(-45deg,transparent 75%,#e3e3e3 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0}
+/* fake editor behind */
+.ed{position:absolute;inset:0;display:flex;flex-direction:column}
+.ed .top{height:56px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 14px;flex:none}
+.logo{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;font:700 italic 17px var(--cond)}
+.ed .body{flex:1;display:flex;min-height:0}
+.ed .rail{width:58px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:10px}
+.ed .rail i{width:40px;height:40px;border-radius:9px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.ed .rail i.on{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.ed .lp{width:282px;background:var(--panel);border-right:1px solid var(--line)}
+.ed .cv{flex:1;position:relative;display:grid;place-items:center;background:var(--canvas);overflow:hidden}
+.ed .rp{width:322px;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.ph{height:12px;margin:16px;border-radius:5px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.paper{background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.35);position:relative}
+.scrim{position:absolute;inset:0;background:rgba(8,10,14,.6);backdrop-filter:blur(2px)}
+[data-theme=light] .scrim{background:rgba(60,55,45,.32)}
+
+/* ================= A · IMPORT BAY ================= */
+.bay{position:absolute;inset:28px 40px;display:grid;grid-template-columns:220px 1fr 340px;grid-template-rows:auto 1fr auto;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:0 30px 80px rgba(0,0,0,.5);overflow:hidden}
+.bay header{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.bay header h2{font-size:22px}
+.steps{display:flex;flex-direction:column;gap:4px;padding:16px 12px;border-right:1px solid var(--line);background:color-mix(in srgb,var(--ink) 2%,var(--panel))}
+.step{display:flex;gap:11px;align-items:flex-start;padding:10px;border:0;border-radius:10px;background:none;text-align:left;color:var(--muted)}
+.step .n{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);font:700 11px var(--mono);flex:none}
+.step b{display:block;color:var(--ink2);font-size:13px}.step small{font-size:11px}
+.step.on{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.step.on .n{background:var(--accent);border-color:var(--accent);color:#fff}
+.step.on b{color:var(--ink)}
+.step.done .n{border-color:var(--ok);color:var(--ok)}
+.step.off{opacity:.45}
+.steps .file{margin-top:auto;padding:12px 10px;border-top:1px solid var(--line2);font-size:11.5px;color:var(--muted)}
+.steps .file b{display:block;color:var(--ink);font-size:12.5px}
+.stage{position:relative;display:flex;flex-direction:column;min-width:0;background:var(--canvas)}
+.stage .tb{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line2)}
+.stage .view{flex:1;display:grid;place-items:center;padding:20px;min-height:0;position:relative}
+.ctl{display:flex;flex-direction:column;gap:14px;padding:18px;border-left:1px solid var(--line);overflow:auto}
+.ctl h3{font-size:16px}
+.ctl p{margin:0}
+.bay footer{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:12px 20px;border-top:1px solid var(--line)}
+.pages{display:grid;grid-template-columns:repeat(3,150px);gap:18px}
+.pg{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border:2px solid transparent;border-radius:10px;background:none;color:var(--muted);font-size:12px}
+.pg .sh{width:120px;height:170px;background:#fff;border-radius:3px;box-shadow:0 4px 14px rgba(0,0,0,.3);display:grid;place-items:center}
+.pg.on{border-color:var(--accent);color:var(--ink)}
+.pg.on::after{content:'✓';position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;display:grid;place-items:center}
+.cards3{display:flex;flex-direction:column;gap:8px}
+.cc{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--raised);text-align:left}
+.cc.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.cc b{display:block;font-size:13px}.cc small{color:var(--muted);font-size:11.5px}
+.cc .r{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);flex:none;margin-top:2px}
+.cc.on .r{border:5px solid var(--accent)}
+.sw{display:flex;flex-wrap:wrap;gap:6px}
+.sw span{display:flex;align-items:center;gap:6px;height:28px;padding:0 9px 0 4px;border:1px solid var(--line);border-radius:14px;font:500 11px var(--mono);color:var(--ink2)}
+.sw span i{width:20px;height:20px;border-radius:50%;border:1px solid rgba(0,0,0,.2)}
+.wipe{position:relative;overflow:hidden;border-radius:8px}
+.wipe .half{position:absolute;inset:0;clip-path:inset(0 0 0 50%)}
+.wipe .bar{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--accent)}
+.wipe .bar::after{content:'⟷';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:14px}
+.wipe .lbl{position:absolute;top:10px;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px}
+.handles{position:absolute;inset:18px 30px;border:2px solid var(--accent);border-radius:2px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+.handles i{position:absolute;width:12px;height:12px;background:#fff;border:2px solid var(--accent)}
+.where{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.where button{display:flex;flex-direction:column;align-items:flex-start;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--raised);text-align:left}
+.where button b{font-size:12.5px}.where button small{font:500 11px var(--mono);color:var(--muted)}
+.where button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.big{display:flex;align-items:center;gap:6px}
+.big .inp{height:46px;flex:1;min-width:0}
+.big .inp input{font-size:22px}
+.quality{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--ok) 10%,transparent);font-size:12px}
+.carbox{position:relative;width:100%;max-width:760px}
+.ruler{display:flex;align-items:center;gap:8px;margin-top:14px;color:var(--faint);font:11px var(--mono)}
+.ruler i{flex:1;height:1px;background:var(--faint)}
+
+/* ================= B · ON THE SHEET ================= */
+.place-card{display:flex;flex-direction:column;gap:12px;padding:16px;border-bottom:1px solid var(--line)}
+.place-card h3{font-size:15px}
+.toastbar{position:absolute;left:50%;top:18px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:8px 10px 8px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:12.5px;white-space:nowrap;z-index:3}
+.lensbar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 14px 40px rgba(0,0,0,.45);white-space:nowrap;z-index:4}
+.lensbar .sw{flex-wrap:nowrap}.lensbar .sw span{padding:0 4px}
+.lensbar .sep{width:1px;height:26px;background:var(--line)}
+.lens-dim{position:absolute;inset:0;background:rgba(6,8,12,.72);z-index:1}
+[data-theme=light] .lens-dim{background:rgba(40,36,30,.55)}
+.lens{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:2}
+.lens .tag{position:absolute;top:-30px;left:0;display:flex;gap:8px;align-items:center;color:#fff;font-size:12px}
+.cursor-drop{position:absolute;width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px var(--accent)}
+.strip{position:absolute;left:24px;right:24px;bottom:22px;display:flex;align-items:center;gap:14px;padding:12px 16px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 14px 40px rgba(0,0,0,.45);z-index:4}
+.strip .pgs{display:flex;gap:10px;flex:1;overflow:hidden}
+.strip .pg .sh{width:66px;height:92px}
+.dropzone{position:absolute;inset:16px;border:2px dashed color-mix(in srgb,var(--accent) 60%,transparent);border-radius:16px;z-index:1;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 5%,transparent)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+ <!-- the made-up "imported" logo: a raster on a light grey background -->
+ <symbol id="logo-raw" viewBox="0 0 640 400"><rect width="640" height="400" fill="#f1f1f1"/><circle cx="200" cy="200" r="150" fill="#d92b2b"/><text x="200" y="262" text-anchor="middle" font-family="Arial" font-weight="700" font-size="170" fill="#fff">27</text><rect x="380" y="80" width="200" height="240" fill="#1d3f8f"/><path d="M400 280h160" stroke="#fff" stroke-width="14"/></symbol>
+ <symbol id="logo-clean" viewBox="0 0 640 400"><circle cx="200" cy="200" r="150" fill="#d92b2b"/><text x="200" y="262" text-anchor="middle" font-family="Arial" font-weight="700" font-size="170" fill="#fff">27</text><rect x="380" y="80" width="200" height="240" fill="#1d3f8f"/><path d="M400 280h160" stroke="#fff" stroke-width="14"/></symbol>
+ <symbol id="logo-vec" viewBox="0 0 640 400"><circle cx="200" cy="200" r="150" fill="#d92b2b" stroke="#2f8cff" stroke-width="2" stroke-dasharray="6 5"/><text x="200" y="262" text-anchor="middle" font-family="Arial" font-weight="700" font-size="170" fill="#fff" stroke="#2f8cff" stroke-width="1.5" stroke-dasharray="6 5">27</text><rect x="380" y="80" width="200" height="240" fill="#1d3f8f" stroke="#2f8cff" stroke-width="2" stroke-dasharray="6 5"/><path d="M400 280h160" stroke="#fff" stroke-width="14"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+ <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v16h16M2 6h16v16"/></symbol>
+ <symbol id="i-drop" viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18zM14 6l4 4M17 3l4 4-2 2-4-4z"/></symbol>
+ <symbol id="i-trace" viewBox="0 0 24 24"><path d="M4 20c2-6 4-9 8-9s6 3 8 9M8 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0"/></symbol>
+ <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 15l2-5c.5-1 1.5-2 3-2h7c1.5 0 2.5.6 3.5 1.8L21 13v3H3zM7.5 18.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM16.5 18.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+ <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-undo" viewBox="0 0 24 24"><path d="M4 9h11a5 5 0 0 1 0 10H9M4 9l4-4M4 9l4 4"/></symbol>
+ <symbol id="i-image" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 9h.01"/></symbol>
+ <symbol id="i-trim" viewBox="0 0 24 24"><path d="M4 4h4M4 4v4M20 4h-4M20 4v4M4 20h4M4 20v-4M20 20h-4M20 20v-4M9 9h6v6H9z"/></symbol>
+</defs></svg>
+
+<div class="switch">
+ <b>Design</b><div class="seg" id="sw-opt"><button class="on" data-v="A">A · Import bay</button><button data-v="B">B · On the sheet</button></div>
+ <b>Step</b><div class="seg" id="sw-step"><button data-v="page">PDF page</button><button class="on" data-v="clean">Clean up</button><button data-v="trace">Image or vector</button><button data-v="size">Size</button></div>
+ <b>Theme</b><div class="seg" id="sw-theme"><button class="on" data-v="dark">Dark</button><button data-v="light">Light</button></div>
+ <p>Preview only · one made-up logo</p>
+</div>
+
+<!-- shared fake editor -->
+<template id="editor">
+ <div class="ed"><div class="top"><span class="logo">D</span><div style="font:700 italic 20px var(--cond);text-transform:uppercase">Club Racing · No. 27</div><span class="grow"></span><span class="btn primary sm">Export PDF</span></div>
+  <div class="body"><div class="rail"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div><div class="lp"><div class="ph"></div><div class="ph" style="width:55%"></div><div class="ph"></div></div><div class="cv"></div><div class="rp"></div></div></div>
+</template>
+
+<!-- ================= A ================= -->
+<section class="opt" id="A">
+ <div class="stagewrap" style="position:absolute;inset:0" id="A-bg"></div>
+ <div class="scrim"></div>
+ <div class="bay">
+  <header><h2>Add artwork</h2><span class="faint" id="A-file">Team logo.png · 640 × 400 px</span><span class="grow"></span><span class="faint" style="font-size:12px">Every step is optional · Enter goes on</span><button class="btn ghost sm" style="width:30px;padding:0"><svg class="i"><use href="#i-x"/></svg></button></header>
+  <nav class="steps" id="A-steps"></nav>
+  <div class="stage" id="A-stage"></div>
+  <aside class="ctl" id="A-ctl"></aside>
+  <footer id="A-foot"></footer>
+ </div>
+</section>
+
+<!-- ================= B ================= -->
+<section class="opt" id="B" hidden>
+ <div style="position:absolute;inset:0" id="B-bg"></div>
+</section>
+
+<script>
+const $ = s => document.querySelector(s);
+const logo = (id, w, extra = '') => `<svg viewBox="0 0 640 400" width="${w}" height="${w * 400 / 640}" style="display:block;${extra}"><use href="#${id}"/></svg>`;
+const pdfPage = (n, w = 120) => {
+  const k = w / 120, items = [
+    `<circle cx="60" cy="50" r="26" fill="#d92b2b"/><text x="60" y="61" text-anchor="middle" font-family="Arial" font-weight="700" font-size="30" fill="#fff">27</text><rect x="20" y="96" width="80" height="10" fill="#1d3f8f"/><rect x="20" y="112" width="80" height="6" fill="#d92b2b"/>`,
+    `<rect x="18" y="30" width="84" height="40" rx="6" fill="#1d3f8f"/><text x="60" y="58" text-anchor="middle" font-family="Arial" font-weight="700" font-size="20" fill="#fff">TEAM</text><circle cx="40" cy="110" r="14" fill="#d92b2b"/><circle cx="80" cy="110" r="14" fill="#d92b2b"/>`,
+    `<text x="60" y="40" text-anchor="middle" font-family="Arial" font-size="9" fill="#555">Colour guide</text><rect x="20" y="54" width="22" height="22" fill="#d92b2b"/><rect x="49" y="54" width="22" height="22" fill="#1d3f8f"/><rect x="78" y="54" width="22" height="22" fill="#111"/><rect x="20" y="90" width="80" height="2" fill="#ccc"/><rect x="20" y="100" width="60" height="2" fill="#ccc"/>`,
+    `<path d="M15 120 L60 30 L105 120 Z" fill="#f2711c"/><text x="60" y="105" text-anchor="middle" font-family="Arial" font-weight="700" font-size="22" fill="#fff">GO</text>`,
+    `<rect x="20" y="40" width="80" height="16" fill="#111"/><rect x="20" y="62" width="80" height="16" fill="#d92b2b"/><rect x="20" y="84" width="80" height="16" fill="#111"/>`,
+    `<text x="60" y="70" text-anchor="middle" font-family="Arial" font-size="9" fill="#777">Notes</text><rect x="20" y="80" width="80" height="2" fill="#ddd"/><rect x="20" y="88" width="80" height="2" fill="#ddd"/><rect x="20" y="96" width="50" height="2" fill="#ddd"/>`][n];
+  return `<svg width="${120 * k}" height="${170 * k}" viewBox="0 0 120 170">${items}</svg>`;
+};
+const car = (decalMm = 18, at = [830, 330], sel = true) => {
+  const k = 1981 / 140, w = decalMm * k, h = w * 400 / 640;
+  return `<svg viewBox="0 0 1981 793" style="width:100%;display:block"><image href="../../../assets/car-side.png" width="1981" height="793"/><svg x="${at[0]}" y="${at[1]}" width="${w}" height="${h}" viewBox="0 0 640 400"><use href="#logo-clean"/></svg>${sel ? `<rect x="${at[0] - 6}" y="${at[1] - 6}" width="${w + 12}" height="${h + 12}" fill="none" stroke="#2f8cff" stroke-width="5" stroke-dasharray="14 8"/>` : ''}</svg>`;
+};
+const ICON = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+
+// ---------------- A · Import bay ----------------
+const STEPS = [['page', 'Choose pages', 'From a PDF or EPS'], ['clean', 'Clean up', 'Crop and remove the background'], ['trace', 'Image or vector', 'Keep pixels or trace to shapes'], ['size', 'Size & place', 'Millimetres, checked on the car']];
+function A(step) {
+  const idx = STEPS.findIndex(s => s[0] === step);
+  $('#A-steps').innerHTML = STEPS.map(([id, t, s], n) => `<button class="step ${id === step ? 'on' : n < idx ? 'done' : ''} ${id === 'page' && step !== 'page' ? 'off' : ''}" data-step="${id}"><span class="n">${n < idx && id !== 'page' ? '✓' : n + 1}</span><span><b>${t}</b><small>${s}</small></span></button>`).join('') +
+    `<div class="file">${step === 'page' ? '<b>Team pack.pdf</b>6 pages · vector · 1.2 MB' : '<b>Team logo.png</b>640 × 400 px · raster · 48 KB'}<br>${step === 'page' ? 'PDF pages stay sharp vectors.' : 'At 25 mm wide this prints at 650 PPI.'}</div>`;
+  $('#A-file').textContent = step === 'page' ? 'Team pack.pdf · 6 pages' : 'Team logo.png · 640 × 400 px';
+  const stage = $('#A-stage'), ctl = $('#A-ctl'), foot = $('#A-foot');
+  const nav = (back, next, nextLabel = 'Next') => `${back ? `<button class="btn">← ${back}</button>` : ''}<span class="grow"></span><span class="faint" style="font-size:12px">${next ? 'You can come back to every step later from the Decal tab.' : ''}</span>${next ? `<button class="btn ghost">Skip</button><button class="btn primary">${nextLabel} →</button>` : `<button class="btn primary">${ICON('check')}Add to sheet</button>`}`;
+  if (step === 'page') {
+    stage.innerHTML = `<div class="tb"><span class="eye">6 pages</span><span class="grow"></span><button class="btn sm">Select all</button></div><div class="view"><div class="pages">${[0, 1, 2, 3, 4, 5].map(n => `<button class="pg ${[0, 1].includes(n) ? 'on' : ''}"><span class="sh">${pdfPage(n)}</span>Page ${n + 1}</button>`).join('')}</div></div>`;
+    ctl.innerHTML = `<h3>Which pages?</h3><p class="muted">Each chosen page becomes its own decal, already cut to its artwork.</p><div class="cards3"><button class="cc on"><span class="r"></span><span><b>Crop to the artwork</b><small>White page margins are left out</small></span></button><button class="cc"><span class="r"></span><span><b>Keep the whole page</b><small>For a pre-made decal sheet</small></span></button></div><div class="quality">${ICON('check')}<span>2 pages chosen · both are vector and stay sharp at any size</span></div>`;
+    foot.innerHTML = nav('', 'Size the 2 decals', 'Size the 2 decals');
+  }
+  if (step === 'clean') {
+    stage.innerHTML = `<div class="tb"><div class="seg sm"><button class="on">${ICON('crop')}Crop</button><button>${ICON('drop')}Pick background</button></div><span class="grow"></span><span class="eye">Preview on</span><div class="seg sm"><button class="on">Checker</button><button>White</button><button>Dark</button><button>Car</button></div></div><div class="view"><div class="wipe checker" style="width:600px;height:375px">${logo('logo-raw', 600)}<div class="half checker">${logo('logo-clean', 600)}</div><div class="bar"></div><span class="lbl" style="left:10px">Original</span><span class="lbl" style="right:10px">Cleaned up</span><div class="handles" style="inset:12px 22px 12px 22px"><i style="left:-7px;top:-7px"></i><i style="right:-7px;top:-7px"></i><i style="left:-7px;bottom:-7px"></i><i style="right:-7px;bottom:-7px"></i></div></div></div>`;
+    ctl.innerHTML = `<h3>Clean up</h3><p class="muted">Drag the corners to crop. Click the background in the picture to make it see-through.</p><div class="field"><label>Background</label><div class="row"><span style="width:30px;height:30px;border-radius:8px;background:#f1f1f1;border:1px solid var(--line)"></span><span class="mono" style="font-size:12px">#F1F1F1 · removed</span><span class="grow"></span><button class="btn sm">${ICON('undo')}Keep it</button></div></div><div class="field"><label>How close a colour must be · 12</label><div class="slider"><i style="width:22%"></i><b style="left:22%"></b></div><div class="row faint" style="font-size:11px;justify-content:space-between"><span>Only this colour</span><span>Similar colours too</span></div></div><button class="btn">${ICON('trim')}Trim empty edges</button><div class="quality">${ICON('check')}<span>38,400 background pixels removed · edges smoothed · original kept</span></div>`;
+    foot.innerHTML = nav('', 'Image or vector');
+  }
+  if (step === 'trace') {
+    stage.innerHTML = `<div class="tb"><span class="eye">Drag the line to compare</span><span class="grow"></span><div class="seg sm"><button>Fit</button><button class="on">200%</button><button>400%</button></div></div><div class="view"><div class="wipe checker" style="width:600px;height:375px">${logo('logo-clean', 600)}<div class="half checker">${logo('logo-vec', 600)}</div><div class="bar" style="left:50%"></div><span class="lbl" style="left:10px">Image</span><span class="lbl" style="right:10px">Traced vector · 9 shapes</span></div></div>`;
+    ctl.innerHTML = `<h3>Image or vector?</h3><div class="cards3"><button class="cc"><span class="r"></span><span><b>Keep as image</b><small>Best for photos and soft shading. 650 PPI at 25 mm: fine.</small></span></button><button class="cc on"><span class="r"></span><span><b>Trace: logo</b><small>Flat colours become clean shapes that stay sharp at any size.</small></span></button><button class="cc"><span class="r"></span><span><b>Trace: fine detail</b><small>More shapes for small lettering and thin lines.</small></span></button></div><div class="field"><label>Colours found · click to merge or change</label><div class="sw"><span><i style="background:#d92b2b"></i>Red</span><span><i style="background:#1d3f8f"></i>Blue</span><span><i style="background:#fff"></i>White</span><span style="opacity:.55;text-decoration:line-through"><i style="background:#e36b6b"></i>Edge pink</span></div><p class="faint" style="font-size:11.5px;margin-top:4px">Edge pink (anti-aliasing) was merged into red.</p></div><div class="field"><label>Smallest shape kept</label><div class="slider"><i style="width:35%"></i><b style="left:35%"></b></div></div>`;
+    foot.innerHTML = nav('Clean up', 'Size & place');
+  }
+  if (step === 'size') {
+    stage.innerHTML = `<div class="tb"><span class="eye">On your car · Modern GT · 1:32</span><span class="grow"></span><div class="seg sm"><button class="on">Side</button><button>Top</button></div></div><div class="view"><div class="carbox">${car(18)}<div class="ruler"><i></i>140 mm car · decal 18 mm<i></i></div></div></div>`;
+    ctl.innerHTML = `<h3>How big?</h3><div class="field"><label>Printed width</label><div class="big"><button class="btn" style="height:46px;width:40px;padding:0">${ICON('minus')}</button><div class="inp"><input value="18.0"><span>mm</span></div><button class="btn" style="height:46px;width:40px;padding:0">${ICON('plus')}</button></div><span class="mono faint" style="font-size:11.5px">18.0 × 11.3 mm</span></div><div class="field"><label>Or pick where it goes</label><div class="where"><button class="on"><b>Door number</b><small>≈ 18 mm</small></button><button><b>Bonnet</b><small>≈ 26 mm</small></button><button><b>Side logo</b><small>≈ 34 mm</small></button><button><b>Windscreen</b><small>≈ 60 mm</small></button><button><b>File's own size</b><small>none in a PNG</small></button><button><b>From a full-size car</b><small>real mm ÷ 32</small></button></div></div><div class="field"><label>Copies to place</label><div class="seg sm"><button class="on">1</button><button>2 · both sides</button><button>4</button></div></div><div class="quality">${ICON('check')}<span>Vector · sharp at any size</span></div>`;
+    foot.innerHTML = nav('Image or vector', '');
+  }
+}
+
+// ---------------- B · On the sheet ----------------
+function B(step) {
+  const bg = $('#B-bg');
+  bg.innerHTML = $('#editor').innerHTML;
+  const cv = bg.querySelector('.cv'), rp = bg.querySelector('.rp');
+  const paper = (inner, w = 470) => `<div class="paper" style="width:${w}px;height:${w * 297 / 210}px">${inner}</div>`;
+  if (step === 'size') {
+    cv.innerHTML = paper(`<div style="position:absolute;left:40px;top:40px;width:120px;height:75px;outline:2px solid #2f8cff;outline-offset:3px">${logo('logo-clean', 120)}</div>`) +
+      `<div class="toastbar">${ICON('check')}<span><b>Team logo</b> placed at <b class="mono">25 mm</b> · cleaned up automatically (plain background removed)</span><button class="btn sm">${ICON('undo')}Keep background</button></div>` +
+      `<div style="position:absolute;right:16px;bottom:16px;width:300px;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;box-shadow:0 12px 34px rgba(0,0,0,.35)"><div class="row" style="padding:8px 12px;border-bottom:1px solid var(--line2)">${ICON('car')}<b style="font:700 italic 14px var(--cond);text-transform:uppercase">Fit check</b></div><div style="padding:6px 8px">${car(25, [800, 300])}</div></div>`;
+    rp.innerHTML = `<div class="place-card"><span class="eye" style="color:var(--accent)">Just added</span><h3>Size it for the car</h3><div class="where"><button class="on"><b>Door number</b><small>≈ 18 mm</small></button><button><b>Bonnet</b><small>≈ 26 mm</small></button><button><b>Side logo</b><small>≈ 34 mm</small></button><button><b>Windscreen</b><small>≈ 60 mm</small></button></div><div class="big"><div class="inp"><input value="25.0"><span>mm wide</span></div></div><div class="quality">${ICON('check')}<span>650 PPI at this size · fine for printing</span></div></div><div class="place-card"><h3>Make it better</h3><button class="btn" style="justify-content:flex-start">${ICON('crop')}Clean up on the sheet</button><button class="btn" style="justify-content:flex-start">${ICON('trace')}Turn into a vector</button></div><div class="ph"></div><div class="ph" style="width:60%"></div>`;
+  }
+  if (step === 'clean') {
+    cv.innerHTML = paper('') + `<div class="lens-dim"></div><div class="lens"><span class="tag"><b>CLEAN UP</b> · Team logo · on the sheet at 400%</span><div class="checker" style="position:relative;width:640px;height:400px;border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.6)">${logo('logo-raw', 640)}<div class="handles" style="inset:20px 34px"><i style="left:-7px;top:-7px"></i><i style="right:-7px;top:-7px"></i><i style="left:-7px;bottom:-7px"></i><i style="right:-7px;bottom:-7px"></i></div><span class="cursor-drop" style="left:560px;top:340px"></span></div></div>` +
+      `<div class="lensbar"><div class="seg sm"><button class="on">${ICON('crop')}Crop</button><button>${ICON('drop')}Click the background</button></div><span class="sep"></span><span class="faint" style="font-size:12px">Tolerance</span><div class="slider" style="width:120px;margin:0"><i style="width:22%"></i><b style="left:22%"></b></div><button class="btn sm">${ICON('trim')}Trim edges</button><span class="sep"></span><button class="btn sm ghost">Cancel</button><button class="btn sm primary">${ICON('check')}Done</button></div>`;
+    rp.innerHTML = `<div class="place-card"><span class="eye">Cleaning up</span><h3>Team logo</h3><p class="muted" style="margin:0">Drag the corners on the sheet to crop. Click the grey background to make it see-through; similar colours go too.</p><div class="sw"><span><i style="background:#f1f1f1"></i>#F1F1F1 · to remove</span></div></div><div class="ph"></div>`;
+  }
+  if (step === 'trace') {
+    cv.innerHTML = paper('') + `<div class="lens-dim"></div><div class="lens"><span class="tag"><b>IMAGE OR VECTOR</b> · drag the line to compare</span><div class="wipe checker" style="width:640px;height:400px;border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.6)">${logo('logo-clean', 640)}<div class="half checker">${logo('logo-vec', 640)}</div><div class="bar"></div><span class="lbl" style="left:10px">Image</span><span class="lbl" style="right:10px">Vector · 9 shapes</span></div></div>` +
+      `<div class="lensbar"><div class="seg sm"><button>${ICON('image')}Keep image</button><button class="on">${ICON('trace')}Logo</button><button>Fine detail</button></div><span class="sep"></span><div class="sw"><span><i style="background:#d92b2b"></i></span><span><i style="background:#1d3f8f"></i></span><span><i style="background:#fff"></i></span><span style="opacity:.5;text-decoration:line-through"><i style="background:#e36b6b"></i></span></div><span class="sep"></span><button class="btn sm ghost">Cancel</button><button class="btn sm primary">${ICON('check')}Use vector</button></div>`;
+    rp.innerHTML = `<div class="place-card"><span class="eye">Tracing</span><h3>Team logo</h3><p class="muted" style="margin:0">Click a colour chip to merge it into a neighbour, or a shape on the sheet to remove it.</p></div><div class="ph"></div>`;
+  }
+  if (step === 'page') {
+    cv.innerHTML = paper(`<div style="position:absolute;left:40px;top:40px;opacity:.35">${pdfPage(0, 90)}</div>`) + `<div class="dropzone"></div><div style="position:absolute;top:34px;left:50%;transform:translateX(-50%);z-index:3;text-align:center;padding:12px 22px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 10px 30px rgba(0,0,0,.35)"><h2 style="font-size:24px">Team pack.pdf</h2><span class="muted">6 pages · pick the ones you want, they land on the sheet as decals</span></div>` +
+      `<div class="strip"><div class="pgs">${[0, 1, 2, 3, 4, 5].map(n => `<button class="pg ${[0, 1].includes(n) ? 'on' : ''}"><span class="sh">${pdfPage(n, 66)}</span>${n + 1}</button>`).join('')}</div><div style="display:flex;flex-direction:column;gap:8px"><label class="row" style="font-size:12px"><input type="checkbox" checked> Crop to the artwork</label><div class="row"><button class="btn sm ghost">Cancel</button><button class="btn sm primary">Place 2 pages</button></div></div></div>`;
+    rp.innerHTML = `<div class="ph"></div><div class="ph" style="width:60%"></div>`;
+  }
+}
+
+// ---------------- switches ----------------
+let opt = 'A', step = 'clean';
+function draw() {
+  $('#A').hidden = opt !== 'A'; $('#B').hidden = opt !== 'B';
+  if (opt === 'A') { $('#A-bg').innerHTML = $('#editor').innerHTML; A(step); } else B(step);
+}
+function pick(id, fn) { const s = document.getElementById(id); s.onclick = e => { const b = e.target.closest('button'); if (!b) return; s.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); fn(b.dataset.v); draw(); }; }
+pick('sw-opt', v => (opt = v));
+pick('sw-step', v => (step = v));
+pick('sw-theme', v => (document.documentElement.dataset.theme = v));
+document.addEventListener('click', e => { const s = e.target.closest('[data-step]'); if (s) { step = s.dataset.step; document.querySelectorAll('#sw-step button').forEach(b => b.classList.toggle('on', b.dataset.v === step)); draw(); } });
+const q = new URLSearchParams(location.search);
+if (q.get('opt')) opt = q.get('opt');
+if (q.get('step')) step = q.get('step');
+if (q.get('theme')) document.documentElement.dataset.theme = q.get('theme');
+document.querySelectorAll('#sw-opt button').forEach(b => b.classList.toggle('on', b.dataset.v === opt));
+document.querySelectorAll('#sw-step button').forEach(b => b.classList.toggle('on', b.dataset.v === step));
+document.querySelectorAll('#sw-theme button').forEach(b => b.classList.toggle('on', b.dataset.v === document.documentElement.dataset.theme));
+draw();
+</script>
+</body>
+</html>

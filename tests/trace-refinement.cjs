@@ -67,6 +67,7 @@ async function main() {
     const original = await state();
     assert.equal(await page.locator('.artwork-badge').textContent(), 'Raster');
     await open();
+    await page.locator('.trace-generation summary').click();
     await page.locator('#trace-colors').fill('3');
     await page.locator('#trace-detail').selectOption('fine');
     await page.locator('#trace-update').click();
@@ -76,7 +77,7 @@ async function main() {
     await red.fill('oops');
     await red.press('Tab');
     assert.ok(await page.locator('#trace-apply').isDisabled());
-    assert.ok((await page.locator('#dialog-error').textContent()).includes('six-digit'));
+    assert.ok((await page.locator('#dialog .bay-error').textContent()).includes('six-digit'));
     await red.fill('#00aa44');
     await red.press('Tab');
     assert.equal(await page.locator('#trace-preview path[fill="#00aa44"]').count(), 2);
@@ -279,7 +280,7 @@ async function main() {
   } catch (error) {
     console.log(
       await page.evaluate(() => ({
-        error: document.querySelector('#dialog-error')?.textContent,
+        error: document.querySelector('#dialog .bay-error')?.textContent,
         scroll: ['trace-original-view', 'trace-vector-view'].map(id => {
           const e = document.getElementById(id);
           return (

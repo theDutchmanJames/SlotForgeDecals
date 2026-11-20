@@ -83,7 +83,7 @@ async function main() {
     await page.locator('#prep-tolerance').fill('100');
     await page.locator('#prep-update').click();
     await page.waitForFunction(() =>
-      document.querySelector('#dialog-error').textContent.includes('No visible')
+      document.querySelector('#dialog .bay-error').textContent.includes('No visible')
     );
     assert.ok(await page.locator('#prep-apply').isDisabled());
     assert.deepEqual((await state())[0], original);
@@ -95,10 +95,12 @@ async function main() {
     assert.equal(await page.locator('#prep-w').inputValue(), '120');
     assert.equal(await page.locator('#prep-h').inputValue(), '80');
     await page.screenshot({ path: path.join(run, 'cleanup-preview.png') });
+    // The exact pixel fields sit in a closed section of the Clean up step.
+    await page.locator('#dialog .bay-more summary').click();
     await page.locator('#prep-w').fill('0');
     await page.locator('#prep-update').click();
     await page.waitForFunction(() =>
-      document.querySelector('#dialog-error').textContent.includes('whole pixels')
+      document.querySelector('#dialog .bay-error').textContent.includes('whole pixels')
     );
     assert.ok(await page.locator('#prep-apply').isDisabled());
     await page.locator('#prep-w').fill('120');
@@ -196,6 +198,7 @@ async function main() {
     await page.evaluate(() => Studio.select([Studio.project.items[0].id]));
     const beforeCopy = (await state())[0];
     await open();
+    await page.locator('#dialog .bay-more summary').click();
     await page.locator('#prep-x').fill('50');
     await page.locator('#prep-w').fill('110');
     await update();
