@@ -286,3 +286,54 @@ test('deleting a sheet keeps it recoverable and lists it once among deleted shee
   run('saveSheet', { project: { ...gone, name: 'Back again' } });
   assert.equal(run('catalog-query', { scope: 'deleted' }).total, 0);
 });
+test('decal shelves: tags, favourites and recent use survive saves, and sheets using a decal are found', t => {
+  const { run } = fixture(t);
+  run('load');
+  const list = [decal(1), decal(2), decal(3)];
+  list[0].tags = 'Sponsors, Team Forge';
+  list[1].tags = 'sponsors';
+  list[2].tags = '';
+  const saved = list.map(d => run('catalog-save', { decal: d, fonts: [] }));
+  const shelves = run('catalog-shelves');
+  assert.equal(shelves.total, 3);
+  assert.equal(shelves.untagged, 1);
+  assert.deepEqual(
+    shelves.tags.map(t => [t.tag, t.count]),
+    [
+      ['Sponsors', 2],
+      ['Team Forge', 1]
+    ]
+  );
+  assert.equal(run('catalog-query', { filter: 'tag:SPONSORS' }).total, 2);
+  assert.equal(run('catalog-query', { filter: 'tag:Team' }).total, 0, 'whole tags only');
+  assert.equal(run('catalog-query', { filter: 'untagged' }).entries[0].id, 'decal-3');
+  // Marking changes the index only: the stamp stays valid, and a later save keeps the marks.
+  run('catalog-mark', { id: 'decal-2', favourite: true, used: true });
+  assert.equal(run('catalog-query', { filter: 'favourite' }).entries[0].id, 'decal-2');
+  const recent = run('catalog-query', { filter: 'recent', sort: 'used' }).entries[0];
+  assert.equal(recent.id, 'decal-2');
+  assert.equal(recent.stamp, saved[1].stamp);
+  run('catalog-save', { decal: { ...list[1], name: 'Renamed' }, fonts: [], expected: recent.stamp });
+  const renamed = run('catalog-query', { filter: 'favourite' }).entries[0];
+  assert.equal(renamed.name, 'Renamed');
+  assert(renamed.used);
+  run('catalog-mark', { id: 'decal-2', favourite: false });
+  assert.equal(run('catalog-shelves').favourites, 0);
+  assert.throws(() => run('catalog-query', { filter: 'nonsense' }), /filter/);
+  // Sheets holding a copy, also inside a group; only the latest version of each sheet counts.
+  const a = D.project('Club racing'),
+    b = D.project('Other sheet'),
+    inner = { ...D.item('rect'), libraryId: 'decal-1' };
+  a.items = [{ ...D.item('rect'), libraryId: 'decal-1' }];
+  b.items = [D.group([inner])];
+  run('saveSheet', { project: a });
+  run('saveSheet', { project: { ...a, name: 'Club racing v2' } });
+  run('saveSheet', { project: b });
+  assert.deepEqual(
+    run('catalog-used-on', { id: 'decal-1' })
+      .map(e => e.name)
+      .sort(),
+    ['Club racing v2', 'Other sheet']
+  );
+  assert.deepEqual(run('catalog-used-on', { id: 'decal-3' }), []);
+});

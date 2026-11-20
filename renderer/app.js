@@ -1778,7 +1778,7 @@ const HELP_TOPICS = [
   ],
   [
     'Libraries & sharing',
-    '<p><strong>Save decal to library</strong> keeps a reusable design with a name and tags. Copies on sheets stay independent. Share saved decals as an .sfdecal pack with Export Decals.</p><p>The <strong>Workshop</strong> holds every saved sheet. Click one to see it large with <strong>Open</strong>, <strong>Rename</strong>, <strong>Duplicate</strong>, <strong>Share…</strong>, <strong>Pin</strong> and <strong>Delete</strong>, and its <strong>History</strong>: every earlier save opens as a separate copy. Shift- or Ctrl-click several sheets to share them as one file. <strong>Recover a sheet…</strong> brings back deleted sheets and automatic snapshots. New sheet (the arrow next to the sheet name) saves the outgoing work and starts another. Export selected sheets as one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent copies while your current work stays open. Versions and Recover a sheet open earlier work as separate copies.</p><p>Back up everything with <strong>App Settings → Export Complete Backup</strong>.</p>'
+    '<p><strong>Save decal to library</strong> keeps a reusable design with a name and tags. Copies on sheets stay independent.</p><p><strong>Decal Library</strong> in the top bar is a page of its own. On the left are your shelves: All decals, <strong>Favourites</strong> (the star on a card), <strong>Recently used</strong>, a shelf for every tag, and vector, image and group decals. Click a decal for its details: rename it, add or remove tags (press Enter), set the creator, see its size at 1:24, 1:32 and 1:43 and next to your car, and which saved sheets hold a copy. <strong>Add to sheet</strong> (or a double-click) places it and returns to the editor. <strong>True size</strong> shows the collection at its printed size. <strong>Select</strong> (or Ctrl-click) picks several to tag, add, export or delete together; drag cards onto a tag shelf to tag them. Drop an .sfdecal pack on the page to import it; <strong>Export…</strong> shares saved decals as a pack. The ⋯ on a decal in the editor’s Library tab opens its details there.</p><p>The <strong>Workshop</strong> holds every saved sheet. Click one to see it large with <strong>Open</strong>, <strong>Rename</strong>, <strong>Duplicate</strong>, <strong>Share…</strong>, <strong>Pin</strong> and <strong>Delete</strong>, and its <strong>History</strong>: every earlier save opens as a separate copy. Shift- or Ctrl-click several sheets to share them as one file. <strong>Recover a sheet…</strong> brings back deleted sheets and automatic snapshots. New sheet (the arrow next to the sheet name) saves the outgoing work and starts another. Export selected sheets as one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent copies while your current work stays open. Versions and Recover a sheet open earlier work as separate copies.</p><p>Back up everything with <strong>App Settings → Export Complete Backup</strong>.</p>'
   ],
   [
     'Print & white ink',
@@ -2457,6 +2457,7 @@ const actions = {
   editor: () => {
     closeDialog();
     Workshop.hide();
+    Shelf.hide();
   },
   close: closeDialog,
   rename: () => nameDialog('Name your sheet', project.name, n => mutate(() => (project.name = n))),
@@ -2598,7 +2599,7 @@ const actions = {
   sharing: sharingDialog,
   help: helpDialog,
   folder: () => desktop.folder(),
-  library: decalBrowser,
+  library: () => Shelf.show(),
   duplicate: () => duplicate(),
   copies: () => {
     const n = DM.number($('#copies').value, 1, 100, 'Copies');
@@ -3101,7 +3102,8 @@ document.addEventListener('keydown', e => {
     (e.ctrlKey || e.metaKey) &&
     e.key.toLowerCase() === 'k' &&
     !document.querySelector('dialog[open]') &&
-    !Workshop.isOpen()
+    !Workshop.isOpen() &&
+    !Shelf.isOpen()
   ) {
     e.preventDefault();
     Finder.open();
@@ -3125,7 +3127,7 @@ document.addEventListener('keydown', e => {
     closeMenus();
     return;
   }
-  if (!$('#finder').hidden || Workshop.isOpen()) return;
+  if (!$('#finder').hidden || Workshop.isOpen() || Shelf.isOpen()) return;
   if (e.target.matches('input,textarea,select') || document.querySelector('dialog[open]')) return; // also the update window
   const ctrl = e.ctrlKey || e.metaKey;
   let action;

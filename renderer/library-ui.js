@@ -174,7 +174,7 @@ const Library = (() => {
           el.ondragstart = e => e.dataTransfer.setData('application/x-slotforge-decal', el.dataset.lib);
         }
         for (const el of container.querySelectorAll('[data-lib-menu]'))
-          el.onclick = () => libraryDetails(el.dataset.libMenu).catch(fail);
+          el.onclick = () => Shelf.show({ focus: el.dataset.libMenu });
       })
       .catch(error => {
         if (request === sidebarRequest) {
@@ -244,40 +244,8 @@ async function addFromLibrary(id, point) {
     place(i, point);
   });
   toast(`Added ${entry.name} at 1:${project.scale}`);
-}
-async function libraryDetails(id) {
-  showDialog('Decal details', 'Loading artwork…', '<p>Please wait…</p>');
-  const loading = $('.dialog-head');
-  const value = await desktop.readDecal(id);
-  if (!loading.isConnected || !$('#dialog').open) return;
-  const d = value.decal;
-  Art.inspectItems([d.art]);
-  showDialog(
-    d.name,
-    `Saved at 1:${d.scale} · ${d.art.w.toFixed(1)} × ${d.art.h.toFixed(1)} mm`,
-    `<div class="import-preview"><img src="${Art.url(Art.standalone(d.art, value.fonts))}"></div><div class="field"><label>Name</label><input id="library-name" value="${E(d.name)}" maxlength="160"></div><div class="field"><label>Tags</label><input id="library-tags" value="${E(d.tags || '')}" maxlength="300"></div><div class="field"><label>Creator</label><input id="library-creator" value="${E(d.creator || '')}" maxlength="160"></div><p class="hint">Sheet copies remain independent. Deleting this library entry keeps existing sheets intact.</p>`,
-    `<button class="danger" id="library-delete">Delete</button><button id="library-export">Export Decals</button><button class="primary" id="library-update">Save details</button>`
-  );
-  const act = fn => async () => {
-    const host = $('#dialog-content');
-    host.inert = true;
-    try {
-      await fn();
-      closeDialog();
-    } catch (e) {
-      $('#dialog-error').textContent = e.message;
-    } finally {
-      host.inert = false;
-    }
-  };
-  $('#library-update').onclick = act(async () => {
-    d.name = $('#library-name').value.trim() || d.name;
-    d.tags = $('#library-tags').value;
-    d.creator = $('#library-creator').value;
-    await Library.save(d, value.fonts, value.entry.stamp);
-  });
-  $('#library-delete').onclick = act(() => Library.remove(value.entry));
-  $('#library-export').onclick = () => decalExportDialog([value.entry]);
+  // Feeds the Recently used shelf; the decal itself does not change.
+  desktop.markDecal({ id: entry.id, used: true }).catch(() => {});
 }
 async function saveDecal() {
   const list = items();

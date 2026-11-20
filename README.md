@@ -178,7 +178,7 @@ The PDF includes a named white separation using a 600 PPI silhouette mask. Confi
 
 The **Shape** flyout has rectangles, ellipses, triangles and lines, plus diamonds, stars, regular polygons, arrows, chevrons, trapezoids and shields. Choose **Adjust Shape / Pattern** on a placed shape to set exact dimensions, colours, transparent fills and outlines in a live preview. **Checkerboard** and **Racing stripes** create editable groups. Checkerboards grow by rows and columns of a chosen square size. Stripe count ranges from **1 to 12**, with individual widths, equal spacing in millimetres and two alternating colours. Adding stripes or spacing grows the pattern without thinning the stripes; existing double stripes can be upgraded through **Stripe Count & Spacing**. **Racing numbers** is at the foot of the same flyout. New polygon shapes require a version of Decals that supports them.
 
-Select one or more canvas items and choose **Save Decal to Library**; multiple items become one reusable grouped decal after you name and save it. Both full library windows use **two columns in List view**. The sidebar library folds closed, offers its own grid/list switch, and scrolls within a height limit as collections grow.
+Select one or more canvas items and choose **Save Decal to Library**; multiple items become one reusable grouped decal after you name and save it. The editor's Library tab offers a grid/list switch and pages through the collection; the ⋯ on a decal opens its details on the Decal Library page.
 
 The editor is one screen (redesigned in November 2026):
 
@@ -199,7 +199,14 @@ Files containing these editable paths need a Decals version with path support.
 
 ### Keep a library and share editable designs
 
-Explicitly **Save decal to library** to keep a reusable design with a name and tags. **Decal Library** has grid/list views, search, alphabetical sorting, newest-added and recently-updated sorting. Select items with checkboxes, Ctrl-click or Shift-click; use **Add to Sheet** when you want to place one. Your view and sorting choices are remembered. Editing a sheet copy does not change its library master. Libraries load in pages, with previews fetched as you scroll; opening the app and autosaving no longer load or resend your whole decal collection. Search covers the entire library, and selections stay checked across pages.
+Explicitly **Save decal to library** to keep a reusable design with a name and tags. **Decal Library** is a page of its own (redesigned in November 2026):
+
+- **Shelves:** All decals, **Favourites**, **Recently used**, one shelf per tag (with counts), and vector, image and group decals. Drag cards onto a tag shelf to tag them.
+- **Cards or True size:** cards show each decal with its size at the open sheet's scale and its tags; True size lays the collection out at its printed size, as it comes off the printer.
+- **Details:** click a decal to rename it, edit its tags and creator (saved as you type), see its size at 1:24, 1:32 and 1:43 and next to your car, and which saved sheets hold a copy. **Add to sheet** places it and returns to the editor.
+- **Several at once:** **Select** (or Ctrl-click) picks decals to tag, add, export as a pack or delete together.
+
+Search covers names, tags and creators; the order you choose is remembered. Editing a sheet copy does not change its library master. Libraries load in pages, with previews fetched as you scroll; opening the app and autosaving no longer load or resend your whole decal collection. Search covers the entire library, and selections stay checked across pages.
 
 | Format | Use it for |
 | --- | --- |

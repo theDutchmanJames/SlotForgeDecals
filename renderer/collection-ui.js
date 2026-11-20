@@ -398,27 +398,6 @@ function decalRows(decals = [], fonts = activeFonts()) {
     preview: () => decalThumbnail(d.art, fonts)
   }));
 }
-function decalBrowser() {
-  const session = collectionBrowser({
-    title: 'Decal Library',
-    subtitle: 'Select decals across pages to export. Artwork loads when needed.',
-    kind: 'decals',
-    query: args => Library.query(args),
-    preview: e => Library.preview(e),
-    footer:
-      '<button data-action="import-pack">Import Decals</button><button id="library-export-selected" class="collection-export" disabled>Export Decals</button>',
-    actions: (e, n) =>
-      `<button data-collection-action="add" data-index="${n}">Add to Sheet</button><button data-collection-action="details" data-index="${n}">Details</button>`,
-    action: async (action, e) => {
-      if (action === 'details') await libraryDetails(e.id);
-      else {
-        await addFromLibrary(e.id);
-        closeDialog();
-      }
-    }
-  });
-  $('#library-export-selected').onclick = () => decalExportDialog(session.selected());
-}
 function decalExportDialog(selected = []) {
   return collectionBrowser({
     title: 'Export Decals',
@@ -449,6 +428,7 @@ function decalImportDialog(pack) {
         pack.fonts
       );
       toast(`Imported ${selected.length} decal(s).`);
+      Shelf.changed();
       return true;
     }
   });

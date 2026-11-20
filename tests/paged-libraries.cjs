@@ -72,26 +72,26 @@ async function main() {
     await page.locator('#sidebar-next').click();
     await page.waitForFunction(() => document.querySelector('#sidebar-page').textContent.startsWith('25–'));
     assert.equal(await page.locator('#library-grid .library-card').count(), 24);
+    // The Decal Library page shows 48 decals at a time; Show more adds the next ones.
+    const shelfCards = n =>
+      page.waitForFunction(
+        n =>
+          document.querySelector('#shelf-body')?.dataset.loading === 'false' &&
+          document.querySelectorAll('#shelf .sh-card').length === n,
+        n
+      );
     await page.locator('nav [data-action="library"]').click();
-    await loaded();
-    await page.locator('#project-sort').selectOption('name');
-    await loaded();
-    assert.equal(await page.locator('.collection-item').count(), 48);
-    await page.locator('.collection-item [data-select]').first().check();
-    const first = await page.locator('.collection-name h3').first().textContent();
-    await page.locator('#collection-next').click();
-    await loaded();
-    assert.equal(await page.locator('.collection-name h3').first().textContent(), 'Sponsor 48');
-    await page.locator('.collection-item [data-select]').first().check();
-    assert.match(await page.locator('#collection-count').textContent(), /^2 selected/);
-    await page.locator('#project-search').fill('Sponsor 154');
-    await page.waitForFunction(
-      () =>
-        document.querySelectorAll('.collection-item').length === 1 &&
-        document.querySelector('.collection-name h3')?.textContent === 'Sponsor 154'
-    );
-    assert.match(await page.locator('#collection-count').textContent(), /2 on other pages or hidden/);
-    await page.locator('#library-export-selected').click();
+    await page.locator('#shelf-sort').selectOption('name');
+    await shelfCards(48);
+    await page.locator('#shelf-select').click();
+    await page.locator('#shelf .sh-card .sh-pv').first().click();
+    const first = await page.locator('#shelf .sh-meta b').first().textContent();
+    await page.locator('#shelf-more').click();
+    await shelfCards(96);
+    assert.equal(await page.locator('#shelf .sh-meta b').nth(48).textContent(), 'Sponsor 48');
+    await page.locator('#shelf .sh-card .sh-pv').nth(48).click();
+    assert.equal(await page.locator('#shelf-picked').textContent(), '2 selected');
+    await page.locator('[data-shelf-act="export-picked"]').click();
     await loaded();
     assert.match(await page.locator('#collection-confirm').textContent(), /2 Decals/);
     await page.locator('#collection-confirm').click();
@@ -101,19 +101,17 @@ async function main() {
     );
     assert.deepEqual(pack.decals.map(d => d.name).sort(), [first, 'Sponsor 48'].sort());
     assert(pack.decals.every(d => d.art.src === png));
-    await page.locator('nav [data-action="library"]').click();
-    await loaded();
-    await page.locator('#project-search').fill('Sponsor 1');
-    await page.locator('#project-search').fill('Sponsor 154');
+    await page.locator('[data-shelf-act="clear"]').click();
+    await page.locator('#shelf-search').fill('Sponsor 1');
+    await page.locator('#shelf-search').fill('Sponsor 154');
     await page.waitForFunction(
       () =>
-        document.querySelectorAll('.collection-item').length === 1 &&
-        document.querySelector('.collection-name h3')?.textContent === 'Sponsor 154'
+        document.querySelectorAll('#shelf .sh-card').length === 1 &&
+        document.querySelector('#shelf .sh-meta b')?.textContent === 'Sponsor 154'
     );
-    await page.locator('[data-collection-action="add"]').click();
-    await page.waitForFunction(
-      () => Studio.project.items.length === 1 && !document.querySelector('#dialog').open
-    );
+    await page.locator('#shelf .sh-card').hover();
+    await page.locator('#shelf .sh-card [data-shelf-add]').click();
+    await page.waitForFunction(() => Studio.project.items.length === 1 && !Shelf.isOpen());
     assert.equal(await page.evaluate(() => Studio.project.items[0].src), png);
     // The Workshop shows 48 sheets at a time; Show more adds the next ones.
     const cards = n =>
@@ -134,12 +132,11 @@ async function main() {
     await page.locator('nav [data-action="editor"]').click();
     await page.evaluate(() => setTheme('light'));
     await page.locator('nav [data-action="library"]').click();
-    await loaded();
-    await page.locator('[data-view="list"]').click();
+    await shelfCards(48);
+    await page.locator('[data-shelf-view="true"]').click();
     await page.screenshot({ path: path.join(run, 'paged-decals-light.png') });
-    const geometry = await page.locator('.dialog-foot').boundingBox();
-    assert(geometry.y + geometry.height <= (await page.evaluate(() => innerHeight)));
-    await close();
+    assert.equal(await page.locator('#shelf .sh-fig').count(), 48);
+    await page.locator('nav [data-action="editor"]').click();
     await page.evaluate(() => Studio.flush());
     const cache = await page.evaluate(() => Library.cacheInfo);
     assert(cache.entries <= 64 && cache.bytes <= 8e6);

@@ -55,6 +55,13 @@ async function main() {
     page
       .locator('.collection-item')
       .filter({ has: page.locator('h3', { hasText: new RegExp('^' + name + '$') }) });
+  // Saved decals live on the Decal Library page.
+  const shelfCard = name =>
+    page
+      .locator('#shelf .sh-card')
+      .filter({ has: page.locator('.sh-meta b', { hasText: new RegExp('^' + name + '$') }) });
+  const shelfLoaded = () =>
+    page.waitForFunction(() => document.querySelector('#shelf-body')?.dataset.loading === 'false');
   try {
     await attach();
     await page.locator('#workshop [data-ws="blank"]').click();
@@ -245,14 +252,13 @@ async function main() {
     });
     const beforeDecals = await state();
     await page.locator('nav [data-action="library"]').click();
-    await page.locator('#project-sort').selectOption('name');
-    await page.waitForFunction(
-      () => document.querySelector('#collection-items')?.dataset.loading === 'false'
-    );
-    await page.locator('[data-view="list"]').click();
-    await card('Bravo Badge').locator('[data-select]').check();
+    await page.locator('#shelf-sort').selectOption('name');
+    await shelfLoaded();
+    await page.locator('#shelf-select').click();
+    await shelfCard('Bravo Badge').locator('.sh-pv').click();
+    assert.equal(await page.locator('#shelf-picked').textContent(), '1 selected');
     assert.deepEqual(await state(), beforeDecals);
-    await page.locator('#library-export-selected').click();
+    await page.locator('[data-shelf-act="export-picked"]').click();
     await page.waitForFunction(
       () => document.querySelector('#collection-items')?.dataset.loading === 'false'
     );
@@ -264,9 +270,11 @@ async function main() {
     await confirm();
     assert.equal(await page.evaluate(() => Studio.libraryCount), 4);
     await page.locator('nav [data-action="library"]').click();
-    await page.locator('#project-sort').selectOption('name-desc');
-    await page.screenshot({ path: path.join(run, 'decal-library-list.png') });
-    await close();
+    await page.locator('#shelf-sort').selectOption('name-desc');
+    await shelfLoaded();
+    assert.equal(await page.locator('#shelf .sh-card').count(), 4);
+    await page.screenshot({ path: path.join(run, 'decal-library.png') });
+    await page.locator('nav [data-action="editor"]').click();
     // Backups cannot be restored accidentally through Import Decals.
     const backup = await page.evaluate(() => assetsSnapshot()),
       backupFile = {
@@ -320,10 +328,13 @@ async function main() {
     page = await app.firstWindow();
     await attach();
     await page.locator('nav [data-action="library"]').click();
-    assert.equal(await page.locator('#collection-items').getAttribute('data-view'), 'list');
-    assert.equal(await page.locator('#project-sort').inputValue(), 'name-desc');
+    assert.equal(
+      await page.locator('#shelf-sort').inputValue(),
+      'name-desc',
+      'the library remembers its order'
+    );
     assert.equal(await page.evaluate(() => Studio.libraryCount), 4);
-    await close();
+    await page.locator('nav [data-action="editor"]').click();
     await browser();
     assert.equal(await page.locator('#ws-sort').inputValue(), 'name', 'the Workshop remembers its order');
     assert.deepEqual(errors, []);
@@ -331,11 +342,14 @@ async function main() {
     await page.evaluate(() => setTheme('dark'));
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1100, 720));
     await page.locator('nav [data-action="library"]').click();
-    await page.locator('[data-view="grid"]').click();
-    await page.screenshot({ path: path.join(run, 'decal-library-dark-grid.png') });
-    const foot = await page.locator('.dialog-foot').boundingBox();
+    await shelfLoaded();
+    await page.locator('#shelf .sh-card .sh-pv').first().click();
+    await page.waitForSelector('#shelf-name');
+    await page.screenshot({ path: path.join(run, 'decal-library-dark.png') });
+    // The details panel keeps Add to sheet in view on a small window.
+    const foot = await page.locator('.sh-acts').boundingBox();
     assert(foot.y + foot.height <= (await page.evaluate(() => innerHeight)));
-    await close();
+    await page.locator('nav [data-action="editor"]').click();
     // Another installation can import the collection and edit the embedded-font page.
     await app.close();
     app = await launch({

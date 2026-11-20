@@ -30,6 +30,7 @@ const suites = [
   'sheet-tools',
   'import-bay',
   'make-tools',
+  'decal-shelf',
   'update-check'
 ];
 for (const suite of suites) {

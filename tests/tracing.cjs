@@ -176,8 +176,8 @@ async function main() {
     assert.equal(await page.evaluate(() => Studio.libraryCount), 2);
     // Saved decals use the library; artwork import remains available in Import & Export.
     await page.locator('nav [data-action="library"]').click();
-    assert.ok(await page.locator('#dialog [data-action="import-pack"]').isVisible());
-    await page.locator('#dialog [data-action="close"]').first().click();
+    assert.ok(await page.locator('#shelf [data-action="import-pack"]').isVisible());
+    await page.locator('nav [data-action="editor"]').click();
     await page.locator('nav [data-action="sharing"]').click();
     const chooseLibrary = page.waitForEvent('filechooser');
     await page.locator('#dialog [data-action="import"]').click();

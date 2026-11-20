@@ -29,11 +29,25 @@ function validateDecal(value) {
   const valid = DM.validateLibrary([value.decal], value.fonts || []);
   return { decal: valid.library[0], fonts: valid.libraryFonts };
 }
+// Tags are typed as "Sponsors, Team Forge". tagKey holds them lower-case between commas, so one tag
+// is found with LIKE '%,sponsors,%'.
+const tagList = tags => {
+  const seen = new Map();
+  for (const t of String(tags || '').split(','))
+    if (t.trim() && !seen.has(normalize(t.trim()))) seen.set(normalize(t.trim()), t.trim().slice(0, 60));
+  return [...seen.values()].slice(0, 30);
+};
+const tagKey = tags =>
+  ',' +
+  tagList(tags)
+    .map(t => normalize(t) + ',')
+    .join('');
 function decalMeta(d) {
   return {
     id: d.id,
     name: d.name,
     tags: d.tags,
+    tagKey: tagKey(d.tags),
     creator: d.creator,
     scale: d.scale,
     w: d.art.w,
@@ -47,7 +61,98 @@ function decalMeta(d) {
 function writeDecal(db, value) {
   const v = validateDecal(value);
   if (Buffer.byteLength(JSON.stringify(v)) > MAX) throw Error('Decal exceeds 160 MB.');
-  return S.put(db, 'decals', v.decal.id, v, decalMeta(v.decal));
+  // Favourite and last use belong to this library, not to the artwork: keep them across saves.
+  const old = db.prepare("SELECT metadata FROM records WHERE scope='decals' AND key=?").get(v.decal.id),
+    keep = old ? JSON.parse(old.metadata) : {};
+  return S.put(db, 'decals', v.decal.id, v, {
+    ...decalMeta(v.decal),
+    ...(keep.favourite ? { favourite: true } : {}),
+    ...(keep.used ? { used: keep.used } : {})
+  });
+}
+// Libraries saved before tag shelves get their tag keys on first use.
+function backfillTags(db) {
+  const rows = db
+    .prepare(
+      "SELECT key,metadata FROM records WHERE scope='decals' AND json_extract(metadata,'$.tagKey') IS NULL"
+    )
+    .all();
+  const update = db.prepare("UPDATE records SET metadata=? WHERE scope='decals' AND key=?");
+  for (const r of rows) {
+    const m = JSON.parse(r.metadata);
+    update.run(JSON.stringify({ ...m, tagKey: tagKey(m.tags) }), r.key);
+  }
+}
+// The shelves of the Decal Library: every tag with its count, favourites, recently used and kinds.
+function shelves(db) {
+  backfillTags(db);
+  const tags = new Map(),
+    out = { total: 0, favourites: 0, recent: 0, untagged: 0, vector: 0, image: 0, group: 0 };
+  for (const r of db.prepare("SELECT metadata FROM records WHERE scope='decals'").iterate()) {
+    const m = JSON.parse(r.metadata),
+      list = tagList(m.tags);
+    out.total++;
+    if (m.favourite) out.favourites++;
+    if (m.used) out.recent++;
+    if (!list.length) out.untagged++;
+    if (['Raster', 'Mixed raster / vector'].includes(m.artworkType)) out.image++;
+    else out.vector++;
+    if (m.kind === 'group') out.group++;
+    for (const t of list) {
+      const k = normalize(t),
+        tag = tags.get(k) || { tag: t, count: 0 };
+      // The same tag typed differently is one shelf, named by a capitalised spelling when there is one.
+      if (tag.tag === tag.tag.toLowerCase() && t !== t.toLowerCase()) tag.tag = t;
+      tag.count++;
+      tags.set(k, tag);
+    }
+  }
+  out.tags = [...tags.values()].sort((a, b) =>
+    a.tag.localeCompare(b.tag, undefined, { numeric: true, sensitivity: 'base' })
+  );
+  return out;
+}
+// Favourite, and the moment a decal was last added to a sheet. Only the index changes, so the
+// decal's stamp stays valid.
+function mark(db, args) {
+  return S.transaction(db, () => {
+    const row = decalRow(db, args?.id),
+      m = JSON.parse(row.metadata);
+    if (typeof args.favourite === 'boolean') {
+      if (args.favourite) m.favourite = true;
+      else delete m.favourite;
+    }
+    if (args.used) m.used = new Date().toISOString();
+    db.prepare("UPDATE records SET metadata=? WHERE scope='decals' AND key=?").run(
+      JSON.stringify(m),
+      row.key
+    );
+    return rowMeta(db, { ...row, metadata: JSON.stringify(m) });
+  });
+}
+// Saved sheets that hold a copy of this decal (latest version of each sheet only).
+function usedOn(db, args) {
+  const id = String(args?.id || '');
+  if (!id || id.length > 1000) throw Error('Invalid decal identity.');
+  const missing = db
+    .prepare(
+      "SELECT key,metadata,document FROM records WHERE scope='projects' AND json_type(metadata,'$.decals') IS NULL"
+    )
+    .all();
+  const update = db.prepare("UPDATE records SET metadata=? WHERE scope='projects' AND key=?");
+  for (const r of missing) {
+    let ids = [];
+    try {
+      ids = S.libraryIds(S.unpack(db, r.document));
+    } catch {}
+    update.run(JSON.stringify({ ...JSON.parse(r.metadata), decals: ids }), r.key);
+  }
+  return query(db, { scope: 'projects', usesDecal: id, sort: 'updated', limit: 20 }).entries.map(e => ({
+    id: e.id,
+    name: e.name,
+    modified: e.modified,
+    updated: e.updated
+  }));
 }
 function count(db) {
   return db.prepare("SELECT count(*) n FROM records WHERE scope='decals'").get().n;
@@ -142,7 +247,8 @@ function query(db, args = {}) {
     'name-desc': "json_extract(metadata,'$.sortName') DESC",
     added: "json_extract(metadata,'$.added') DESC",
     updated: "json_extract(metadata,'$.updated') DESC",
-    recent: "json_extract(metadata,'$.recent') DESC"
+    recent: "json_extract(metadata,'$.recent') DESC",
+    used: "json_extract(metadata,'$.used') DESC"
   };
   if (!fields[sort]) throw Error('Invalid library order.');
   // Deleted sheets are history entries marked as deleted whose sheet was not saved again since.
@@ -169,13 +275,25 @@ function query(db, args = {}) {
     where.push("json_extract(metadata,'$.id')=?");
     params.push(String(projectId));
   }
+  if (args.usesDecal) {
+    where.push("EXISTS (SELECT 1 FROM json_each(metadata,'$.decals') WHERE value=?)");
+    params.push(String(args.usesDecal));
+  }
   if (typeof search !== 'string' || search.length > 500) throw Error('Search is too long.');
   if (search) {
     where.push("json_extract(metadata,'$.search') LIKE ? ESCAPE '\\'");
     params.push('%' + normalize(search).replace(/[\\%_]/g, '\\$&') + '%');
   }
   if (scope === 'decals' && filter !== 'all') {
-    if (filter === 'svg')
+    if (typeof filter !== 'string' || filter.length > 80) throw Error('Invalid library filter.');
+    if (filter.startsWith('tag:') || filter === 'untagged') backfillTags(db);
+    if (filter === 'favourite') where.push("json_extract(metadata,'$.favourite')=1");
+    else if (filter === 'recent') where.push("json_extract(metadata,'$.used') IS NOT NULL");
+    else if (filter === 'untagged') where.push("json_extract(metadata,'$.tagKey')=','");
+    else if (filter.startsWith('tag:')) {
+      where.push("json_extract(metadata,'$.tagKey') LIKE ? ESCAPE '\\'");
+      params.push('%,' + normalize(filter.slice(4).trim()).replace(/[\\%_]/g, '\\$&') + ',%');
+    } else if (filter === 'svg')
       where.push("json_extract(metadata,'$.artworkType') NOT IN ('Raster','Mixed raster / vector')");
     else if (filter === 'image')
       where.push("json_extract(metadata,'$.artworkType') IN ('Raster','Mixed raster / vector')");
@@ -354,6 +472,12 @@ function execute(db, method, args) {
       });
     case 'export':
       return exportSelected(db, args);
+    case 'shelves':
+      return shelves(db);
+    case 'mark':
+      return mark(db, args);
+    case 'used-on':
+      return usedOn(db, args);
     default:
       throw Error('Unknown library operation.');
   }

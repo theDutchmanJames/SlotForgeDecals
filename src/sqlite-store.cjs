@@ -235,6 +235,18 @@ function put(db, scope, key, value, metadata = {}) {
   ).run(scope, key, id, meta, revision);
   return { scope, key, document: id, metadata: meta, revision };
 }
+// Library decals a sheet holds a copy of, also inside groups (for "On your sheets").
+function libraryIds(project) {
+  const ids = new Set(),
+    walk = list => {
+      for (const i of list || []) {
+        if (typeof i.libraryId === 'string') ids.add(i.libraryId);
+        walk(i.children);
+      }
+    };
+  walk(project?.items);
+  return [...ids].slice(0, 500);
+}
 function meta(project, modified = new Date().toISOString()) {
   return {
     id: project.id,
@@ -244,6 +256,7 @@ function meta(project, modified = new Date().toISOString()) {
     orientation: project.orientation,
     scale: project.scale,
     count: project.items.length,
+    decals: libraryIds(project),
     added: project.added || modified,
     updated: project.updated,
     modified,
@@ -818,6 +831,7 @@ function run(db, file, method, args = {}) {
   }
 }
 module.exports = {
+  libraryIds,
   execute,
   session,
   closeSession,

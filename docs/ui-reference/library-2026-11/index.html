@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decal Library redesign</title>
+<!-- Preview only: made-up decals, nothing is wired up. Two concepts for the Decal Library: a full Shelf page, or a sticker book that slides out over the editor. -->
+<style>
+@font-face{font-family:'SF Barlow Condensed';src:url('../../../renderer/fonts/barlowcondensed/BarlowCondensed-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic}
+@font-face{font-family:'SF Roboto Mono';src:url('../../../renderer/fonts/robotomono/RobotoMono[wght].ttf') format('truetype');font-weight:100 700}
+:root{--bg:#14181e;--canvas:#101318;--panel:#1d232b;--raised:#252c36;--ink:#e8e6e1;--ink2:#c4c8ce;--muted:#98a0ab;--faint:#6b7380;--line:#323946;--line2:#272d37;--accent:#e5484d;--ok:#3ecf8e;--blue:#79b5ed;--gold:#f0b429;
+  --cond:'SF Barlow Condensed','Bahnschrift',sans-serif;--mono:'SF Roboto Mono',Consolas,monospace;--ui:'Segoe UI',system-ui,sans-serif;color-scheme:dark}
+[data-theme=light]{--bg:#f1efea;--canvas:#e4e1da;--panel:#fff;--raised:#f3f1ec;--ink:#1d2229;--ink2:#3a414c;--muted:#656c76;--faint:#8a929d;--line:#d9d6cf;--line2:#e6e3dd;--accent:#c92424;--ok:#1f9a62;--blue:#236db4;--gold:#b7820a;color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--ui);overflow:hidden}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+h1,h2,h3,h4{font-family:var(--cond);font-style:italic;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0}
+.eye{font:600 10px var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}.faint{color:var(--faint)}.grow{flex:1}.mono{font-family:var(--mono);font-weight:500}
+.row{display:flex;align-items:center;gap:8px}
+.switch{position:relative;z-index:50;display:flex;align-items:center;gap:14px;height:46px;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--line2)}
+.switch b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.switch p{margin:0 0 0 auto;font-size:12px;color:var(--faint)}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+.seg button{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.seg button.on{background:color-mix(in srgb,var(--ink) 12%,var(--panel));color:var(--ink);font-weight:600}
+.seg.sm button{height:22px;padding:0 8px;font-size:12px}
+.opt{position:absolute;inset:46px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 13px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);font-size:13px;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+.btn.danger{color:var(--accent)}
+.btn.sm{height:27px;padding:0 9px;font-size:12px}
+.btn.icon{width:32px;padding:0}.btn.sm.icon{width:27px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:11px;color:var(--muted)}
+.inp{display:flex;align-items:center;gap:6px;min-width:0;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--bg) 70%,var(--panel))}
+.inp input,.inp select{flex:1;min-width:0;border:0;background:none;outline:0}
+.inp span{color:var(--faint);font-size:11.5px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:11px;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink2);font-size:11.5px;white-space:nowrap}
+.chip.add{border:1px dashed var(--line);background:none;color:var(--muted)}
+.chip i{font-style:normal;color:var(--faint);cursor:pointer}
+.checker{background-color:#fff;background-image:linear-gradient(45deg,#e9e9e9 25%,transparent 25%),linear-gradient(-45deg,#e9e9e9 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e9e9e9 75%),linear-gradient(-45deg,transparent 75%,#e9e9e9 75%);background-size:14px 14px;background-position:0 0,0 7px,7px -7px,-7px 0}
+.star,.btn.star{color:var(--gold)}
+/* shared top bar */
+.top{height:56px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 14px;flex:none}
+.logo{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;font:700 italic 17px var(--cond)}
+.brand{font:700 italic 21px var(--cond);letter-spacing:.02em}
+.nav{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:10px;margin-left:110px}
+.nav span{padding:5px 12px;border-radius:7px;color:var(--muted);font-size:13px}
+.nav span.on{background:color-mix(in srgb,var(--ink) 11%,var(--panel));color:var(--ink);font-weight:600}
+.app{position:absolute;inset:0;display:flex;flex-direction:column}
+.body{flex:1;display:flex;min-height:0}
+
+/* ================= A · DECAL SHELF ================= */
+.shelves{width:236px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px 10px;gap:2px;overflow:auto}
+.shelves h4{font-size:13px;color:var(--muted);padding:12px 10px 5px}
+.shelf{display:flex;align-items:center;gap:10px;padding:7px 10px;border:0;border-radius:8px;background:none;color:var(--ink2);text-align:left;font-size:13px}
+.shelf .n{margin-left:auto;font:500 11px var(--mono);color:var(--faint)}
+.shelf.on{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--ink);font-weight:600}
+.shelf.on svg{color:var(--accent)}
+.shelf .dot{width:9px;height:9px;border-radius:3px;flex:none}
+.shelf.drop{outline:2px dashed var(--accent);outline-offset:-2px;background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.dropzone{margin-top:auto;border:1.5px dashed var(--line);border-radius:12px;padding:14px;text-align:center;color:var(--muted);font-size:12px}
+.dropzone b{display:block;color:var(--ink);font-size:13px;margin-bottom:3px}
+.shelfmain{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--bg)}
+.shelfhead{display:flex;align-items:flex-end;gap:14px;padding:22px 26px 14px}
+.shelfhead h1{font-size:34px;line-height:1}
+.shelfhead .sub{color:var(--muted);margin-top:4px}
+.toolbar{display:flex;align-items:center;gap:10px;padding:0 26px 14px;border-bottom:1px solid var(--line2)}
+.search{flex:1;max-width:420px;height:36px}
+.grid{flex:1;overflow:auto;padding:20px 26px 90px;display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:16px;align-content:start;grid-auto-rows:max-content}
+.card{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+.card .pv{height:132px;display:grid;place-items:center;background:#fff;border-bottom:1px solid var(--line)}
+.card .pv svg{max-width:78%;max-height:76%}
+.card .meta{padding:9px 11px 11px}
+.card .meta b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .meta small{color:var(--muted);font:500 11px var(--mono)}
+.card .tags{display:flex;gap:4px;margin-top:6px;overflow:hidden}
+.card .tags .chip{height:19px;font-size:10.5px;padding:0 6px}
+.card .fav{position:absolute;top:8px;right:8px;width:26px;height:26px;display:grid;place-items:center;border-radius:7px;background:rgba(255,255,255,.9);color:#9aa0a8;border:0}
+.card .fav.on{color:#e0a100}
+.card .tick{position:absolute;top:8px;left:8px;width:20px;height:20px;border-radius:6px;border:1.5px solid #aab;background:rgba(255,255,255,.9);display:grid;place-items:center;color:#fff;opacity:0}
+.grid.selecting .tick,.card.sel .tick{opacity:1}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.card.sel .tick{background:var(--accent);border-color:var(--accent)}
+.card.hover .add{display:flex}
+.card .add{display:none;position:absolute;left:10px;right:10px;top:92px;height:30px;align-items:center;justify-content:center;gap:6px;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;font-size:12.5px;border:0}
+.card.focus{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.inspector{width:340px;flex:none;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:auto}
+.inspector .big{height:210px;display:grid;place-items:center;border-bottom:1px solid var(--line)}
+.inspector .big svg{max-width:70%;max-height:70%}
+.inspector section{padding:16px 18px;border-bottom:1px solid var(--line2);display:flex;flex-direction:column;gap:10px}
+.inspector h3{font-size:15px}
+.namein{font:700 italic 24px var(--cond);text-transform:uppercase;background:none;border:0;border-bottom:1px dashed var(--line);padding:0 0 3px;width:100%;outline:0}
+.scales{display:grid;grid-template-columns:auto 1fr auto;gap:5px 12px;font-size:12px}
+.scales span:nth-child(3n+1){color:var(--muted)}
+.scales .on{color:var(--ink);font-weight:600}
+.carmini{position:relative;height:96px;border-radius:10px;background:color-mix(in srgb,var(--ink) 5%,transparent);overflow:hidden}
+.used{display:flex;flex-direction:column;gap:6px}
+.used div{display:flex;align-items:center;gap:9px;font-size:12.5px}
+.used i{width:34px;height:24px;border-radius:4px;background:#fff;border:1px solid var(--line);flex:none}
+.inspector .acts{display:flex;gap:8px;padding:16px 18px;margin-top:auto;position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line)}
+.selbar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:8px 8px 8px 16px;border:1px solid var(--line);border-radius:14px;background:var(--raised);box-shadow:0 14px 40px rgba(0,0,0,.45);white-space:nowrap}
+.selbar b{margin-right:8px}
+.truesize{flex:1;overflow:auto;padding:22px 26px}
+.sheetpaper{position:relative;background:#fff;border-radius:4px;box-shadow:0 10px 40px rgba(0,0,0,.35);padding:26px 30px 30px;display:flex;flex-wrap:wrap;gap:22px 26px;align-items:flex-end;max-width:1000px}
+.sheetpaper figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.sheetpaper figcaption{font:500 10px var(--mono);color:#7a808a}
+.sheetpaper figure.sel svg{outline:2px solid #2f8cff;outline-offset:4px}
+.ruler{position:absolute;left:30px;top:8px;right:30px;height:10px;background:repeating-linear-gradient(90deg,#bbb 0 1px,transparent 1px 10px);opacity:.6}
+.scaletag{display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;color:var(--muted)}
+
+/* ================= B · STICKER BOOK ================= */
+.ed .rail{width:60px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:10px;flex:none;position:relative;z-index:6}
+.ed .rail button{display:flex;flex-direction:column;align-items:center;gap:3px;width:48px;padding:6px 0 4px;border:0;border-radius:9px;background:none;color:var(--muted);font-size:10px}
+.ed .rail button svg{width:19px;height:19px}
+.ed .rail button.on{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.ed .rail hr{width:34px;border:0;border-top:1px solid var(--line);margin:4px 0}
+.ed .cv{flex:1;position:relative;display:grid;place-items:center;background:var(--canvas);overflow:hidden}
+.ed .rp{width:322px;background:var(--panel);border-left:1px solid var(--line);flex:none}
+.ph{height:12px;margin:16px;border-radius:5px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.paper{position:relative;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.book{position:absolute;left:60px;top:56px;bottom:0;width:640px;z-index:5;display:flex;background:var(--panel);border-right:1px solid var(--line);box-shadow:18px 0 50px rgba(0,0,0,.4)}
+.book .pages{flex:1;display:flex;flex-direction:column;min-width:0}
+.bookhead{display:flex;align-items:center;gap:10px;padding:14px 16px 12px}
+.bookhead h2{font-size:22px}
+.bookbody{flex:1;overflow:auto;padding:4px 16px 16px;background:color-mix(in srgb,#000 16%,var(--bg))}
+[data-theme=light] .bookbody{background:#e4e1da}
+.leaf{position:relative;background:#fbfbf8;border-radius:3px;box-shadow:0 6px 24px rgba(0,0,0,.3);padding:18px 18px 22px;margin-top:12px}
+.leaf::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 23px,rgba(40,80,160,.05) 23px 24px);pointer-events:none}
+.leaf h4{position:relative;font-size:13px;color:#8a7f70;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.leaf h4 small{font:500 10px var(--mono);color:#a8a196;text-transform:none;font-style:normal;letter-spacing:0}
+.stickers{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px 18px}
+.stk{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px;border-radius:8px;border:1px dashed transparent}
+.stk svg{display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.18))}
+.stk small{font:500 10px var(--mono);color:#857e74;white-space:nowrap}
+.stk.hover{border-color:#c9c2b6;background:rgba(0,0,0,.025)}
+.stk .fv{position:absolute;top:2px;right:2px;color:#e0a100;font-size:12px}
+.stk.lift{opacity:.35}
+.stk.chk{border-color:#2f8cff;background:rgba(47,140,255,.07)}
+.stk .ck{position:absolute;top:-6px;left:-6px;width:18px;height:18px;border-radius:5px;background:#2f8cff;color:#fff;display:grid;place-items:center}
+.tabs{width:46px;flex:none;display:flex;flex-direction:column;gap:6px;padding-top:66px;background:var(--panel);border-left:1px solid var(--line2)}
+.tab{position:relative;writing-mode:vertical-rl;padding:12px 0;margin-left:-1px;border:0;border-radius:0 8px 8px 0;background:var(--raised);color:var(--muted);font:700 italic 13px var(--cond);text-transform:uppercase;letter-spacing:.06em;border-left:4px solid var(--c,var(--line))}
+.tab.on{background:#fbfbf8;color:#3a3530;margin-left:-6px;box-shadow:4px 2px 10px rgba(0,0,0,.25)}
+.tab .k{writing-mode:horizontal-tb;display:block;margin-top:6px;font:500 9.5px var(--mono);font-style:normal}
+.bookfoot{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--line)}
+.savezone{position:absolute;right:-1px;top:0;bottom:0;width:640px;pointer-events:none}
+.saveslot{margin-top:12px;border:2px dashed color-mix(in srgb,var(--accent) 70%,transparent);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px;background:color-mix(in srgb,var(--accent) 7%,var(--panel));color:var(--ink)}
+.saveslot.quiet{border-color:var(--line);background:none;color:var(--muted)}
+.ghost-drag{position:absolute;z-index:20;pointer-events:none;filter:drop-shadow(0 8px 16px rgba(0,0,0,.4));transform:rotate(-4deg)}
+.cursor{position:absolute;z-index:21;width:18px;height:18px;pointer-events:none}
+.peel{position:absolute;z-index:8;width:300px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden}
+.peel .pv{height:150px;display:grid;place-items:center}
+.peel .pv svg{max-width:70%;max-height:70%}
+.peel .bd{padding:14px;display:flex;flex-direction:column;gap:10px}
+.peel::before{content:'';position:absolute;left:-9px;top:70px;border:9px solid transparent;border-right-color:var(--line);border-left:0}
+.snapgh{position:absolute;outline:2px dashed #2f8cff;outline-offset:2px}
+.hint{position:absolute;z-index:9;left:50%;bottom:20px;transform:translateX(-50%);padding:8px 14px;border-radius:10px;background:var(--raised);border:1px solid var(--line);color:var(--ink2);font-size:12.5px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+</style>
+</head>
+<body>
+<div class="switch">
+  <b>Option</b><div class="seg" id="opt"><button data-v="A">A · Decal shelf</button><button data-v="B">B · Sticker book</button></div>
+  <b>State</b><div class="seg" id="state"></div>
+  <b>Theme</b><div class="seg" id="theme"><button data-v="dark">Dark</button><button data-v="light">Light</button></div>
+  <p id="blurb"></p>
+</div>
+<div class="opt" id="stage"></div>
+
+<svg width="0" height="0" style="position:absolute">
+ <defs>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v12m-5-5 5 5 5-5M4 20h16"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M3 16 16 3l5 5L8 21z"/><path d="m7 12 2 2m1-5 2 2m1-5 2 2"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/></symbol>
+  <symbol id="i-sel" viewBox="0 0 24 24"><path d="m5 3 14 8-6 2-3 6z"/></symbol>
+  <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 8"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+  <symbol id="i-hash" viewBox="0 0 24 24"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></symbol>
+  <symbol id="i-shape" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><rect x="11" y="11" width="9" height="9" rx="1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 15v-3l3-5h10l4 5v3z"/><circle cx="7.5" cy="16" r="2"/><circle cx="16.5" cy="16" r="2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></symbol>
+ </defs>
+</svg>
+
+<script>
+const I = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const F = "font-family:'SF Barlow Condensed',Bahnschrift,sans-serif;font-style:italic;font-weight:700";
+// made-up decal artwork: [svg body, viewBox w, h]
+const ART = {
+  r27: [`<circle cx="50" cy="50" r="46" fill="#fff" stroke="#e11d2e" stroke-width="8"/><text x="50" y="68" text-anchor="middle" font-size="52" fill="#111" style="${F}">27</text>`, 100, 100],
+  r44: [`<circle cx="50" cy="50" r="46" fill="#fff" stroke="#1d4ed8" stroke-width="8"/><text x="50" y="68" text-anchor="middle" font-size="52" fill="#111" style="${F}">44</text>`, 100, 100],
+  o7: [`<ellipse cx="60" cy="40" rx="56" ry="36" fill="#f5c400" stroke="#111" stroke-width="5"/><text x="60" y="58" text-anchor="middle" font-size="50" fill="#111" style="${F}">7</text>`, 120, 80],
+  p51: [`<rect x="3" y="3" width="134" height="94" rx="10" fill="#fff" stroke="#111" stroke-width="6"/><text x="70" y="78" text-anchor="middle" font-size="72" fill="#111" style="${F}">51</text>`, 140, 100],
+  forge: [`<text x="8" y="44" font-size="50" fill="#111" style="${F}">FORGE</text><path d="M4 52h180l-10 10H0z" fill="#e11d2e"/><text x="40" y="88" font-size="30" fill="#111" style="${F}">RACING</text>`, 190, 96],
+  dutch: [`<text x="4" y="40" font-size="44" fill="#111" style="${F}">DUTCH</text><path d="M118 18h70l-6 8h-70zM112 32h70l-6 8h-70z" fill="#ff6a13"/><text x="6" y="70" font-size="25" fill="#111" style="${F}">MOTORSPORT</text>`, 190, 78],
+  shield: [`<path d="M8 6h84v46c0 24-22 38-42 44C30 90 8 76 8 52z" fill="#1e2530"/><path d="M8 6h84v10H8z" fill="#e11d2e"/><text x="50" y="66" text-anchor="middle" font-size="42" fill="#fff" style="${F}">SF</text>`, 100, 100],
+  stripe: [`<rect x="0" y="0" width="300" height="9" fill="#e11d2e"/><rect x="0" y="14" width="300" height="9" fill="#1d4ed8"/>`, 300, 23],
+  name: [`<rect x="2" y="6" width="26" height="6" fill="#ae1c28"/><rect x="2" y="12" width="26" height="6" fill="#fff" stroke="#ddd" stroke-width=".5"/><rect x="2" y="18" width="26" height="6" fill="#21468b"/><text x="36" y="23" font-size="20" fill="#111" style="${F}">J. DE VRIES</text>`, 150, 30],
+  kestrel: [`<ellipse cx="80" cy="34" rx="78" ry="32" fill="#f5c400"/><ellipse cx="80" cy="34" rx="70" ry="25" fill="none" stroke="#111" stroke-width="3"/><text x="80" y="45" text-anchor="middle" font-size="30" fill="#111" style="${F}">KESTREL OIL</text>`, 160, 68],
+  apex: [`<rect width="170" height="44" rx="4" fill="#111"/><text x="85" y="33" text-anchor="middle" font-size="30" fill="#f5c400" style="${F}">APEX TYRES</text>`, 170, 44],
+  volt: [`<path d="M14 4 4 26h9l-4 18 16-26h-9l6-14z" fill="#1d8bf0"/><text x="32" y="36" font-size="32" fill="#1d4ed8" style="${F}">VOLTLINE</text>`, 160, 48],
+  check: [`${Array.from({length: 24}, (_, k) => `<rect x="${(k % 12) * 10}" y="${Math.floor(k / 12) * 10 + ((k % 12) % 2 ? 0 : 0)}" width="10" height="10" fill="${((k % 12) + Math.floor(k / 12)) % 2 ? '#fff' : '#111'}"/>`).join('')}<rect width="120" height="20" fill="none" stroke="#111"/>`, 120, 20],
+  lights: [`<circle cx="20" cy="20" r="18" fill="#f9e27d" stroke="#d6b000" stroke-width="3"/><circle cx="66" cy="20" r="18" fill="#f9e27d" stroke="#d6b000" stroke-width="3"/><circle cx="14" cy="14" r="5" fill="#fff" opacity=".8"/><circle cx="60" cy="14" r="5" fill="#fff" opacity=".8"/>`, 86, 40],
+  photo: [`<defs><radialGradient id="g1"><stop offset="0" stop-color="#ffb84d"/><stop offset=".6" stop-color="#e5484d"/><stop offset="1" stop-color="#5b1a6b"/></radialGradient></defs><circle cx="50" cy="50" r="48" fill="url(#g1)"/><path d="M18 64q32-36 64 0" fill="none" stroke="#fff" stroke-width="5"/><text x="50" y="86" text-anchor="middle" font-size="15" fill="#fff" style="${F}">HALCYON</text>`, 100, 100],
+  grille: [`<rect width="110" height="34" rx="12" fill="#222"/>${Array.from({length: 9}, (_, k) => `<rect x="${10 + k * 10.5}" y="7" width="5" height="20" rx="2" fill="#555"/>`).join('')}`, 110, 34]
+};
+const art = (k, w) => { const [b, vw, vh] = ART[k]; return `<svg viewBox="0 0 ${vw} ${vh}" ${w ? `width="${w}" height="${(w * vh / vw).toFixed(1)}"` : ''} xmlns="http://www.w3.org/2000/svg">${b}</svg>`; };
+// name, art, mm w×h at 1:32, kind, tags, favourite, used-on sheets
+const D = [
+  ['Roundel 27', 'r27', 18, 18, 'Vector', ['Numbers', 'Team Forge'], 1, 4],
+  ['Forge Racing', 'forge', 36, 18.2, 'Vector', ['Sponsors', 'Team Forge'], 1, 4],
+  ['Dutch Motorsport', 'dutch', 34, 14, 'Vector', ['Sponsors'], 0, 2],
+  ['SF Shield', 'shield', 12, 12, 'Group', ['Team Forge'], 1, 3],
+  ['Double stripe', 'stripe', 80, 6.1, 'Vector', ['Stripes'], 0, 5],
+  ['Driver name', 'name', 30, 6, 'Group', ['Names'], 0, 4],
+  ['Kestrel Oil', 'kestrel', 28, 12, 'Vector', ['Sponsors'], 1, 1],
+  ['Apex Tyres', 'apex', 30, 7.8, 'Vector', ['Sponsors'], 0, 1],
+  ['Voltline', 'volt', 26, 7.8, 'Vector', ['Sponsors'], 0, 0],
+  ['Number plate 51', 'p51', 20, 14.3, 'Vector', ['Numbers'], 0, 1],
+  ['Oval 7', 'o7', 21, 14, 'Vector', ['Numbers'], 0, 0],
+  ['Roundel 44', 'r44', 18, 18, 'Vector', ['Numbers'], 0, 1],
+  ['Checker band', 'check', 40, 6.7, 'Group', ['Stripes'], 0, 2],
+  ['Headlights', 'lights', 22, 10.2, 'Group', ['Details'], 1, 3],
+  ['Halcyon logo', 'photo', 16, 16, 'Image', ['Sponsors'], 0, 0],
+  ['Front grille', 'grille', 24, 7.4, 'Group', ['Details'], 0, 2]
+];
+
+const STATES = {
+  A: [['browse', 'Browse'], ['detail', 'One selected'], ['many', 'Several selected'], ['true', 'True size']],
+  B: [['open', 'Book open'], ['drag', 'Drag to the sheet'], ['peel', 'Details'], ['save', 'Save a selection']]
+};
+const BLURB = {
+  A: 'A full page next to the Workshop: shelves from your tags, a details panel, and a true-size view of the collection.',
+  B: 'No separate window: a sticker book slides out over the editor. Drag a decal onto the sheet, or drop a selection into the book to save it.'
+};
+const q = new URLSearchParams(location.search);
+let opt = q.get('opt') || 'A', state = q.get('state'), theme = q.get('theme') || 'dark';
+
+function topbar(nav) {
+  return `<div class="top"><div class="logo">D</div><span class="brand">DECALS</span>
+  <div class="nav">${['Workshop', 'Editor', 'Decal Library', 'Import & Export'].map(n => `<span class="${n === nav ? 'on' : ''}">${n.replace('&', '&amp;')}</span>`).join('')}</div>
+  <span class="grow"></span><span class="inp" style="width:270px">${I('search')}<input placeholder="Find a tool, decal or setting"><span class="mono">Ctrl K</span></span>
+  <button class="btn primary">Export PDF</button></div>`;
+}
+
+/* ---------- A ---------- */
+function shelfA(s) {
+  const tagN = t => D.filter(d => d[5].includes(t)).length;
+  const colors = { Numbers: '#e5484d', Sponsors: '#f0b429', 'Team Forge': '#3ecf8e', Stripes: '#79b5ed', Names: '#b28cf5', Details: '#98a0ab' };
+  const sel = s === 'detail' ? [1] : s === 'many' ? [0, 3, 6, 13] : [];
+  const cards = D.map((d, n) => `<article class="card ${sel.includes(n) ? 'sel' : ''} ${s === 'browse' && n === 2 ? 'hover' : ''}">
+      <div class="pv">${art(d[1])}</div>
+      <span class="tick">${I('check')}</span>
+      <button class="fav ${d[6] ? 'on' : ''}"><svg class="i" style="${d[6] ? 'fill:currentColor' : ''}"><use href="#i-star"/></svg></button>
+      <button class="add">${I('plus')} Add to sheet</button>
+      <div class="meta"><b>${d[0]}</b><small>${d[2]} × ${d[3]} mm · ${d[4]}</small>
+      <div class="tags">${d[5].map(t => `<span class="chip"><span class="shelf dot" style="padding:0;background:${colors[t]}"></span>${t}</span>`).join('')}</div></div></article>`).join('');
+  const main = s === 'true' ? `<div class="truesize"><div class="scaletag">${I('ruler')} Every decal at its printed size for <b style="color:var(--ink)">1:32</b> — the way it comes off the printer. Click one to select it, drag it onto a sheet in the Editor.</div>
+      <div class="sheetpaper"><div class="ruler"></div>${D.map((d, n) => `<figure class="${n === 1 ? 'sel' : ''}">${art(d[1], d[2] * 3.8)}<figcaption>${d[0]} · ${d[2]} mm</figcaption></figure>`).join('')}</div></div>`
+    : `<div class="grid ${s === 'many' ? 'selecting' : ''}">${cards}</div>`;
+  const d = D[1];
+  const insp = s === 'detail' ? `<aside class="inspector">
+      <div class="big checker">${art(d[1])}</div>
+      <section><div class="eye">Decal</div><input class="namein" value="Forge Racing"><div class="row muted" style="font-size:12px">Vector · saved at 1:32 · added 12 Oct 2026 · by James</div>
+        <div class="row" style="flex-wrap:wrap;gap:5px"><span class="chip">Sponsors <i>×</i></span><span class="chip">Team Forge <i>×</i></span><span class="chip add">${I('plus')} Tag</span></div></section>
+      <section><h3>Size on your car</h3><div class="scales"><span>1:24</span><span>48.0 × 24.3 mm</span><span></span><span class="on">1:32</span><span class="on">36.0 × 18.2 mm</span><span class="faint">saved</span><span>1:43</span><span>26.8 × 13.5 mm</span><span></span></div>
+        <div class="carmini"><svg viewBox="0 0 300 96" width="100%" height="96"><path d="M18 70 L30 46 Q60 22 120 20 L190 20 Q228 22 256 44 L284 52 L286 70 Z" fill="#f2f2f2" stroke="#aaa"/><circle cx="74" cy="72" r="15" fill="#2a2a2a"/><circle cx="232" cy="72" r="15" fill="#2a2a2a"/><g transform="translate(118 38) scale(.36)">${ART.forge[0]}</g></svg></div></section>
+      <section><h3>On your sheets</h3><div class="used"><div><i></i>Club Racing · No. 27 <span class="faint grow" style="text-align:right">today</span></div><div><i></i>Endurance 2026 <span class="faint grow" style="text-align:right">3 Nov</span></div><div><i></i>Forge team car <span class="faint grow" style="text-align:right">28 Oct</span></div><div class="faint" style="font-size:11.5px">Sheet copies stay independent: changing this decal never alters them.</div></div></section>
+      <div class="acts"><button class="btn primary grow">${I('plus')} Add to sheet</button><button class="btn icon" title="Export">${I('up')}</button><button class="btn icon danger" title="Delete">${I('trash')}</button></div>
+    </aside>` : '';
+  const selbar = s === 'many' ? `<div class="selbar"><b>4 selected</b><button class="btn sm">${I('tag')} Tag…</button><button class="btn sm">${I('plus')} Add to sheet</button><button class="btn sm">${I('up')} Export pack</button><button class="btn sm danger">${I('trash')} Delete</button><button class="btn sm ghost">${I('x')}</button></div>` : '';
+  return `<div class="app">${topbar('Decal Library')}<div class="body">
+    <nav class="shelves">
+      <button class="shelf ${s !== 'many' ? 'on' : ''}">${I('box')} All decals <span class="n">${D.length}</span></button>
+      <button class="shelf">${I('star')} Favourites <span class="n">${D.filter(d => d[6]).length}</span></button>
+      <button class="shelf">${I('clock')} Recently used <span class="n">8</span></button>
+      <h4>Tags</h4>
+      ${Object.keys(colors).map(t => `<button class="shelf ${s === 'many' && t === 'Team Forge' ? 'drop' : ''}"><span class="dot" style="background:${colors[t]}"></span>${t}<span class="n">${s === 'many' && t === 'Team Forge' ? 'drop to tag' : tagN(t)}</span></button>`).join('')}
+      <button class="shelf faint">${I('plus')} New tag</button>
+      <h4>Kind</h4>
+      <button class="shelf">${I('shape')} Vector <span class="n">10</span></button><button class="shelf">${I('img')} Images <span class="n">1</span></button><button class="shelf">${I('copy')} Groups <span class="n">5</span></button>
+      <div class="dropzone" style="margin-top:18px"><b>${I('down')} Import a decal pack</b>Drop .sfdecal files here, or click to choose</div>
+    </nav>
+    <main class="shelfmain" style="position:relative">
+      <div class="shelfhead"><div><h1>All decals</h1><div class="sub">${D.length} decals · 6 favourites · grows with every “Save to library” in the Editor</div></div><span class="grow"></span><button class="btn">${I('up')} Export…</button><button class="btn">${I('down')} Import…</button></div>
+      <div class="toolbar"><span class="inp search">${I('search')}<input placeholder="Search names, tags or creators"></span>
+        <select class="inp" style="width:170px"><option>Recently used</option></select>
+        <span class="grow"></span>
+        <div class="seg"><button class="${s === 'true' ? '' : 'on'}">${I('grid')} Cards</button><button class="${s === 'true' ? 'on' : ''}">${I('ruler')} True size</button></div>
+        <button class="btn ${s === 'many' ? 'primary' : ''}">${I('check')} Select</button></div>
+      ${main}${selbar}
+    </main>${insp}</div></div>`;
+}
+
+/* ---------- B ---------- */
+function bookB(s) {
+  const tabs = [['All', 16, '#98a0ab'], ['★', 6, '#f0b429'], ['Numbers', 4, '#e5484d'], ['Sponsors', 6, '#f0b429'], ['Team', 3, '#3ecf8e'], ['Stripes', 2, '#79b5ed'], ['Details', 2, '#b28cf5']];
+  const groups = [['Numbers', [0, 11, 9, 10]], ['Sponsors', [1, 2, 6, 7, 8, 14]], ['Stripes & details', [4, 12, 13, 15, 3, 5]]];
+  const k = 3.4;
+  const leaf = ([h, ids]) => `<div class="leaf"><h4>${h} <small>${ids.length} decals · shown at printed size, 1:32</small></h4><div class="stickers">${ids.map(n => {
+      const d = D[n];
+      const cls = (s === 'open' && n === 6 ? 'hover' : '') + (s === 'drag' && n === 1 ? ' lift' : '') + (s === 'peel' && n === 1 ? ' chk' : '');
+      return `<div class="stk ${cls}">${d[6] ? '<span class="fv">★</span>' : ''}${art(d[1], Math.min(d[2] * k, 250))}<small>${d[0]}</small></div>`;
+    }).join('')}</div></div>`;
+  const book = `<div class="book">
+     <div class="pages">
+       <div class="bookhead">${I('book')}<h2>Sticker book</h2><span class="muted">${D.length} decals</span><span class="grow"></span><span class="inp" style="width:210px">${I('search')}<input placeholder="Find a decal"></span><button class="btn sm icon ghost">${I('x')}</button></div>
+       <div class="bookbody">
+        ${s === 'save' ? `<div class="saveslot">${I('down')}<div class="grow"><b>Drop here to save 2 decals as one</b><div class="muted" style="font-size:12px">It goes into the book on the Sponsors page; name it next.</div></div><span class="inp" style="width:170px"><input value="Forge + Kestrel combo"></span></div>` : `<div class="saveslot quiet">${I('down')}<span>Drag a selection from the sheet into the book to save it</span></div>`}
+        ${groups.map(leaf).join('')}
+       </div>
+       <div class="bookfoot"><button class="btn sm">${I('check')} Select…</button><button class="btn sm">${I('down')} Import pack</button><button class="btn sm">${I('up')} Export…</button><span class="grow"></span><span class="faint" style="font-size:11.5px">Click adds · drag places · right-click: details</span></div>
+     </div>
+     <div class="tabs">${tabs.map(([t, n, c], i) => `<button class="tab ${i === 0 ? 'on' : ''}" style="--c:${c}">${t}<span class="k">${n}</span></button>`).join('')}</div>
+   </div>`;
+  const sheetItems = `<div style="position:absolute;left:46px;top:40px">${art('r27', 62)}</div><div style="position:absolute;left:130px;top:46px">${art('dutch', 120)}</div><div style="position:absolute;left:44px;top:130px">${art('stripe', 260)}</div><div style="position:absolute;left:46px;top:186px">${art('name', 110)}</div>`;
+  let extra = '';
+  if (s === 'drag') extra = `<div class="snapgh" style="left:1050px;top:280px;width:124px;height:62px"></div><div class="ghost-drag" style="left:1052px;top:282px">${art('forge', 124)}</div><svg class="cursor" style="left:1110px;top:318px" viewBox="0 0 24 24"><path d="m5 3 14 8-6 2-3 6z" fill="#fff" stroke="#111" stroke-width="1.5"/></svg><div class="hint" style="left:auto;right:360px;transform:none">Drop to place <b>Forge Racing</b> · 36 × 18.2 mm at 1:32 · Esc puts it back</div>`;
+  if (s === 'peel') extra = `<div class="peel" style="left:716px;top:210px">
+       <div class="pv checker">${art('forge')}</div>
+       <div class="bd"><div class="row"><h3 class="grow" style="font-size:18px">Forge Racing</h3><button class="btn sm icon ghost star"><svg class="i" style="fill:currentColor"><use href="#i-star"/></svg></button></div>
+        <div class="muted" style="font-size:12px">36 × 18.2 mm at 1:32 · 48 × 24.3 at 1:24 · Vector · on 4 sheets</div>
+        <div class="row" style="flex-wrap:wrap;gap:5px"><span class="chip">Sponsors <i>×</i></span><span class="chip">Team Forge <i>×</i></span><span class="chip add">${I('plus')} Tag</span></div>
+        <div class="field"><label>Name</label><span class="inp"><input value="Forge Racing"></span></div>
+        <div class="row"><button class="btn sm primary grow">${I('plus')} Add to sheet</button><button class="btn sm icon">${I('up')}</button><button class="btn sm icon danger">${I('trash')}</button></div></div></div>`;
+  if (s === 'save') extra = `<div class="ghost-drag" style="left:470px;top:226px;transform:rotate(-3deg) scale(.8)"><div style="display:flex;gap:6px;align-items:center;padding:6px;background:#fff;border-radius:6px;outline:2px solid #2f8cff">${art('forge', 90)}${art('kestrel', 70)}</div></div><svg class="cursor" style="left:520px;top:256px" viewBox="0 0 24 24"><path d="m5 3 14 8-6 2-3 6z" fill="#fff" stroke="#111" stroke-width="1.5"/></svg>`;
+  return `<div class="app ed">${topbar('Editor')}<div class="body">
+     <div class="rail">${[['sel', 'Select'], ['img', 'Image'], ['text', 'Text'], ['hash', 'Number'], ['shape', 'Shape']].map(([i, n]) => `<button>${I(i)}${n}</button>`).join('')}<hr><button class="on">${I('book')}Book</button></div>
+     <div class="cv"><div class="paper" style="width:440px;height:600px;margin-left:540px">${sheetItems}
+       ${s === 'save' ? `<div style="position:absolute;left:150px;top:250px;outline:2px dashed #2f8cff;outline-offset:3px;opacity:.35;display:flex;gap:6px">${art('forge', 90)}${art('kestrel', 70)}</div>` : `<div style="position:absolute;left:150px;top:250px">${art('kestrel', 90)}</div>`}
+     </div></div>
+     <div class="rp"><div class="ph" style="width:40%"></div><div class="ph"></div><div class="ph" style="width:70%"></div><div class="ph"></div></div>
+   </div>${book}${extra}</div>`;
+}
+
+function draw() {
+  document.documentElement.dataset.theme = theme;
+  const st = STATES[opt];
+  if (!st.some(x => x[0] === state)) state = st[0][0];
+  document.getElementById('state').innerHTML = st.map(([v, l]) => `<button data-v="${v}">${l}</button>`).join('');
+  for (const [id, v] of [['opt', opt], ['state', state], ['theme', theme]])
+    for (const b of document.querySelectorAll(`#${id} button`)) b.classList.toggle('on', b.dataset.v === v);
+  document.getElementById('blurb').textContent = BLURB[opt];
+  document.getElementById('stage').innerHTML = opt === 'A' ? shelfA(state) : bookB(state);
+}
+document.querySelector('.switch').addEventListener('click', e => {
+  const b = e.target.closest('button[data-v]');
+  if (!b) return;
+  const g = b.parentElement.id;
+  if (g === 'opt') { opt = b.dataset.v; state = null; }
+  if (g === 'state') state = b.dataset.v;
+  if (g === 'theme') theme = b.dataset.v;
+  draw();
+});
+draw();
+</script>
+</body>
+</html>

@@ -110,20 +110,18 @@ async function main() {
     assert(!(await page.locator('#library-grid').isVisible()));
     await page.locator('[data-left-tab="library"]').click();
     assert(await page.locator('#library-grid').isVisible());
-    for (const action of ['library']) {
-      await page.locator('nav [data-action="' + action + '"]').click();
-      await page.waitForSelector('.collection-item');
-      await page.locator('button[data-view="list"]').click();
-      const layout = await page.locator('#collection-items').evaluate(e => ({
-        columns: getComputedStyle(e).gridTemplateColumns.split(' ').length,
-        h: e.clientHeight,
-        scroll: e.scrollHeight
-      }));
-      assert.equal(layout.columns, 2);
-      assert(layout.scroll > layout.h);
-      await page.screenshot({ path: path.join(run, action + '-two-columns.png') });
-      await close();
-    }
+    // The Decal Library page: cards in several columns, scrolling within the page.
+    await page.locator('nav [data-action="library"]').click();
+    await page.waitForSelector('#shelf .sh-card');
+    const layout = await page.locator('#shelf .sh-grid').evaluate(e => ({
+      columns: getComputedStyle(e).gridTemplateColumns.split(' ').length,
+      h: e.parentElement.clientHeight,
+      scroll: e.parentElement.scrollHeight
+    }));
+    assert(layout.columns >= 3, JSON.stringify(layout));
+    assert(layout.scroll > layout.h);
+    await page.screenshot({ path: path.join(run, 'library-page.png') });
+    await page.locator('nav [data-action="editor"]').click();
     // Existing double stripes can become a configurable pattern without losing placement.
     await gallery();
     await page.locator('[data-place=\"stripe\"]').click();

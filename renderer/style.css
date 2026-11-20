@@ -6162,3 +6162,632 @@ dialog.bay-dialog .dialog-foot .hint {
 .vector-panel {
   padding: 14px;
 }
+/* The Decal Library page (remake option A "Decal shelf", docs/ui-reference/library-2026-11): shelves
+   from your tags, the decals as cards or at their printed size, and a details panel. */
+body.shelf-mode .wb-body,
+body.shelf-mode .wb-status,
+body.shelf-mode .wb-sheet,
+body.shelf-mode #finder-open,
+body.shelf-mode .wb-top > div.wb-icons,
+body.shelf-mode .wb-split {
+  display: none;
+}
+.shelf {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  background: var(--bg);
+}
+.shelf[hidden] {
+  display: none;
+}
+.sh-shelves {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 240px;
+  flex-shrink: 0;
+  padding: 16px 10px;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  overflow-y: auto;
+}
+.sh-shelves h4 {
+  align-self: flex-start;
+  margin: 12px 10px 4px;
+  text-align: left;
+  font:
+    italic 700 13px 'SF Barlow Condensed',
+    'Bahnschrift',
+    sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.sh-shelf {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  font-size: 13px;
+}
+.sh-shelf:hover {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.sh-shelf .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+.sh-shelf .n {
+  margin-left: auto;
+  font:
+    500 11px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+  color: var(--muted);
+}
+.sh-shelf[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  font-weight: 600;
+}
+.sh-shelf[aria-pressed='true'] .icon {
+  color: var(--accent-text);
+}
+.sh-shelf.drop {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+}
+.sh-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.sh-dot.none {
+  border: 1.5px solid var(--muted);
+}
+.sh-none {
+  margin: 2px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.sh-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-top: auto;
+  padding: 14px 12px;
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+.sh-drop b {
+  color: var(--ink);
+  font-size: 13px;
+}
+.sh-drop.drop,
+.sh-drop:hover {
+  border-color: var(--accent);
+}
+.sh-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sh-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 22px 26px 14px;
+}
+.sh-head h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1;
+}
+.sh-sub {
+  margin: 5px 0 0;
+  color: var(--muted);
+}
+.sh-head button,
+.sh-tools > button,
+.sh-acts button,
+.sh-selbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sh-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 26px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.sh-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 420px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.sh-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: 0;
+}
+.sh-search .icon {
+  color: var(--muted);
+}
+.sh-tools select {
+  width: 170px;
+}
+.sh-tools .seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#shelf-select[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+.sh-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 26px 90px;
+}
+.sh-body[data-loading='true'] {
+  opacity: 0.6;
+}
+.sh-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  grid-auto-rows: max-content;
+  gap: 16px;
+}
+.sh-card {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.sh-card:hover {
+  border-color: color-mix(in srgb, var(--ink) 35%, var(--line));
+}
+.sh-card.on {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+}
+.sh-card.picked {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.sh-pv {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 132px;
+  padding: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: #fff;
+}
+.sh-card .sh-pv:hover:not(:disabled) {
+  background: #fff;
+}
+.sh-pv img {
+  max-width: 100%;
+  max-height: 106px;
+  object-fit: contain;
+}
+.sh-card .sh-fav:hover:not(:disabled) {
+  background: #fff;
+}
+.sh-pv img:not([src]) {
+  visibility: hidden;
+}
+.sh-fav,
+.sh-tick {
+  position: absolute;
+  top: 8px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+}
+.sh-fav {
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: #fffe;
+  color: #9aa0a8;
+}
+.sh-fav .icon {
+  width: 16px;
+  height: 16px;
+}
+.sh-fav[aria-pressed='true'] {
+  color: #e0a100;
+}
+.sh-fav[aria-pressed='true'] .icon {
+  fill: currentColor;
+}
+.sh-tick {
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #aab;
+  background: #fffe;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+.sh-tick .icon {
+  width: 13px;
+  height: 13px;
+}
+.sh-grid.selecting .sh-tick,
+.sh-card.picked .sh-tick {
+  opacity: 1;
+}
+.sh-card.picked .sh-tick {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.sh-add {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 92px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+.sh-card:hover .sh-add,
+.sh-card:focus-within .sh-add {
+  display: flex;
+}
+.sh-grid.selecting .sh-add {
+  display: none;
+}
+.sh-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 11px 11px;
+}
+.sh-meta b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-meta small,
+.sh-fig figcaption {
+  font:
+    500 11px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+  color: var(--muted);
+}
+.sh-tags,
+.sh-taglist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.sh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 21px;
+  padding: 0 8px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.sh-chip button {
+  min-height: 0;
+  padding: 0 0 0 2px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+}
+.sh-tagin {
+  width: 90px;
+  height: 21px;
+  min-height: 0;
+  padding: 0 8px;
+  border: 1px dashed var(--line);
+  border-radius: 11px;
+  background: none;
+  font-size: 11px;
+}
+.sh-more {
+  display: block;
+  margin: 22px auto 0;
+}
+.sh-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 70px;
+  color: var(--muted);
+  text-align: center;
+}
+.sh-empty b {
+  color: var(--ink);
+  font-size: 15px;
+}
+.sh-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+.sh-note b {
+  color: var(--ink);
+}
+.sh-paper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 22px 26px;
+  padding: 28px 30px 30px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 10px 40px #0005;
+}
+.sh-fig {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  cursor: pointer;
+}
+.sh-fig img {
+  display: block;
+  object-fit: contain;
+}
+.sh-fig figcaption {
+  color: #7a808a;
+  font-size: 10px;
+}
+.sh-fig.on img {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+}
+.sh-fig.picked img {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.sh-selbar {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--head);
+  box-shadow: 0 14px 40px #0007;
+  white-space: nowrap;
+}
+.sh-selbar[hidden] {
+  display: none;
+}
+.sh-selbar b {
+  margin-right: 6px;
+}
+.sh-insp {
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  overflow-y: auto;
+}
+.sh-insp[hidden] {
+  display: none;
+}
+.sh-loading {
+  padding: 20px;
+  color: var(--muted);
+}
+.sh-big {
+  display: grid;
+  place-items: center;
+  height: 210px;
+  flex-shrink: 0;
+  padding: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.sh-big img {
+  width: 100%;
+  height: 160px;
+  object-fit: contain;
+}
+.checker-bg {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #e9e9e9 25%, transparent 25%),
+    linear-gradient(-45deg, #e9e9e9 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e9e9e9 75%),
+    linear-gradient(-45deg, transparent 75%, #e9e9e9 75%);
+  background-size: 14px 14px;
+  background-position:
+    0 0,
+    0 7px,
+    7px -7px,
+    -7px 0;
+}
+.sh-insp section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.sh-insp h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.sh-eye {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sh-name {
+  width: 100%;
+  padding: 0 0 3px;
+  border: 0;
+  border-bottom: 1px dashed var(--line);
+  border-radius: 0;
+  background: none;
+  font:
+    italic 700 24px 'SF Barlow Condensed',
+    'Bahnschrift',
+    sans-serif;
+  text-transform: uppercase;
+  outline: 0;
+}
+.sh-name:focus {
+  border-bottom-color: var(--focus);
+}
+.sh-facts {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.sh-scales {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 5px 12px;
+  font-size: 12px;
+}
+.sh-scales span:nth-child(3n + 1) {
+  color: var(--muted);
+}
+.sh-scales .on {
+  color: var(--ink) !important;
+  font-weight: 600;
+}
+.sh-scales .faint {
+  color: var(--muted);
+}
+.sh-car {
+  position: relative;
+  padding: 12px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.sh-car .car {
+  display: block;
+  width: 100%;
+}
+.sh-car .decal {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+}
+.sh-used {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12.5px;
+}
+.sh-used div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.sh-used div .faint {
+  margin-left: auto;
+}
+.sh-used i {
+  width: 30px;
+  height: 21px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+}
+.sh-used p {
+  margin: 0;
+  font-size: 11.5px;
+}
+.sh-used .faint {
+  color: var(--muted);
+}
+.sh-acts {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.sh-acts .primary {
+  flex: 1;
+  justify-content: center;
+}
+.sh-error {
+  flex-basis: 100%;
+  color: var(--accent-text);
+  font-size: 12px;
+}
+.sh-error:empty {
+  display: none;
+}

@@ -132,7 +132,10 @@ else {
       ['decal-read', 'read'],
       ['decal-save', 'save'],
       ['decal-import', 'import'],
-      ['decal-delete', 'delete']
+      ['decal-delete', 'delete'],
+      ['library-shelves', 'shelves'],
+      ['decal-mark', 'mark'],
+      ['decal-used-on', 'used-on']
     ])
       handle(channel, args => workspace.catalog(method, args));
     handle('workspace-restore', data => workspace.restoreLegacy(data));
