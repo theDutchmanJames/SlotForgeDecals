@@ -290,11 +290,12 @@ async function main() {
     await page.locator('nav [data-action="settings"]').click();
     await page.locator('#legacy-backups summary').click();
     const chooser = page.waitForEvent('filechooser');
-    await page.locator('[data-action="restore-backup"]').click();
+    await page.locator('#settings-page [data-alias="restore-backup"]').click();
     await (await chooser).setFiles(backupFile);
     await page.waitForSelector('#confirm');
     assert.match(await page.locator('#dialog h2').textContent(), /Restore workspace backup/);
     await close();
+    await page.locator('nav [data-action="editor"]').click();
     // Failed or cancelled export keeps the picker and current work intact.
     await app.evaluate(({ ipcMain }) => {
       ipcMain.removeHandler('library-export');

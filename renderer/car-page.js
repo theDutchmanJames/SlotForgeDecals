@@ -29,6 +29,7 @@ const CarPage = (() => {
     Workshop.hide();
     Shelf.hide();
     PrintPage.hide();
+    SettingsPage.hide();
     closeDialog();
     mode = options.garage ? 'garage' : 'livery';
     if (options.focus) focus = options.focus;

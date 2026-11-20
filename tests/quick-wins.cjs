@@ -138,14 +138,22 @@ const path = require('node:path'),
 
   // 7. Installed fonts picker embeds a font.
   await page.evaluate(id => Studio.select([id]), text.id);
+  // Installed fonts opens the Fonts tab of the Settings page, shown in the selected text.
   await page.locator('[data-action="installed-fonts"]').click();
   await page.waitForSelector('#font-list .font-option');
+  assert.equal(await page.locator('[data-sp-tab="fonts"]').getAttribute('aria-selected'), 'true');
   const count = await page.locator('#font-list .font-option').count();
   await page
     .locator('#font-search')
     .fill((await page.locator('#font-list .font-option small').first().textContent()).slice(0, 4));
   await page.locator('#font-list .font-option').first().click();
-  await page.waitForFunction(() => !document.querySelector('#dialog').open);
+  await page.waitForFunction(
+    id => Studio.project.items.find(i => i.id === id).font.startsWith('sf-font-'),
+    text.id
+  );
+  // The embedded font is listed under In this sheet.
+  await page.waitForSelector('[data-sp-sheet-font]');
+  await page.locator('nav [data-action="editor"]').click();
   p = await P();
   const t2 = p.items.find(i => i.id === text.id),
     font = p.fonts.find(f => f.family === t2.font);

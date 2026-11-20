@@ -209,6 +209,14 @@ Choose **Merge** in the tools, then select **2–20 filled native shapes or clos
 
 Files containing these editable paths need a Decals version with path support.
 
+### Settings, Help and fonts
+
+The gear in the top bar opens the **Settings** page (redesigned in November 2026), with three tabs:
+
+- **Settings:** cards for the look (dark or light), what Decals opens on, updates, your workspace folder and storage, backups (when you last made one, with a reminder after two weeks) and getting a sheet back.
+- **Help:** every topic as a chip with short three-step how-tos, each with **Show me**, which takes you to the place it describes; a search that answers straight away; and the full topic one click away. The question mark in the top bar opens it.
+- **Fonts:** type your own text and see it in every font. *In this sheet* lists the embedded fonts with how many texts use them, and removes ones nothing uses any more; *On this computer* filters bold, condensed or script fonts and uses one for the selected text. **Add a font file…** embeds a .ttf or .otf.
+
 ### Keep a library and share editable designs
 
 Explicitly **Save decal to library** to keep a reusable design with a name and tags. **Decal Library** is a page of its own (redesigned in November 2026):
@@ -239,7 +247,7 @@ Sharing is currently file-based. Online galleries and direct Livery integration 
 
 The current workspace saves automatically. **Save to Sheets / Ctrl+S** (the arrow next to the sheet name) keeps a copy among your sheets.
 
-Decals opens on the **Workshop** (redesigned in November 2026; App Settings → Appearance can open straight into the editor instead). On the very first start it is a welcome page with ways to begin. Afterwards it shows:
+Decals opens on the **Workshop** (redesigned in November 2026; Settings → When Decals opens can start in the editor instead). On the very first start it is a welcome page with ways to begin. Afterwards it shows:
 
 - **Continue where you left off:** the open sheet with its pages, facts, Versions and Export PDF.
 - **Start something new:** a blank sheet on the paper you pick, from an image, from a shared `.sfsheet` file, or the example sheet.
@@ -250,11 +258,11 @@ Shift- or Ctrl-click several sheets and choose **Share selected…** to share an
 
 Earlier saved versions, deleted sheets and recent workspace backups can be previewed and recovered as separate sheet copies. Opening another project or starting a new sheet preserves the outgoing project first.
 
-Your files live in **Documents/SlotForge Decals**, separate from the installed application. **Settings → Open workspace folder** shows the actual location, including redirected Documents folders. Updating the app does not replace that folder.
+Your files live in **Documents/SlotForge Decals**, separate from the installed application. **Settings → Your workspace → Open the folder** shows the actual location, including redirected Documents folders. Updating the app does not replace that folder.
 
 Sheets, decals, fonts and history now live in **`decals.sqlite`**. Repeated artwork is stored once and reused across saved sheets and versions. On first launch, Decals checks and migrates existing workspace, sheet and history files; the original files stay unchanged as recovery copies.
 
-Use **Settings → Backup & Recovery → Export Complete Backup** to save a verified `.sfdbbackup` containing the whole database. **Restore Complete Backup** keeps a recovery copy before replacing the workspace. The older `.sfbackup` option supports the current sheet and up to 1,000 decals, within its file-size and font limits; it does not contain every saved sheet. Use a complete backup for larger libraries. The on-demand library upgrade keeps a verified pre-upgrade database backup; older app versions cannot open the upgraded database. Keep an independent backup of valuable artwork.
+Use **Settings → Backups → Back up now** (or **Print & share → Share & back up**) to save a verified `.sfdbbackup` containing the whole database; the card shows when you last did, and can remind you after two weeks. **Restore…** keeps a recovery copy before replacing the workspace. The older `.sfbackup` option supports the current sheet and up to 1,000 decals, within its file-size and font limits; it does not contain every saved sheet. Use a complete backup for larger libraries. The on-demand library upgrade keeps a verified pre-upgrade database backup; older app versions cannot open the upgraded database. Keep an independent backup of valuable artwork.
 
 For step-by-step instructions, see the [user guide](docs/USER-GUIDE.md). The [testing notes](docs/TESTING.md) describe what has been checked and the remaining practical limits.
 
@@ -304,7 +312,7 @@ Start with the example sheet or a blank page. Choose your paper size, import art
 
 ### Updating and building from source
 
-Back up your work, close Decals, then run the newer installer (it replaces the installed version) or replace the portable file. Your workspace remains separate from the app. About 5 seconds after starting, installed and portable copies ask GitHub once whether a newer release has been published. If so, a window shows what is new, with **Download**, which saves the file for your copy in Downloads and checks it, and **Skip this version**. Decals never opens or installs what it downloads; turn the check off or run it by hand in **App Settings → Updates**. See the [release notes](RELEASE_NOTES.md) for changes.
+Back up your work, close Decals, then run the newer installer (it replaces the installed version) or replace the portable file. Your workspace remains separate from the app. About 5 seconds after starting, installed and portable copies ask GitHub once whether a newer release has been published. If so, a window shows what is new, with **Download**, which saves the file for your copy in Downloads and checks it, and **Skip this version**. Decals never opens or installs what it downloads; turn the check off or run it by hand in **Settings → Updates**. See the [release notes](RELEASE_NOTES.md) for changes.
 
 Developers can follow the [build instructions](docs/BUILDING.md) for local setup and native packaging. Official Windows, macOS and Linux packages are built and tested by GitHub Actions before publication.
 

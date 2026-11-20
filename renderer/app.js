@@ -252,6 +252,7 @@ async function start() {
     if (!loaded.data) Workshop.show({ welcome: true });
     else if (loaded.startOnWorkshop && settings.startOnWorkshop !== false) Workshop.show();
     startUpdates();
+    SettingsPage.remind();
     // Load the path library once the editor is idle, so the Path Tool opens without a wait.
     requestIdleCallback(() => PathTools.ready().catch(() => {}), { timeout: 4000 });
   } catch (e) {
@@ -960,6 +961,7 @@ function renderCar() {
   bindCar($('#car-stage'));
   CarPage.render();
   PrintPage.render();
+  if (SettingsPage.tab === 'fonts') SettingsPage.render();
 }
 function finishCarDrag(cancel = false) {
   if (!carDrag) return;
@@ -1414,13 +1416,6 @@ async function exportPDF(proof = false, confirmed = false) {
     busy = false;
   }
 }
-// App Settings: a side list of the sections next to one scrolling column of slim setting rows.
-function settingsRow(name, desc, control, extra = '') {
-  return `<div class="ss-row ${extra}"><div class="ss-t"><b>${name}</b>${desc ? `<span class="ss-desc">${desc}</span>` : ''}</div><div class="ss-c">${control}</div></div>`;
-}
-function settingsSection(id, iconName, title, lead, body) {
-  return `<section class="ss-section" id="settings-${id}" aria-labelledby="settings-${id}-title"><header class="ss-head"><span class="ss-headico">${icon(iconName)}</span><div><h3 id="settings-${id}-title">${title}</h3><p>${lead}</p></div></header>${body}</section>`;
-}
 // The update window and Settings → Updates (update-ui.js, from SlotForge Circuit). Its section is
 // made once and moved into Settings each time Settings opens.
 let updateCard = null;
@@ -1447,118 +1442,12 @@ function updateRail() {
     })
     .catch(() => {});
 }
-function settingsDialog() {
-  const sections = [
-    ['appearance', 'appearance', 'Appearance', 'How Decals looks on this computer.'],
-    ['workspace', 'workspace', 'Workspace', 'Where your sheets, decals and artwork are kept.'],
-    ['backup', 'backup', 'Backup &amp; Recovery', 'Copies of everything, and ways to get a sheet back.'],
-    ['updates', 'update', 'Updates', 'Checks whether a newer Decals has been published.']
-  ];
-  const bodies = {
-    appearance: `<div class="ss-sheet">${settingsRow('Theme', 'Dark or light windows and panels. Sheets always print the same.', `<span class="seg" role="group" aria-label="Theme"><button data-theme-pick="dark">Dark</button><button data-theme-pick="light">Light</button></span><select id="theme-setting" hidden aria-hidden="true" tabindex="-1"><option value="dark">SlotForge Dark</option><option value="light">SlotForge Light</option></select>`)}${settingsRow('Start on the Workshop', 'Show your sheets and a quick way to continue when Decals opens. Off: open straight into the editor.', `<label class="switch-row"><input id="start-workshop" type="checkbox" role="switch" ${settings.startOnWorkshop !== false ? 'checked' : ''}><span class="sw" aria-hidden="true"></span></label>`)}</div>`,
-    workspace: `<div class="ss-sheet">${settingsRow('Workspace folder', `<code class="ss-path">${E(rootPath)}</code>`, '<button data-action="folder">Open folder</button>')}${settingsRow('Database', 'Sheets, decals, artwork and history are stored in decals.sqlite in this folder.', '')}<div class="ss-stats" id="storage-usage" role="status"><span class="hint">Reading storage usage…</span></div></div><p class="ss-note">Installing a new version never replaces this folder. Three previous workspace versions are kept inside the database, and older files stay unchanged as recovery copies.</p>`,
-    backup: `<div class="ss-sheet">${settingsRow('Complete backup', 'Every saved sheet with its history, your decal library and all artwork, in one file.', '<button data-action="complete-backup">Export Complete Backup</button>')}${settingsRow('Restore a complete backup', 'Replaces the workspace with the backup. A recovery copy is kept first.', '<button data-action="complete-restore">Restore Complete Backup</button>')}${settingsRow('Recover a sheet', 'Bring back an earlier version of a sheet or a recovered copy.', '<button data-action="recover-workspace">Recover a sheet</button>')}${settingsRow('Your sheets', 'Every saved sheet with its history, in the Workshop.', '<button data-action="projects">Open the Workshop</button>')}</div><h4 class="ss-gh">Only if you need it</h4><details class="settings-advanced ss-sheet" id="legacy-backups"><summary>Older backup format (.sfbackup)</summary>${settingsRow('Workspace backup', 'Only for exchanging with older Decals versions. Contains the current sheet and up to 1,000 library decals, not every saved sheet.', '<button data-action="backup">Export Workspace Backup</button><button data-action="restore-backup">Restore Workspace Backup</button>')}</details>`,
-    updates:
-      '<div id="update-settings"></div><p class="ss-note">Decal artwork stays on your computer. No account is needed; the internet is only used to check for new versions.</p>'
-  };
-  showDialog(
-    'App settings',
-    'Your workspace belongs to you.',
-    `<div class="rail-shell settings-shell"><nav class="rail" aria-label="Settings sections">${sections.map(([id, ic, title]) => `<button class="rail-item" data-rail="settings-${id}">${icon(ic)}<span><span class="rail-name">${title}</span><small id="rail-status-${id}"></small></span></button>`).join('')}</nav><div class="rail-canvas">${sections.map(([id, ic, title, lead]) => settingsSection(id, ic, title, lead, bodies[id])).join('')}</div></div>`,
-    '<button class="primary" data-action="close">Done</button>',
-    true
-  );
-  $('#dialog').classList.add('rail-dialog');
-  railShell($('.settings-shell'));
-  const status = (id, text) => {
-    const el = $('#rail-status-' + id);
-    if (el) el.textContent = text;
-  };
-  const themeStatus = () => {
-    for (const b of $$('[data-theme-pick]'))
-      b.setAttribute('aria-pressed', String(b.dataset.themePick === settings.theme));
-    status('appearance', settings.theme === 'light' ? 'Light' : 'Dark');
-  };
-  status('backup', 'Complete backups · recovery');
-  $('#start-workshop').onchange = e => {
-    settings.startOnWorkshop = e.target.checked;
-    revision++;
-    scheduleSave();
-  };
-  desktop
-    .storageStats()
-    .then(s => {
-      const el = $('#storage-usage');
-      if (!el) return;
-      const mb = (s.bytes / 1024 / 1024).toFixed(1) + ' MB';
-      el.innerHTML = [
-        ['Database', mb],
-        ['Saved decals', s.decals],
-        ['Saved sheets', s.sheets],
-        ['Artwork assets', s.assets],
-        ['Saved versions', s.history]
-      ]
-        .map(([k, v]) => `<div class="ss-stat"><small>${k}</small><b>${E(String(v))}</b></div>`)
-        .join('');
-      status('workspace', `${mb} · ${s.sheets} sheets · ${s.decals} decals`);
-    })
-    .catch(fail);
-  if (updateCard) $('#update-settings').append(updateCard);
-  updateRail();
-  $('#theme-setting').value = settings.theme;
-  $('#theme-setting').onchange = e => {
-    setTheme(e.target.value);
-    themeStatus();
-  };
-  for (const b of $$('[data-theme-pick]'))
-    b.onclick = () => {
-      $('#theme-setting').value = b.dataset.themePick;
-      $('#theme-setting').dispatchEvent(new Event('change'));
-    };
-  themeStatus();
-}
-// A side list that scrolls its column to a section and marks the section in view.
-function railShell(shell) {
-  const canvas = shell.querySelector('.rail-canvas'),
-    items = [...shell.querySelectorAll('[data-rail]')];
-  const target = b => document.getElementById(b.dataset.rail);
-  const mark = () => {
-    const visible = items.filter(b => !b.hidden && target(b) && !target(b).hidden);
-    if (!visible.length) return;
-    const top = canvas.getBoundingClientRect().top + 40;
-    let current = visible[0];
-    for (const b of visible) if (target(b).getBoundingClientRect().top <= top) current = b;
-    // At the very end the last short section cannot reach the top: mark it anyway.
-    if (canvas.scrollTop > 0 && canvas.scrollTop + canvas.clientHeight >= canvas.scrollHeight - 2)
-      current = visible[visible.length - 1];
-    for (const b of items) b.setAttribute('aria-current', String(b === current));
-  };
-  let pending = false;
-  canvas.addEventListener(
-    'scroll',
-    () => {
-      if (pending) return;
-      pending = true;
-      requestAnimationFrame(() => {
-        pending = false;
-        mark();
-      });
-    },
-    { passive: true }
-  );
-  for (const b of items)
-    b.onclick = () => {
-      canvas.scrollTo({ top: target(b).offsetTop - canvas.firstElementChild.offsetTop, behavior: 'smooth' });
-      for (const x of items) x.setAttribute('aria-current', String(x === b));
-    };
-  mark();
-  return { mark };
-}
-// Help is split into topics with a topic list and search, instead of one long page.
+// Help topics: the full text behind the Help tab of the Settings page (settings-page.js), which
+// shows them as chips with short how-tos and searches them.
 const HELP_TOPICS = [
   [
     'Getting started',
-    '<p>The usual workflow: <strong>import or create</strong> artwork, set its <strong>printed size</strong> in millimetres, check it in the <strong>Fit check</strong>, <strong>arrange</strong> the sheet, print a plain-paper <strong>sizing proof</strong>, then <strong>Export PDF</strong> for your decal paper.</p><p>Everything is saved locally and automatically. <strong>Save to Sheets</strong> (Ctrl+S) also keeps a copy among your sheets.</p><p>Decals opens on the <strong>Workshop</strong>: continue the open sheet, start a new one (blank on the paper you pick, from an image, a shared file or the example), or pick any saved sheet. App Settings → Appearance can open straight into the editor instead.</p>'
+    '<p>The usual workflow: <strong>import or create</strong> artwork, set its <strong>printed size</strong> in millimetres, check it in the <strong>Fit check</strong>, <strong>arrange</strong> the sheet, print a plain-paper <strong>sizing proof</strong>, then <strong>Export PDF</strong> for your decal paper.</p><p>Everything is saved locally and automatically. <strong>Save to Sheets</strong> (Ctrl+S) also keeps a copy among your sheets.</p><p>Decals opens on the <strong>Workshop</strong>: continue the open sheet, start a new one (blank on the paper you pick, from an image, a shared file or the example), or pick any saved sheet. Settings → When Decals opens can open straight into the editor instead.</p>'
   ],
   [
     'The editor',
@@ -1570,7 +1459,7 @@ const HELP_TOPICS = [
   ],
   [
     'Text, shapes & paths',
-    '<p>New artwork is made on the sheet. <strong>Text</strong>, <strong>Number</strong> and <strong>Shape</strong> on the tool rail open a small flyout next to it: pick a style, then click the sheet where it should go, drag to draw it at the size you want (a label shows the millimetres; Shift keeps proportions), or press <strong>Enter</strong> to add it in free space. Esc stops.</p><p><strong>Text</strong> styles include plain, bold, sponsor, outlined, arched and number lettering. After placing it you type straight on the sheet, with a small bar above it for the font, bold, italic, bend, letter spacing and colour; Enter or Done finishes. Double-click text on the sheet to type in it again. Choose <strong>Choose installed font…</strong> for any font on this computer, or <strong>Import font</strong> for a font file, in the Decal tab; chosen fonts are embedded in the sheet.</p><p>The <strong>Shape</strong> flyout has rectangles, circles, triangles, lines and double stripes, plus diamonds, stars, polygons, arrows, chevrons, trapezoids, shields, checkerboards and 1–12 racing stripes. <strong>Adjust Shape / Pattern</strong> in the Decal tab changes a placed shape or pattern. The <strong>Number</strong> flyout makes roundels, ovals and plates, one decal or a pair for each number. Fill in <strong>More numbers</strong> (for example 1-30, 44, 51) for every car in the field at once: <strong>Place on the sheet</strong> lays them in rows from where you click, <strong>Add in free space</strong> fills free space and adds pages as needed.</p><p><strong>Recolour</strong> is in the Decal tab: it lists every colour in the selected decals, including inside SVG artwork. Click one, then a new colour; the change applies at once and Ctrl+Z undoes it.</p><p><strong>Path Tool</strong> draws lines or closed shapes; edit points and curve handles afterwards. <strong>Merge &amp; Cut</strong> combines filled native shapes on the canvas: union, cut, intersection or excluded overlap. Results remain editable paths; imports and text cannot be combined.</p><p>Colour fields offer an eyedropper and quick swatches of your recent colours and the colours on the sheet. <strong>Add silhouette outline</strong> creates an adjustable vector border around imported artwork. Select a group and choose <strong>Edit group</strong> to change its parts; Apply changes commits them together.</p>'
+    '<p>New artwork is made on the sheet. <strong>Text</strong>, <strong>Number</strong> and <strong>Shape</strong> on the tool rail open a small flyout next to it: pick a style, then click the sheet where it should go, drag to draw it at the size you want (a label shows the millimetres; Shift keeps proportions), or press <strong>Enter</strong> to add it in free space. Esc stops.</p><p><strong>Text</strong> styles include plain, bold, sponsor, outlined, arched and number lettering. After placing it you type straight on the sheet, with a small bar above it for the font, bold, italic, bend, letter spacing and colour; Enter or Done finishes. Double-click text on the sheet to type in it again. <strong>Installed font…</strong> in the Decal tab opens the Fonts tab of Settings, with your text in every font on this computer; <strong>Import font</strong> adds a font file. Chosen fonts are embedded in the sheet.</p><p>The <strong>Shape</strong> flyout has rectangles, circles, triangles, lines and double stripes, plus diamonds, stars, polygons, arrows, chevrons, trapezoids, shields, checkerboards and 1–12 racing stripes. <strong>Adjust Shape / Pattern</strong> in the Decal tab changes a placed shape or pattern. The <strong>Number</strong> flyout makes roundels, ovals and plates, one decal or a pair for each number. Fill in <strong>More numbers</strong> (for example 1-30, 44, 51) for every car in the field at once: <strong>Place on the sheet</strong> lays them in rows from where you click, <strong>Add in free space</strong> fills free space and adds pages as needed.</p><p><strong>Recolour</strong> is in the Decal tab: it lists every colour in the selected decals, including inside SVG artwork. Click one, then a new colour; the change applies at once and Ctrl+Z undoes it.</p><p><strong>Path Tool</strong> draws lines or closed shapes; edit points and curve handles afterwards. <strong>Merge &amp; Cut</strong> combines filled native shapes on the canvas: union, cut, intersection or excluded overlap. Results remain editable paths; imports and text cannot be combined.</p><p>Colour fields offer an eyedropper and quick swatches of your recent colours and the colours on the sheet. <strong>Add silhouette outline</strong> creates an adjustable vector border around imported artwork. Select a group and choose <strong>Edit group</strong> to change its parts; Apply changes commits them together.</p>'
   ],
   [
     'Size & car preview',
@@ -1586,7 +1475,7 @@ const HELP_TOPICS = [
   ],
   [
     'Libraries & sharing',
-    '<p><strong>Save decal to library</strong> keeps a reusable design with a name and tags. Copies on sheets stay independent.</p><p><strong>Decal Library</strong> in the top bar is a page of its own. On the left are your shelves: All decals, <strong>Favourites</strong> (the star on a card), <strong>Recently used</strong>, a shelf for every tag, and vector, image and group decals. Click a decal for its details: rename it, add or remove tags (press Enter), set the creator, see its size at 1:24, 1:32 and 1:43 and next to your car, and which saved sheets hold a copy. <strong>Add to sheet</strong> (or a double-click) places it and returns to the editor. <strong>True size</strong> shows the collection at its printed size. <strong>Select</strong> (or Ctrl-click) picks several to tag, add, export or delete together; drag cards onto a tag shelf to tag them. Drop an .sfdecal pack on the page to import it; <strong>Export…</strong> shares saved decals as a pack. The ⋯ on a decal in the editor’s Library tab opens its details there.</p><p>The <strong>Workshop</strong> holds every saved sheet. Click one to see it large with <strong>Open</strong>, <strong>Rename</strong>, <strong>Duplicate</strong>, <strong>Share…</strong>, <strong>Pin</strong> and <strong>Delete</strong>, and its <strong>History</strong>: every earlier save opens as a separate copy. Shift- or Ctrl-click several sheets to share them as one file. <strong>Recover a sheet…</strong> brings back deleted sheets and automatic snapshots. New sheet (the arrow next to the sheet name) saves the outgoing work and starts another. Export selected sheets as one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent copies while your current work stays open. Versions and Recover a sheet open earlier work as separate copies.</p><p>Back up everything with <strong>App Settings → Export Complete Backup</strong>.</p>'
+    '<p><strong>Save decal to library</strong> keeps a reusable design with a name and tags. Copies on sheets stay independent.</p><p><strong>Decal Library</strong> in the top bar is a page of its own. On the left are your shelves: All decals, <strong>Favourites</strong> (the star on a card), <strong>Recently used</strong>, a shelf for every tag, and vector, image and group decals. Click a decal for its details: rename it, add or remove tags (press Enter), set the creator, see its size at 1:24, 1:32 and 1:43 and next to your car, and which saved sheets hold a copy. <strong>Add to sheet</strong> (or a double-click) places it and returns to the editor. <strong>True size</strong> shows the collection at its printed size. <strong>Select</strong> (or Ctrl-click) picks several to tag, add, export or delete together; drag cards onto a tag shelf to tag them. Drop an .sfdecal pack on the page to import it; <strong>Export…</strong> shares saved decals as a pack. The ⋯ on a decal in the editor’s Library tab opens its details there.</p><p>The <strong>Workshop</strong> holds every saved sheet. Click one to see it large with <strong>Open</strong>, <strong>Rename</strong>, <strong>Duplicate</strong>, <strong>Share…</strong>, <strong>Pin</strong> and <strong>Delete</strong>, and its <strong>History</strong>: every earlier save opens as a separate copy. Shift- or Ctrl-click several sheets to share them as one file. <strong>Recover a sheet…</strong> brings back deleted sheets and automatic snapshots. New sheet (the arrow next to the sheet name) saves the outgoing work and starts another. Export selected sheets as one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent copies while your current work stays open. Versions and Recover a sheet open earlier work as separate copies.</p><p>Back up everything with <strong>Settings → Backups → Back up now</strong>.</p>'
   ],
   [
     'Print & white ink',
@@ -1598,41 +1487,13 @@ const HELP_TOPICS = [
   ],
   [
     'Updates',
-    '<p>About 5 seconds after it starts, Decals asks GitHub once for the newest published release. Nothing about you or your sheets is sent. When a newer version exists, a window shows it with what is new and the file for your copy of Decals.</p><p><strong>Download</strong> saves that file in your Downloads folder and checks it against the release; <strong>Show in folder</strong> then shows where it is. <strong>Skip this version</strong> hides the window until an even newer version appears; closing it hides it until Decals starts again.</p><p>Decals never opens or installs what it downloads. Close Decals, then install the new version as before; your sheets and decals stay in Documents/SlotForge Decals. <strong>App Settings → Updates</strong> shows the versions, has <strong>Check now</strong> and turns the check at start off.</p>'
+    '<p>About 5 seconds after it starts, Decals asks GitHub once for the newest published release. Nothing about you or your sheets is sent. When a newer version exists, a window shows it with what is new and the file for your copy of Decals.</p><p><strong>Download</strong> saves that file in your Downloads folder and checks it against the release; <strong>Show in folder</strong> then shows where it is. <strong>Skip this version</strong> hides the window until an even newer version appears; closing it hides it until Decals starts again.</p><p>Decals never opens or installs what it downloads. Close Decals, then install the new version as before; your sheets and decals stay in Documents/SlotForge Decals. <strong>Settings → Updates</strong> shows the versions, has <strong>Check now</strong> and turns the check at start off.</p>'
   ],
   [
     'Keyboard shortcuts',
     '<dl class="help-keys"><dt>Ctrl+C / Ctrl+X / Ctrl+V</dt><dd>Copy, cut and paste decals (also between sheets); paste images, screenshots or SVG code</dd><dt>Ctrl+D</dt><dd>Duplicate</dd><dt>Ctrl+G</dt><dd>Group</dd><dt>Ctrl+A</dt><dd>Select everything on the page</dd><dt>Delete</dt><dd>Remove the selection</dd><dt>Arrow keys</dt><dd>Move 1 mm · with Shift 0.1 mm</dd><dt>Ctrl+Z / Ctrl+Y</dt><dd>Undo and redo, up to 200 steps (Ctrl+Shift+Z also redoes)</dd><dt>Ctrl+S</dt><dd>Save the sheet to Sheets</dd><dt>Ctrl+K</dt><dd>Find a tool, decal or setting</dd><dt>Ctrl+P</dt><dd>Export PDF</dd><dt>V · I · T · N · S · P · M</dt><dd>Select, Image, Text, Number, Shape, Path, Merge</dd><dt>Enter · Esc</dt><dd>While placing new artwork: add it in free space · stop</dd><dt>Ctrl+mousewheel</dt><dd>Zoom the sheet</dd><dt>Alt-drag</dt><dd>Move without snapping</dd><dt>Escape</dt><dd>Clear the selection or cancel a drag</dd></dl><p class="hint">On a Mac, use Cmd instead of Ctrl.</p>'
   ]
 ];
-function helpDialog() {
-  showDialog(
-    'Your decal workshop',
-    'SlotForge Decals' + (appVersion ? ' · ' + appVersion : ''),
-    `<div class="rail-shell help-shell"><nav class="rail" aria-label="Help topics"><span class="rail-search">${icon('search')}<input id="help-search" type="search" placeholder="Search help…" aria-label="Search help"></span>${HELP_TOPICS.map((t, n) => `<button class="rail-item" data-help-topic="${n}" data-rail="help-topic-${n}">${icon('topic')}<span class="rail-name">${E(t[0])}</span></button>`).join('')}</nav><div class="rail-canvas help-reader" id="help-content">${HELP_TOPICS.map((t, n) => `<section class="help-topic" id="help-topic-${n}"><h3>${E(t[0])}</h3>${t[1]}</section>`).join('')}<p class="hint help-empty" hidden>No help topics match your search.</p><p class="hint help-source">Source and third-party notices are included with the app.</p></div></div>`,
-    '<button class="primary" data-action="close">Start creating</button>',
-    true
-  );
-  $('#dialog').classList.add('rail-dialog');
-  const rail = railShell($('.help-shell'));
-  $('#help-search').oninput = e => {
-    const q = e.target.value.trim().toLowerCase();
-    let shown = 0;
-    HELP_TOPICS.forEach((_, n) => {
-      const match =
-        !q ||
-        $('#help-topic-' + n)
-          .textContent.toLowerCase()
-          .includes(q);
-      $('#help-topic-' + n).hidden = !match;
-      $(`[data-help-topic="${n}"]`).hidden = !match;
-      shown += match;
-    });
-    $('.help-empty').hidden = shown > 0;
-    $('#help-content').scrollTop = 0;
-    rail.mark();
-  };
-}
 function svgAsset(name, content, w, h) {
   return DM.item('svg', {
     name,
@@ -1881,58 +1742,6 @@ async function fontFromBlob(blob, name) {
       data
     }
   );
-}
-async function installedFontsDialog() {
-  const text = current();
-  if (text?.kind !== 'text') throw Error('Select a text decal first.');
-  if (text.locked) throw Error('Unlock this decal before editing.');
-  const list = await installedFonts(),
-    sample = E(text.text.trim().slice(0, 24) || 'Race 27'),
-    cssName = f => f.replace(/["\\]/g, '');
-  showDialog(
-    'Installed fonts',
-    `${list.length} font families on this computer. The chosen font is embedded in this sheet, so PDFs and shared sheets keep it.`,
-    '<div class="field"><input id="font-search" type="search" placeholder="Search fonts…" aria-label="Search installed fonts"></div><div id="font-list" class="font-list"></div><p class="hint">Only share sheets with fonts whose licence allows embedding.</p>',
-    '<button data-action="close">Cancel</button>',
-    true
-  );
-  const draw = () => {
-    const q = $('#font-search').value.trim().toLowerCase(),
-      matches = list.filter(f => f.family.toLowerCase().includes(q));
-    $('#font-list').innerHTML = matches.length
-      ? matches
-          .map(
-            f =>
-              `<button class="font-option" data-font-family="${E(f.family)}"><span class="font-sample" style="font-family:&quot;${E(cssName(f.family))}&quot;, sans-serif">${sample}</span><small>${E(f.family)}</small></button>`
-          )
-          .join('')
-      : '<p class="hint">No installed fonts match your search.</p>';
-  };
-  $('#font-search').oninput = draw;
-  $('#font-list').onclick = async e => {
-    const option = e.target.closest('[data-font-family]');
-    if (!option) return;
-    try {
-      const entry = list.find(f => f.family === option.dataset.fontFamily);
-      for (const b of $$('#font-list button')) b.disabled = true;
-      const font = await fontFromBlob(await entry.face.blob(), entry.face.fullName || entry.family);
-      await Art.loadFonts([...activeFonts(), font]);
-      mutate(() => {
-        const live = project.items.find(x => x.id === text.id);
-        if (!live) throw Error('The text decal is no longer on this sheet.');
-        if (!project.fonts.includes(font)) project.fonts.push(font);
-        live.font = font.family;
-        remeasureText(live);
-      });
-      closeDialog();
-      toast(`${entry.family} embedded in this sheet.`);
-    } catch (err) {
-      $('#dialog-error').textContent = err.message;
-      for (const b of $$('#font-list button')) b.disabled = false;
-    }
-  };
-  draw();
-  $('#font-search').focus();
 }
 // Recolour: replace any colour used by the selected decals, e.g. for a team variant.
 // Recolour in the Decal tab (remake option B): click a colour of the selection, then a new one. The
@@ -2268,6 +2077,7 @@ const actions = {
     Shelf.hide();
     CarPage.hide();
     PrintPage.hide();
+    SettingsPage.hide();
   },
   close: closeDialog,
   rename: () => nameDialog('Name your sheet', project.name, n => mutate(() => (project.name = n))),
@@ -2275,7 +2085,7 @@ const actions = {
   'import-pack': () => $('#pack-file').click(),
   'restore-backup': () => $('#backup-file').click(),
   font: () => $('#font-file').click(),
-  'installed-fonts': installedFontsDialog,
+  'installed-fonts': () => SettingsPage.show('fonts'),
   recolour: recolourDialog,
   'mirror-pair': () => {
     const result = Layout.mirroredPair(project, [...selected]);
@@ -2344,7 +2154,10 @@ const actions = {
     try {
       const file = await desktop.completeBackup();
       closeDialog();
-      if (file) toast('Complete backup saved and verified.');
+      if (file) {
+        toast('Complete backup saved and verified.');
+        SettingsPage.backedUp();
+      }
     } catch (e) {
       closeDialog();
       throw e;
@@ -2402,9 +2215,9 @@ const actions = {
   pdf: () => exportPDF(false),
   proof: () => PrintPage.show('proof'),
   checks: () => PrintPage.show('check'),
-  settings: settingsDialog,
+  settings: () => SettingsPage.show('settings'),
   sharing: () => PrintPage.show('check'),
-  help: helpDialog,
+  help: () => SettingsPage.show('help'),
   folder: () => desktop.folder(),
   library: () => Shelf.show(),
   duplicate: () => duplicate(),
@@ -2632,7 +2445,7 @@ const Finder = (() => {
     ['car-page', 'Car page: the whole livery', 'Page', 'car preview livery fit'],
     ['library', 'Decal Library', 'Window', 'decals collection'],
     ['sharing', 'Print & share', 'Page', 'backup share import export'],
-    ['settings', 'App settings', 'Window', 'preferences theme updates storage'],
+    ['settings', 'Settings', 'Page', 'preferences theme updates storage backup fonts help'],
     ['help', 'Help', 'Window', 'guide how'],
     ['import-pack', 'Import decals', 'Library', 'sfdecal'],
     ['export-pack', 'Export decals', 'Library', 'sfdecal']
@@ -2904,7 +2717,8 @@ document.addEventListener('keydown', e => {
     !Workshop.isOpen() &&
     !Shelf.isOpen() &&
     !CarPage.isOpen() &&
-    !PrintPage.isOpen()
+    !PrintPage.isOpen() &&
+    !SettingsPage.isOpen()
   ) {
     e.preventDefault();
     Finder.open();
@@ -2928,7 +2742,14 @@ document.addEventListener('keydown', e => {
     closeMenus();
     return;
   }
-  if (!$('#finder').hidden || Workshop.isOpen() || Shelf.isOpen() || CarPage.isOpen() || PrintPage.isOpen())
+  if (
+    !$('#finder').hidden ||
+    Workshop.isOpen() ||
+    Shelf.isOpen() ||
+    CarPage.isOpen() ||
+    PrintPage.isOpen() ||
+    SettingsPage.isOpen()
+  )
     return;
   if (e.target.matches('input,textarea,select') || document.querySelector('dialog[open]')) return; // also the update window
   const ctrl = e.ctrlKey || e.metaKey;

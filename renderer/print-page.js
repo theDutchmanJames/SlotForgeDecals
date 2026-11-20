@@ -26,6 +26,7 @@ const PrintPage = (() => {
     Workshop.hide();
     Shelf.hide();
     CarPage.hide();
+    SettingsPage.hide();
     closeDialog();
     step = STEPS.includes(to) ? to : 'check';
     overlay = defaults[step] || null;

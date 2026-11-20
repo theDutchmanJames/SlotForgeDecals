@@ -135,8 +135,12 @@ async function main() {
     await page.waitForFunction(() =>
       document.querySelector('#storage-usage .ss-stat b')?.textContent.endsWith('MB')
     );
-    await page.locator('[data-action="complete-backup"]').click();
-    await page.waitForFunction(() => !document.querySelector('#dialog').open);
+    await page.locator('#settings-page [data-alias="complete-backup"]').click();
+    // The Backups card records the finished backup.
+    await page.waitForFunction(() => settings.lastBackup && !document.querySelector('#dialog').open, null, {
+      timeout: 120000
+    });
+    assert.match(await page.locator('#sp-backup-status').textContent(), /Last backup today/);
     const backup = path.join(run, 'exports', 'SlotForge-Decals-complete.sfdbbackup');
     assert((await fs.stat(backup)).size > 0);
     const other = path.join(run, 'restored'),

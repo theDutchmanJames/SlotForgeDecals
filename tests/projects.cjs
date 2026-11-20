@@ -271,8 +271,8 @@ async function main() {
     );
     // The start page can be turned off in Settings.
     await page.locator('nav [data-action="settings"]').click();
-    await page.locator('#start-workshop').uncheck({ force: true });
-    await page.locator('#dialog [data-action="close"]').first().click();
+    await page.locator('[data-sp-start="editor"]').click();
+    await page.locator('nav [data-action="editor"]').click();
     await page.evaluate(() => Studio.flush());
     await app.close();
     app = await launch();

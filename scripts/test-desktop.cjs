@@ -34,6 +34,7 @@ const suites = [
   'layout-tab',
   'car-page',
   'print-page',
+  'settings-page',
   'update-check'
 ];
 for (const suite of suites) {

@@ -102,7 +102,7 @@ async function main() {
     await page.locator('[data-action="settings"]').first().click();
     await page.waitForSelector('#update-settings .update-card .ss-sheet');
   };
-  const closeSettings = page => page.locator('#dialog [data-action="close"]').first().click();
+  const closeSettings = page => page.locator('nav [data-action="editor"]').click();
   const shot = async (page, file) => {
     if (shots) await page.screenshot({ path: path.join(shots, file + '.png') });
   };
@@ -171,7 +171,6 @@ async function main() {
     await settings(page);
     assert.match(await page.locator('#update-settings').textContent(), /Version 9\.9\.0 is available/);
     assert.match(await page.locator('#rail-status-updates').textContent(), /9\.9\.0 available/);
-    await page.locator('[data-rail="settings-updates"]').click();
     await page.waitForTimeout(400);
     await shot(page, 'update-settings');
     await page.locator('#update-check-now').click();
