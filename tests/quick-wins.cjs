@@ -146,6 +146,7 @@ const path = require('node:path'),
   await page
     .locator('#font-search')
     .fill((await page.locator('#font-list .font-option small').first().textContent()).slice(0, 4));
+  await page.waitForTimeout(300); // the list redraws once typing pauses
   await page.locator('#font-list .font-option').first().click();
   await page.waitForFunction(
     id => Studio.project.items.find(i => i.id === id).font.startsWith('sf-font-'),

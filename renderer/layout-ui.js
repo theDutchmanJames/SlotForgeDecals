@@ -16,9 +16,20 @@ const LayoutTab = (() => {
     order: 'largest',
     pairs: true
   };
-  let fillCache = { key: '', count: 0 },
-    packCache = { key: '', result: null, error: '' };
+  let fillCache = { key: '', project: null, count: 0 },
+    packCache = { key: '', project: null, result: null, error: '' };
   const host = () => document.getElementById('layout-tab');
+  // A full page (Workshop, Library, Car, Print, Settings) covers the editor: the tab waits and
+  // catches up once the editor shows again.
+  const PAGES = '.workshop-mode,.shelf-mode,.carpage-mode,.printpage-mode,.settingspage-mode';
+  const covered = () => document.body.matches(PAGES);
+  let behind = false;
+  new MutationObserver(() => {
+    if (behind && !covered()) {
+      behind = false;
+      render();
+    }
+  }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   const isShown = () => settings.rightTab === 'layout' && !!host();
   // The open section; 'none' when the user closed them all.
   const open = () =>
@@ -130,18 +141,13 @@ const LayoutTab = (() => {
       warn = true;
       summary = e.message;
     }
-    const key = JSON.stringify([
-      project.items.length,
-      [...selected].sort(),
-      project.gap,
-      project.margin,
-      history.length
-    ]);
-    if (fillCache.key !== key) {
+    // Keyed on the project object itself: every change, undo or sheet switch replaces it.
+    const key = JSON.stringify([revision, page, [...selected].sort()]);
+    if (fillCache.key !== key || fillCache.project !== project) {
       try {
-        fillCache = { key, count: Layout.fill(project, [...selected], 200).copies };
+        fillCache = { key, project, count: Layout.fill(project, [...selected], 200).copies };
       } catch {
-        fillCache = { key, count: 0 };
+        fillCache = { key, project, count: 0 };
       }
     }
     const stepper = (id, label, value) =>
@@ -167,11 +173,18 @@ const LayoutTab = (() => {
     }</div><p class="lt-note">${count ? 'Decals keep their positions and sizes; you follow them to that page.' : 'Select decals to move them to another page. Click a page to go there.'}</p>`;
   }
   function packPreview() {
-    const key = JSON.stringify([history.length, project.items.length, state, page, [...selected].sort()]);
-    if (packCache.key === key) return packCache;
+    // The selection only matters when arranging the selection.
+    const key = JSON.stringify([
+      revision,
+      state,
+      page,
+      state.scope === 'selection' ? [...selected].sort() : []
+    ]);
+    if (packCache.key === key && packCache.project === project) return packCache;
     try {
       packCache = {
         key,
+        project,
         result: Layout.pack(project, {
           scope: state.scope,
           order: state.order,
@@ -182,7 +195,7 @@ const LayoutTab = (() => {
         error: ''
       };
     } catch (e) {
-      packCache = { key, result: null, error: e.message };
+      packCache = { key, project, result: null, error: e.message };
     }
     return packCache;
   }
@@ -209,6 +222,7 @@ const LayoutTab = (() => {
   }
   function render() {
     const el = host();
+    if (el && isShown() && covered()) return void (behind = true);
     if (!el || !isShown()) return drawGhosts();
     // Keep a field being typed in: refresh only the summaries then.
     const typing =
@@ -332,7 +346,7 @@ const LayoutTab = (() => {
     if (b.dataset.gotoPage !== undefined) {
       page = Number(b.dataset.gotoPage);
       selected.clear();
-      return render();
+      return window.render(); // the editor's render: the sheet, not only this tab
     }
     if (b.dataset.layoutOperation) {
       const [operation, axis, edge] = b.dataset.layoutOperation.split('-');
@@ -410,6 +424,8 @@ const LayoutTab = (() => {
       });
     if (b.id === 'pack-apply')
       return act(() => {
+        // Always arrange the sheet as it is now, never a preview kept from before.
+        packCache.key = '';
         const { result, error } = packPreview();
         if (!result) throw Error(error);
         mutate(() => {

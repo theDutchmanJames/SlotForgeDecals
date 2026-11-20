@@ -232,7 +232,7 @@
     const fonts = DM.fontsFor([i], p.fonts)
       .map(f => `@font-face{font-family:'${f.family}';src:url('${f.data}');}`)
       .join('');
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${vx} ${vy} ${vw} ${vh}" preserveAspectRatio="none"><style>${fonts}</style>${Art.element(i, 'cut', 'all')}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${vx} ${vy} ${vw} ${vh}" preserveAspectRatio="none"><style>${fonts}</style>${Art.solidElement(i, 'cut', 'all')}</svg>`;
     const img = new Image();
     img.src = Art.url(svg);
     await img.decode();
@@ -245,7 +245,21 @@
       mask = new Uint8Array(w * h);
     for (let n = 0; n < w * h; n++) mask[n] = rgba[n * 4 + 3] >= 24 ? 1 : 0;
     canvas.width = canvas.height = 1;
-    return contourFromMask(mask, w, h, k, vx, vy, offset);
+    // Traced in the pixel worker when there is one (a large decal took up to half a second here).
+    const done =
+      typeof PixelWork === 'undefined'
+        ? null
+        : await PixelWork.run({
+            job: 'contour',
+            mask: mask.slice().buffer,
+            w,
+            h,
+            k,
+            x: vx,
+            y: vy,
+            offset
+          }).catch(() => null);
+    return done || contourFromMask(mask, w, h, k, vx, vy, offset);
   }
   // Cache by decal content and rotation, not position: moving a decal reuses its traced
   // contour. Large image/font strings are shortened in the key.

@@ -204,6 +204,8 @@ test('a failed v1 split rolls back and its complete backup restores with every o
   assert(run('verify'));
 });
 test('legacy export includes unsaved edits and restore keeps recovery metadata and rejects stale writes', t => {
+  process.env.SLOTFORGE_SNAPSHOT_MS = '0'; // a snapshot at every save
+  t.after(() => delete process.env.SLOTFORGE_SNAPSHOT_MS);
   const { root, run } = fixture(t),
     data = snapshot();
   run('save', { data });

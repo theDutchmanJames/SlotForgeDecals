@@ -15,8 +15,9 @@ class Workspace {
     this.stamp = result.stamp;
     return result;
   }
+  // data arrives over IPC, so it is already this process's own copy: no need to clone it again.
   save(data) {
-    const snapshot = structuredClone(data);
+    const snapshot = data;
     const job = this.queue
       .catch(() => {})
       .then(async () => {
@@ -31,7 +32,7 @@ class Workspace {
     return call(this.root, 'catalog-' + method, args);
   }
   async restoreLegacy(data) {
-    await this.queue;
+    await this.queue.catch(() => {}); // a failed autosave must not block backup or restore
     const result = await call(this.root, 'legacy-restore', { data, expected: this.stamp });
     this.stamp = result.stamp;
     return result;
@@ -47,11 +48,11 @@ class Workspace {
     return call(this.root, 'stats');
   }
   async backup(destination) {
-    await this.queue;
+    await this.queue.catch(() => {}); // a failed autosave must not block backup or restore
     return call(this.root, 'backup', { destination });
   }
   async restore(source) {
-    await this.queue;
+    await this.queue.catch(() => {}); // a failed autosave must not block backup or restore
     const result = await call(this.root, 'restore', { source });
     this.stamp = result.stamp;
     return result;

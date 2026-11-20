@@ -263,8 +263,9 @@
   }
   // First free position inside the margins, scanning rows top-left to bottom-right and
   // keeping the sheet's cutting gap to existing artwork. Returns null when nothing fits.
-  function freeSpot(i, p, others) {
-    if (others.length > 400) return null;
+  // fromY: start the search at this row (a row the earlier search already reached).
+  function freeSpot(i, p, others, fromY) {
+    if (others.length > 5000) return null; // about 15 ms at 2,000 decals; the old 400 failed busy pages
     const s = size(p),
       b = bounds(i),
       gap = Math.max(0, p.gap ?? 3),
@@ -272,7 +273,8 @@
       boxes = others.map(bounds),
       eps = 1e-6;
     if (b.w > s.w - 2 * m + eps || b.h > s.h - 2 * m + eps) return null;
-    for (let y = m; y + b.h <= s.h - m + eps; y += 1) {
+    const first = fromY > m ? m + Math.floor(fromY - m + eps) : m;
+    for (let y = first; y + b.h <= s.h - m + eps; y += 1) {
       let x = m;
       while (x + b.w <= s.w - m + eps) {
         const hit = boxes.find(
@@ -388,11 +390,20 @@
           text: `${i.name}: requires white ink; enable it in Paper & white ink.`
         });
     }
-    for (let a = 0; a < p.items.length; a++)
-      for (let b = a + 1; b < p.items.length; b++) {
-        const x = p.items[a],
-          y = p.items[b];
-        if (x.page === y.page && overlaps(boxes.get(x), boxes.get(y), p.gap))
+    // Only decals on the same page can be too close: compare within each page (same order as
+    // comparing every pair, a fraction of the work on a sheet with several pages).
+    const byPage = new Map();
+    for (const i of p.items) {
+      if (!byPage.has(i.page)) byPage.set(i.page, []);
+      byPage.get(i.page).push(i);
+    }
+    const later = new Map();
+    for (const list of byPage.values()) list.forEach((i, n) => later.set(i, [list, n + 1]));
+    for (const x of p.items) {
+      const [list, from] = later.get(x);
+      for (let b = from; b < list.length; b++) {
+        const y = list[b];
+        if (overlaps(boxes.get(x), boxes.get(y), p.gap))
           out.push({
             id: x.id,
             other: y.id,
@@ -401,6 +412,7 @@
           });
         if (out.length > 120) return out;
       }
+    }
     return out;
   }
   function hasWhite(i) {
@@ -429,6 +441,19 @@
     }
     return 'Vector';
   }
+  // Image and font data URLs are checked once: every change validates the whole project, and the
+  // regex over megabytes of base64 cost about 1 ms per MB each time. Clones share these strings.
+  const checked = new Set();
+  const checkedURL = (pattern, s) => {
+    if (typeof s !== 'string') return false;
+    if (checked.has(s)) return true;
+    if (!pattern.test(s)) return false;
+    if (checked.size > 400) checked.clear();
+    checked.add(s);
+    return true;
+  };
+  const isImageURL = s => checkedURL(/^data:image\/(png|jpeg|webp);base64,[A-Za-z\d+/=]+$/, s),
+    isFontURL = s => checkedURL(/^data:font\/(ttf|otf|woff|woff2);base64,[A-Za-z\d+/=]+$/, s);
   function validateItem(raw, depth = 0) {
     if (
       depth > 8 ||
@@ -575,12 +600,7 @@
     }
     if (i.traceSource) {
       const s = i.traceSource;
-      if (
-        i.kind !== 'svg' ||
-        typeof s.src !== 'string' ||
-        !/^data:image\/(png|jpeg|webp);base64,[A-Za-z\d+/=]+$/.test(s.src) ||
-        s.src.length > 28e6
-      )
+      if (i.kind !== 'svg' || typeof s.src !== 'string' || !isImageURL(s.src) || s.src.length > 28e6)
         throw Error('Invalid original tracing image.');
       i.traceSource = {
         src: s.src,
@@ -605,7 +625,7 @@
       if (
         !(i.kind === 'image' || (i.kind === 'svg' && i.traceSource)) ||
         typeof s.src !== 'string' ||
-        !/^data:image\/(png|jpeg|webp);base64,[A-Za-z\d+/=]+$/.test(s.src) ||
+        !isImageURL(s.src) ||
         s.src.length > 28e6
       )
         throw Error('Invalid original preparation image.');
@@ -652,11 +672,7 @@
       if (typeof i.svg !== 'string' || i.svg.length > 12e6) throw Error('SVG is too large.');
     }
     if (i.kind === 'image') {
-      if (
-        typeof i.src !== 'string' ||
-        !/^data:image\/(png|jpeg|webp);base64,[A-Za-z\d+/=]+$/.test(i.src) ||
-        i.src.length > 28e6
-      )
+      if (typeof i.src !== 'string' || !isImageURL(i.src) || i.src.length > 28e6)
         throw Error('Invalid image.');
       i.pixelsW = number(i.pixelsW, 1, 20000);
       i.pixelsH = number(i.pixelsH, 1, 20000);
@@ -689,22 +705,14 @@
     }
     if (!Array.isArray(p.fonts) || p.fonts.length > 30) throw Error('Too many fonts.');
     for (const f of p.fonts) {
-      if (
-        !/^sf-font-[a-z0-9-]+$/.test(f.family) ||
-        !/^data:font\/(ttf|otf|woff|woff2);base64,[A-Za-z\d+/=]+$/.test(f.data) ||
-        f.data.length > 14e6
-      )
+      if (!/^sf-font-[a-z0-9-]+$/.test(f.family) || !isFontURL(f.data) || f.data.length > 14e6)
         throw Error('Invalid embedded font.');
     }
     p.preview = { ...project().preview, ...p.preview };
     for (const k of ['length', 'width', 'height'])
       p.preview[k] = number(p.preview[k], 5, 1000, 'Model dimension');
     for (const k of ['side', 'top'])
-      if (
-        p.preview[k] &&
-        (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z\d+/=]+$/.test(p.preview[k].src) ||
-          p.preview[k].src.length > 28e6)
-      )
+      if (p.preview[k] && (!isImageURL(p.preview[k].src) || p.preview[k].src.length > 28e6))
         throw Error('Invalid car reference.');
     for (const view of ['side', 'top']) {
       const ref = p.preview[view];

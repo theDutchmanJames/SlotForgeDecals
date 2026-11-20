@@ -107,7 +107,8 @@ async function main() {
     assert.equal(await page.locator('[data-sp-tab="fonts"]').getAttribute('aria-selected'), 'true');
     await page.locator('#sp-sample').fill('RACE 27');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'sp-sample');
-    assert.match(await page.locator('.sp-sample').first().textContent(), /RACE 27/);
+    // The samples redraw once typing pauses.
+    await page.waitForFunction(() => document.querySelector('.sp-sample')?.textContent.includes('RACE 27'));
     const unused = page.locator('[data-sp-sheet-font="sf-font-unused"]');
     assert.match(await unused.textContent(), /Not used any more/);
     await unused.locator('[data-sp-font-remove]').click();

@@ -146,11 +146,17 @@
       page = sources[0].page,
       b = DM.union(sources),
       block = DM.item('rect', { x: b.x, y: b.y, w: b.w, h: b.h }),
-      others = out.items.filter(i => i.page === page),
+      // Each decal measured once, as a plain box. Rows above a copy never free up again, so the
+      // next search starts at the row the last copy went into.
+      others = out.items
+        .filter(i => i.page === page)
+        .map(i => DM.item('rect', { ...DM.bounds(i), rotation: 0 })),
       added = [];
+    let row = 0;
     while (out.items.length + sources.length <= 2000 && added.length < limit * sources.length) {
-      const spot = DM.freeSpot(block, out, others);
+      const spot = DM.freeSpot(block, out, others, row);
       if (!spot) break;
+      row = spot.y;
       const box = DM.item('rect', { x: spot.x, y: spot.y, w: b.w, h: b.h, page });
       for (const source of sources) {
         const i = DM.clone(source);
@@ -190,9 +196,10 @@
           ? 'Select unlocked decals to arrange.'
           : 'There are no unlocked decals to arrange.'
       );
-    const area = i => DM.bounds(i).w * DM.bounds(i).h;
+    const areas = new Map(movable.map(i => [i, DM.bounds(i).w * DM.bounds(i).h])),
+      index = new Map(out.items.map((i, n) => [i, n]));
     if (order === 'largest')
-      movable.sort((a, b) => area(b) - area(a) || out.items.indexOf(a) - out.items.indexOf(b));
+      movable.sort((a, b) => areas.get(b) - areas.get(a) || index.get(a) - index.get(b));
     if (order === 'name')
       movable.sort((a, b) =>
         String(a.name || '').localeCompare(String(b.name || ''), undefined, {
@@ -210,31 +217,59 @@
         movable.splice(movable.indexOf(original) + 1, 0, c);
       }
     }
-    const fixed = out.items.filter(i => !movable.includes(i)).map(i => ({ ...DM.bounds(i), page: i.page })),
-      placed = [...fixed],
+    // Each page keeps its obstacles and its sorted candidate edges, updated as decals land, so a
+    // placement only looks at the obstacles in its own row. Same positions as trying every
+    // candidate against every obstacle, far fewer checks (300 decals: seconds → milliseconds).
+    const movingSet = new Set(movable),
+      sheets = new Map(),
       pages = scope === 'all' ? Array.from({ length: 50 }, (_, n) => n) : [current];
+    const insert = (list, v) => {
+      let lo = 0,
+        hi = list.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (list[mid] < v) lo = mid + 1;
+        else hi = mid;
+      }
+      list.splice(lo, 0, v);
+    };
+    const sheet = n => {
+      if (!sheets.has(n)) sheets.set(n, { obstacles: [], xs: [m], ys: [m] });
+      return sheets.get(n);
+    };
+    const add = (n, o) => {
+      const at = sheet(n);
+      at.obstacles.push(o);
+      insert(at.xs, o.x + o.w + g);
+      insert(at.ys, o.y + o.h + g);
+    };
+    for (const i of out.items) if (!movingSet.has(i)) add(i.page, DM.bounds(i));
+    const right = s.w - m + 0.0001,
+      bottom = s.h - m + 0.0001;
     for (const i of movable) {
       const b = DM.bounds(i);
       if (b.w > s.w - 2 * m + 0.0001 || b.h > s.h - 2 * m + 0.0001)
         throw Error(`“${i.name}” is larger than the printable area. Resize it first.`);
       let found = false;
       for (const page of pages) {
-        const obstacles = placed.filter(o => o.page === page),
-          xs = [m, ...obstacles.map(o => o.x + o.w + g)].sort((a, b) => a - b),
-          ys = [m, ...obstacles.map(o => o.y + o.h + g)].sort((a, b) => a - b);
+        const { obstacles, xs, ys } = sheet(page);
+        let last = NaN;
         for (const y of ys) {
+          if (y + b.h > bottom) break;
+          if (y === last) continue;
+          last = y;
+          const row = obstacles.filter(o => y < o.y + o.h + g - 0.00001 && y + b.h + g > o.y + 0.00001);
+          let lastX = NaN;
           for (const x of xs) {
+            if (x + b.w > right) break;
+            if (x === lastX) continue;
+            lastX = x;
             const c = { x, y, w: b.w, h: b.h };
-            if (
-              x + b.w > s.w - m + 0.0001 ||
-              y + b.h > s.h - m + 0.0001 ||
-              obstacles.some(o => DM.overlaps(c, o, g))
-            )
-              continue;
+            if (row.some(o => DM.overlaps(c, o, g))) continue;
             i.x += x - b.x;
             i.y += y - b.y;
             i.page = page;
-            placed.push({ ...c, page });
+            add(page, c);
             found = true;
             break;
           }

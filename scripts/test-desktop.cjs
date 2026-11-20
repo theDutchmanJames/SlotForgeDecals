@@ -36,6 +36,7 @@ const suites = [
   'print-page',
   'settings-page',
   'messages',
+  'full-review',
   'update-check'
 ];
 for (const suite of suites) {

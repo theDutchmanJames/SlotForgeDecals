@@ -414,6 +414,8 @@ const CarPage = (() => {
     }
     if (e.target.matches('input,textarea,select')) return;
     const ctrl = e.ctrlKey || e.metaKey;
+    // Undo while dragging would swap the sheet under the drag: finish the drag first.
+    if (gesture && ctrl && 'zy'.includes(e.key.toLowerCase())) return e.preventDefault();
     if (ctrl && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       actions[e.shiftKey ? 'redo' : 'undo']();
@@ -477,11 +479,11 @@ const CarPage = (() => {
         })
       );
     if (b.dataset.cpSheet !== undefined && i) {
-      hide();
       page = i.page;
       selected = new Set([i.id]);
+      hide();
       revealDecal();
-      return render();
+      return window.render(); // the editor's render, not this page's
     }
     if (b.dataset.cpBody)
       return run(async () => {

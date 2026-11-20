@@ -190,7 +190,8 @@ async function main() {
     await page.locator('#confirm').click();
     await page.waitForFunction(() => Studio.libraryCount === 3);
     await page.waitForFunction(() => document.querySelector('[data-shelf="all"] .n')?.textContent === '3');
-    assert(await page.locator('#shelf-insp').isHidden());
+    // The details panel closes once the shelves have redrawn.
+    await page.locator('#shelf-insp').waitFor({ state: 'hidden' });
     assert.equal(await page.evaluate(() => Studio.project.items.length), 1);
 
     // The editor's Library tab opens a decal's details here.

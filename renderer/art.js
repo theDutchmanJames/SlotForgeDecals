@@ -8,7 +8,7 @@
     )
   );
   const attributes = new Set(
-    'id d x y x1 y1 x2 y2 cx cy r rx ry width height points transform fill fill-rule stroke stroke-width stroke-linecap stroke-linejoin stroke-dasharray stroke-dashoffset stroke-miterlimit opacity fill-opacity stroke-opacity font-size font-family font-weight font-style text-anchor dominant-baseline letter-spacing viewBox preserveAspectRatio clip-path clip-rule clipPathUnits mask maskUnits maskContentUnits gradientUnits gradientTransform offset stop-color stop-opacity spreadMethod patternUnits patternContentUnits patternTransform href xmlns xmlns:xlink style class vector-effect'.split(
+    'id d x y x1 y1 x2 y2 cx cy r rx ry width height points transform fill fill-rule stroke stroke-width stroke-linecap stroke-linejoin stroke-dasharray stroke-dashoffset stroke-miterlimit opacity fill-opacity stroke-opacity font-size font-family font-weight font-style text-anchor dominant-baseline letter-spacing viewBox preserveAspectRatio clip-path clip-rule clipPathUnits mask maskUnits maskContentUnits gradientUnits gradientTransform offset stop-color stop-opacity spreadMethod patternUnits patternContentUnits patternTransform href xmlns xmlns:xlink style class vector-effect display visibility color dx dy rotate xml:space paint-order overflow mix-blend-mode isolation'.split(
       ' '
     )
   );
@@ -58,7 +58,7 @@
       }
     }
     const drawingCSS = new Set(
-      'fill fill-rule fill-opacity stroke stroke-width stroke-linecap stroke-linejoin stroke-dasharray stroke-dashoffset stroke-miterlimit stroke-opacity opacity font-size font-family font-weight font-style text-anchor dominant-baseline letter-spacing clip-path clip-rule mask stop-color stop-opacity vector-effect display visibility paint-order color transform transform-origin transform-box'.split(
+      'fill fill-rule fill-opacity stroke stroke-width stroke-linecap stroke-linejoin stroke-dasharray stroke-dashoffset stroke-miterlimit stroke-opacity opacity font-size font-family font-weight font-style text-anchor dominant-baseline letter-spacing clip-path clip-rule mask stop-color stop-opacity vector-effect display visibility paint-order color transform transform-origin transform-box mix-blend-mode isolation'.split(
         ' '
       )
     );
@@ -333,10 +333,36 @@
         return '';
     }
   }
+  // While the white plate or a cut shape is drawn, every part is solid: see-through decals still
+  // need their white and their cut line. While a proof is drawn, white-only parts (in groups
+  // too) show in magenta so they can be seen on paper.
+  let solid = false,
+    proofing = false,
+    proofWhite = false;
+  function drawing(flags, fn) {
+    const was = [solid, proofing];
+    solid = !!flags.solid;
+    proofing = !!flags.proof;
+    try {
+      return fn();
+    } finally {
+      [solid, proofing] = was;
+    }
+  }
   function element(i, prefix = 'a', mode = 'colour') {
     if (mode === 'colour' && i.ink === 'white-only') return '';
-    return `<g transform="translate(${i.x + i.w / 2} ${i.y + i.h / 2}) rotate(${i.rotation || 0}) translate(${-i.w / 2} ${-i.h / 2})" opacity="${i.opacity ?? 1}">${body(i, prefix, mode)}</g>`;
+    // Inside a white-only group every part is white-only (grouping moves the ink to the group).
+    const white = proofing && (i.ink === 'white-only' || proofWhite);
+    if (white) i = { ...i, fill: '#bf36a8', stroke: '#bf36a8' };
+    const was = proofWhite;
+    proofWhite = white;
+    try {
+      return `<g transform="translate(${i.x + i.w / 2} ${i.y + i.h / 2}) rotate(${i.rotation || 0}) translate(${-i.w / 2} ${-i.h / 2})" opacity="${solid ? 1 : (i.opacity ?? 1)}">${body(i, prefix, mode)}</g>`;
+    } finally {
+      proofWhite = was;
+    }
   }
+  const solidElement = (i, prefix, mode) => drawing({ solid: true }, () => element(i, prefix, mode));
   const fontsCSS = fonts =>
     fonts.map(f => `@font-face{font-family:'${f.family}';src:url('${f.data}');}`).join('');
   function standalone(i, fonts = []) {
@@ -344,28 +370,45 @@
     return `<svg xmlns="${NS}" width="${b.w}mm" height="${b.h}mm" viewBox="${b.x} ${b.y} ${b.w} ${b.h}"><style>${fontsCSS(fonts)}</style>${element({ ...i, x: 0, y: 0 }, 'preview', 'all')}</svg>`;
   }
   const url = svg => 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-  function sheet(p, page, proof = false, white = false, dimensions, preview = false, extra = '') {
+  // fonts: false leaves the font CSS out (the print document has it once in its head).
+  function sheet(
+    p,
+    page,
+    proof = false,
+    white = false,
+    dimensions,
+    preview = false,
+    extra = '',
+    fonts = p.fonts
+  ) {
     const s = dimensions || DM.size(p);
-    let content = p.items
-      .filter(i => i.page === page && (white ? DM.hasWhite(i) : proof || preview || i.ink !== 'white-only'))
-      .map((i, j) =>
-        element(
-          proof && i.ink === 'white-only' ? { ...i, fill: '#bf36a8', stroke: '#bf36a8' } : i,
-          `p${page}i${j}`,
-          white ? 'white' : proof || preview ? 'all' : 'colour'
-        )
-      )
-      .join('');
+    let content = drawing({ solid: white, proof }, () =>
+      p.items
+        .filter(i => i.page === page && (white ? DM.hasWhite(i) : proof || preview || i.ink !== 'white-only'))
+        .map((i, j) => element(i, `p${page}i${j}`, white ? 'white' : proof || preview ? 'all' : 'colour'))
+        .join('')
+    );
     if (proof) {
       const bars = DM.proofBars(p);
       content += `<path d="M 10 ${s.h - 8} h ${bars.x} m ${-bars.x} -2 v 4 m ${bars.x} -4 v 4 M ${s.w - 8} 10 v ${bars.y} m -2 ${-bars.y} h 4 m -4 ${bars.y} h 4" fill="none" stroke="#333" stroke-width=".2"/><text x="10" y="${s.h - 15}" font-size="2.5" fill="#333">${bars.x} mm horizontal · ${bars.y} mm vertical</text><text x="10" y="${s.h - 11}" font-size="2.5" fill="#333">PRINT AT ACTUAL SIZE / 100%</text><rect x="${p.margin}" y="${p.margin}" width="${s.w - p.margin * 2}" height="${s.h - p.margin * 2}" fill="none" stroke="#999" stroke-width=".15" stroke-dasharray="1 1"/>`;
     }
-    return `<svg xmlns="${NS}" width="${s.w}mm" height="${s.h}mm" viewBox="0 0 ${s.w} ${s.h}"><style>${fontsCSS(p.fonts)}</style>${content}${extra}</svg>`;
+    return `<svg xmlns="${NS}" width="${s.w}mm" height="${s.h}mm" viewBox="0 0 ${s.w} ${s.h}"><style>${
+      fonts
+        ? fontsCSS(
+            DM.fontsFor(
+              p.items.filter(i => i.page === page),
+              fonts
+            )
+          )
+        : ''
+    }</style>${content}${extra}</svg>`;
   }
   async function masks(p, dimensions) {
     const s = dimensions || DM.size(p),
-      width = Math.round((s.w / 25.4) * 600),
-      height = Math.round((s.h / 25.4) * 600),
+      // 600 DPI, lowered for long custom sheets so the plate stays within the PDF's 7100 px.
+      dpi = Math.min(600, (7100 * 25.4) / Math.max(s.w, s.h)),
+      width = Math.min(7100, Math.round((s.w / 25.4) * dpi)),
+      height = Math.min(7100, Math.round((s.h / 25.4) * dpi)),
       out = [];
     for (let page = 0; page < p.pages; page++) {
       if (!p.items.some(i => i.page === page && DM.hasWhite(i))) {
@@ -380,17 +423,28 @@
       c.height = height;
       const ctx = c.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(img, 0, 0, width, height);
-      const rgba = ctx.getImageData(0, 0, width, height).data,
-        stride = Math.ceil(width / 8),
-        bits = new Uint8Array(stride * height);
-      bits.fill(255);
-      for (let y = 0; y < height; y++)
-        for (let x = 0; x < width; x++)
-          if (rgba[(y * width + x) * 4 + 3] >= 128) bits[y * stride + (x >> 3)] &= ~(128 >> (x & 7));
-      let binary = '';
-      for (let n = 0; n < bits.length; n += 8192)
-        binary += String.fromCharCode(...bits.subarray(n, n + 8192));
-      out.push({ width, height, bits: btoa(binary) });
+      // Packed into 1-bit rows in the pixel worker when there is one (about 0.4 s per A4 page).
+      let packed =
+        typeof PixelWork === 'undefined'
+          ? null
+          : await (() => {
+              const rgba = ctx.getImageData(0, 0, width, height).data;
+              return PixelWork.run({ job: 'white', rgba: rgba.buffer, width, height }, [rgba.buffer]);
+            })().catch(() => null);
+      if (!packed) {
+        const rgba = ctx.getImageData(0, 0, width, height).data,
+          stride = Math.ceil(width / 8),
+          bits = new Uint8Array(stride * height);
+        bits.fill(255);
+        for (let y = 0; y < height; y++)
+          for (let x = 0; x < width; x++)
+            if (rgba[(y * width + x) * 4 + 3] >= 128) bits[y * stride + (x >> 3)] &= ~(128 >> (x & 7));
+        let binary = '';
+        for (let n = 0; n < bits.length; n += 8192)
+          binary += String.fromCharCode(...bits.subarray(n, n + 8192));
+        packed = btoa(binary);
+      }
+      out.push({ width, height, bits: packed });
       c.width = c.height = 1;
     }
     return out;
@@ -398,7 +452,7 @@
   // extras[page] is extra SVG markup drawn on top of that page, such as printed cut lines.
   function printHTML(p, proof = false, dimensions, extras = []) {
     const s = dimensions || DM.size(p);
-    return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:;"><style>@page{size:${s.w}mm ${s.h}mm;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0}section{width:${s.w}mm;height:${s.h}mm;overflow:hidden;break-after:page}section:last-child{break-after:auto}svg{display:block}${fontsCSS(p.fonts)}</style></head><body>${Array.from({ length: p.pages }, (_, page) => `<section>${sheet(p, page, proof, false, dimensions, false, extras[page] || '')}</section>`).join('')}</body></html>`;
+    return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:;"><style>@page{size:${s.w}mm ${s.h}mm;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0}section{width:${s.w}mm;height:${s.h}mm;overflow:hidden;break-after:page}section:last-child{break-after:auto}svg{display:block}${fontsCSS(DM.fontsFor(p.items, p.fonts))}</style></head><body>${Array.from({ length: p.pages }, (_, page) => `<section>${sheet(p, page, proof, false, dimensions, false, extras[page] || '', false)}</section>`).join('')}</body></html>`;
   }
   const loadedFonts = new Map();
   let pinnedFonts = new Set();
@@ -454,6 +508,7 @@
     sanitize,
     body,
     element,
+    solidElement,
     textBox,
     bendText,
     standalone,

@@ -136,21 +136,32 @@ const Shelf = (() => {
       b('group', `${icon('group')}Groups`, c.group) +
       `<label class="sh-drop" id="shelf-drop">${icon('down')}<b>Import a decal pack</b><span>Drop .sfdecal files here, or click to choose</span></label>`;
   }
-  async function loadPage(request = generation) {
-    const body = $('#shelf-body');
-    body.dataset.loading = 'true';
-    const result = await Library.query({
-      search: $('#shelf-search').value,
-      filter: shelf,
-      sort: sort(),
-      offset: entries.length,
-      limit: PAGE
+  // A second "Show more" while the same page is still loading waits for it instead of adding
+  // the same decals twice.
+  let pending = null;
+  function loadPage(request = generation) {
+    const offset = entries.length;
+    if (pending && pending.request === request && pending.offset === offset) return pending.job;
+    const job = (async () => {
+      const body = $('#shelf-body');
+      body.dataset.loading = 'true';
+      const result = await Library.query({
+        search: $('#shelf-search').value,
+        filter: shelf,
+        sort: sort(),
+        offset,
+        limit: PAGE
+      });
+      if (request !== generation || !isOpen() || entries.length !== offset) return;
+      entries = entries.concat(result.entries);
+      total = result.total;
+      body.dataset.loading = 'false';
+      renderBody();
+    })().finally(() => {
+      if (pending?.job === job) pending = null;
     });
-    if (request !== generation || !isOpen()) return;
-    entries = entries.concat(result.entries);
-    total = result.total;
-    body.dataset.loading = 'false';
-    renderBody();
+    pending = { request, offset, job };
+    return job;
   }
   function renderBody() {
     $('#shelf-title').textContent = title();

@@ -92,6 +92,8 @@ test('failed migration publication leaves all legacy data unchanged and can be r
   assert.deepEqual(run('load').data, w);
 });
 test('workspace history, no-op saves and stale writer protection survive restart', t => {
+  process.env.SLOTFORGE_SNAPSHOT_MS = '0'; // a snapshot at every save
+  t.after(() => delete process.env.SLOTFORGE_SNAPSHOT_MS);
   const { root, run } = fixture(t),
     w = workspace();
   const initial = run('load');
@@ -230,6 +232,9 @@ test('backups reject damaged reference indexes before publishing', t => {
   assert(!fs.existsSync(destination));
 });
 test('garbage collection retains saved history and bounds rotating workspace snapshots', t => {
+  // Every save takes a snapshot here; normally the newest one stays for ten minutes.
+  process.env.SLOTFORGE_SNAPSHOT_MS = '0';
+  t.after(() => delete process.env.SLOTFORGE_SNAPSHOT_MS);
   const { root, run } = fixture(t),
     w = workspace();
   run('save', { data: w });

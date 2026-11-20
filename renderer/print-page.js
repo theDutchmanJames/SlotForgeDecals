@@ -246,11 +246,11 @@ const PrintPage = (() => {
       return show('print');
     }
     // A picture: trace it in the Editor.
-    hide();
     page = w.item.page;
     selected = new Set([w.item.id]);
+    hide();
     revealDecal();
-    render();
+    window.render(); // the editor's render, not this page's
     return actions.trace();
   };
   document.addEventListener('click', e => {

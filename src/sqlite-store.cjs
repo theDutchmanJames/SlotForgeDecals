@@ -186,7 +186,7 @@ function collect(db) {
     );
     if (!db.prepare('SELECT 1 FROM gc_batch LIMIT 1').get()) break;
     db.exec(
-      'DELETE FROM documents WHERE hash IN (SELECT hash FROM gc_batch) AND NOT EXISTS (SELECT 1 FROM records WHERE document=documents.hash) AND NOT EXISTS (SELECT 1 FROM document_links WHERE child=documents.hash)'
+      'DELETE FROM documents WHERE hash IN (SELECT hash FROM gc_batch) AND hash NOT IN (SELECT document FROM records WHERE document IS NOT NULL) AND NOT EXISTS (SELECT 1 FROM document_links WHERE child=documents.hash)'
     );
   }
   db.exec(
@@ -207,6 +207,11 @@ function collectAll(db) {
     total + db.prepare('DELETE FROM assets WHERE hash NOT IN (SELECT asset FROM asset_links)').run().changes
   );
 }
+// How long the newest snapshot stays before a new one is taken (tests set it to 0).
+const snapshotEvery = () =>
+  process.env.SLOTFORGE_SNAPSHOT_MS === undefined
+    ? 10 * 60 * 1000
+    : Number(process.env.SLOTFORGE_SNAPSHOT_MS);
 function transaction(db, fn) {
   track(db);
   db.exec('BEGIN IMMEDIATE');
@@ -466,7 +471,14 @@ function workspaceSave(db, { data, expected }) {
       throw Error('Workspace changed in another session. Reopen Decals before saving.');
     const id = pack(db, valid);
     if (old?.document === id) return { stamp };
-    for (let n = 3; n >= 1; n--) {
+    // Snapshots move back one place at most every ten minutes, so the three of them reach back
+    // over your session instead of holding the last three autosaves seconds apart.
+    const now = Date.now(),
+      last = Number(state(db, 'snapshotAt') || 0),
+      first = db.prepare("SELECT 1 FROM records WHERE scope='workspace' AND key='workspace-1.json'").get();
+    const rotate = !first || !(now - last < snapshotEvery() && now >= last);
+    if (rotate && old) setState(db, 'snapshotAt', String(now));
+    for (let n = 3; rotate && n >= 1; n--) {
       const previous = db
         .prepare("SELECT * FROM records WHERE scope='workspace' AND key=?")
         .get(n === 1 ? 'current' : `workspace-${n - 1}.json`);

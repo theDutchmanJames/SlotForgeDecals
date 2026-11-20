@@ -526,6 +526,20 @@ function renderSelection() {
 function revealDecal() {
   if (settings.rightTab === 'sheet') showTab('right', 'decal');
 }
+// Back / Forward: swap with the nearest decal on the same page (decals on other pages do not
+// overlap it, so swapping with them changed nothing you could see).
+function restack(direction) {
+  const i = current();
+  if (i?.locked) throw Error('Unlock this decal before editing.');
+  if (!i) return;
+  const n = project.items.indexOf(i);
+  let j = n + direction;
+  while (j >= 0 && j < project.items.length && project.items[j].page !== i.page) j += direction;
+  if (j < 0 || j >= project.items.length) return;
+  mutate(() => {
+    [project.items[j], project.items[n]] = [project.items[n], project.items[j]];
+  });
+}
 function commitGesture(before) {
   try {
     project = DM.validateProject(project);
@@ -1989,12 +2003,27 @@ function numberCommit(art, count) {
       if (needsPage && project.pages >= 50)
         throw Error('The pair needs another page; the project already has 50.');
       retainArtworkFonts(art);
+      // Free space for the whole set (a pair side by side or stacked), so nothing lands on top
+      // of decals already on the page. A full page falls back to the top-left corner.
+      const box = {
+          ...art,
+          x: 0,
+          y: 0,
+          w: across ? art.w * 2 + gap : art.w,
+          h: down ? art.h * 2 + gap : art.h
+        },
+        spot = DM.freeSpot(
+          box,
+          project,
+          project.items.filter(i => i.page === page)
+        ),
+        origin = spot || { x: project.margin, y: project.margin };
       const ids = [];
       for (let n = 0; n < count; n++) {
         const i = DM.clone(art);
         place(i, {
-          x: project.margin + (n && across ? art.w + gap : 0),
-          y: project.margin + (n && down ? art.h + gap : 0)
+          x: n && needsPage ? project.margin : origin.x + (n && across ? art.w + gap : 0),
+          y: n && needsPage ? project.margin : origin.y + (n && down ? art.h + gap : 0)
         });
         if (n && needsPage) {
           i.page = project.pages;
@@ -2270,6 +2299,7 @@ const actions = {
   },
   delete: () => {
     const n = project.items.filter(i => selected.has(i.id) && !i.locked).length;
+    if (!n) return; // nothing to delete: no empty undo step
     mutate(() => {
       project.items = project.items.filter(i => !selected.has(i.id) || i.locked);
       selected.clear();
@@ -2313,25 +2343,8 @@ const actions = {
       for (const i of list) if (!i.locked) i.x += b.x + b.w / 2 - (DM.bounds(i).x + DM.bounds(i).w / 2);
     });
   },
-  backward: () => {
-    const i = current();
-    if (i?.locked) throw Error('Unlock this decal before editing.');
-    if (i)
-      mutate(() => {
-        const n = project.items.indexOf(i);
-        if (n > 0) [project.items[n - 1], project.items[n]] = [project.items[n], project.items[n - 1]];
-      });
-  },
-  forward: () => {
-    const i = current();
-    if (i?.locked) throw Error('Unlock this decal before editing.');
-    if (i)
-      mutate(() => {
-        const n = project.items.indexOf(i);
-        if (n < project.items.length - 1)
-          [project.items[n + 1], project.items[n]] = [project.items[n], project.items[n + 1]];
-      });
-  },
+  backward: () => restack(-1),
+  forward: () => restack(1),
   lock: () => {
     const i = current();
     if (i) mutate(() => (i.locked = !i.locked));
@@ -2847,7 +2860,8 @@ document.addEventListener('keydown', e => {
         if (e.key === 'ArrowUp') i.y -= d;
         if (e.key === 'ArrowDown') i.y += d;
       }
-    });
+      // Holding the key is one move: its repeats join the first press's undo step.
+    }, e.repeat);
   }
 });
 new ResizeObserver(() => {

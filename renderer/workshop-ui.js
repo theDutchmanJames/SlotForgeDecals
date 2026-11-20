@@ -200,7 +200,7 @@ const Workshop = (() => {
     box.hidden = !side;
     if (!side) return;
     if (side.kind === 'recover') {
-      box.innerHTML = `<header><h3>Recover a sheet</h3><span class="spacer"></span><button class="ghost icon-only" data-ws="close-side" aria-label="Close">${icon('x')}</button></header><div class="ws-tl"><p class="hint">Recovering opens a separate copy. Your other sheets and the decal library stay as they are.</p><h4>Deleted sheets</h4><div id="ws-deleted" class="ws-list"><p class="hint">Loading…</p></div><h4>Automatic snapshots</h4><p class="hint">The last few states of whichever sheet was open, kept while you work.</p><div id="ws-snapshots" class="ws-list"><p class="hint">Loading…</p></div></div>`;
+      box.innerHTML = `<header><h3>Recover a sheet</h3><span class="spacer"></span><button class="ghost icon-only" data-ws="close-side" aria-label="Close">${icon('x')}</button></header><div class="ws-tl"><p class="hint">Recovering opens a separate copy. Your other sheets and the decal library stay as they are.</p><h4>Deleted sheets</h4><div id="ws-deleted" class="ws-list"><p class="hint">Loading…</p></div><h4>Automatic snapshots</h4><p class="hint">Up to three earlier states of whichever sheet was open, taken at least ten minutes apart.</p><div id="ws-snapshots" class="ws-list"><p class="hint">Loading…</p></div></div>`;
       const fill = async (id, scope) => {
         const result = await desktop.queryLibrary({ scope, sort: 'updated', limit: 30 });
         const el = $('#' + id);
@@ -327,7 +327,11 @@ const Workshop = (() => {
         await desktop.deleteProject(e);
         if (side?.id === e.id) side = null;
         picked.delete(e.id);
-        settings.pinnedSheets = (settings.pinnedSheets || []).filter(id => id !== e.id);
+        if ((settings.pinnedSheets || []).includes(e.id)) {
+          settings.pinnedSheets = settings.pinnedSheets.filter(id => id !== e.id);
+          revision++; // saved, so the pin does not come back after a restart
+          scheduleSave();
+        }
         toast(e.name + ' deleted.', false, {
           action: { label: 'Recover…', run: () => show({ recover: true }) }
         });

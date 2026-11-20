@@ -400,15 +400,24 @@ const MakeTools = (() => {
     input.value = i.text;
     input.setAttribute('aria-label', 'Text on the sheet');
     $('.editor-panel').append(input);
-    editing = { id, input, typed: false, fresh };
+    editing = { id, input, last: null, fresh };
     const fonts = ['Arial', 'Georgia', 'Verdana', 'Courier New', ...activeFonts().map(f => f.family)];
     bar.innerHTML = `<select id="text-bar-font" aria-label="Typeface">${[...new Set(fonts)].map(f => `<option value="${E(f)}" ${f === i.font ? 'selected' : ''}>${E(activeFonts().find(x => x.family === f)?.name || f)}</option>`).join('')}</select><button id="text-bar-bold" class="${i.bold ? 'active' : ''}" aria-pressed="${!!i.bold}" title="Bold"><b>B</b></button><button id="text-bar-italic" class="${i.italic ? 'active' : ''}" aria-pressed="${!!i.italic}" title="Italic"><i>I</i></button><span class="text-bar-sep"></span><label>Bend<input id="text-bar-bend" type="range" min="-300" max="300" step="5" value="${i.curve || 0}"></label><label>Spacing<input id="text-bar-spacing" type="number" min="-10" max="50" step=".5" value="${i.spacing || 0}"></label><span class="text-bar-sep"></span><input id="text-bar-fill" type="color" value="${i.fill === 'none' ? '#111111' : i.fill}" aria-label="Text colour"><button id="text-bar-done" class="primary">Done</button>`;
     bar.hidden = false;
-    const change = (fn, coalesce = true) => {
+    // kind: 'type' or 'bend' joins the previous change of the same kind into one undo step;
+    // anything else (bold, font, colour…) is a step of its own and ends the run.
+    const change = (fn, kind = null) => {
       const live = project.items.find(x => x.id === id);
       if (!live) return finishText();
-      mutate(() => fn(project.items.find(x => x.id === id)), coalesce && editing.typed);
-      editing.typed = true;
+      try {
+        mutate(() => fn(project.items.find(x => x.id === id)), !!kind && editing.last === kind);
+        editing.last = kind;
+      } catch (e) {
+        // Shown, and the box goes back to the text on the sheet (e.g. text grown past 1000 mm).
+        if (kind === 'type') input.value = project.items.find(x => x.id === id)?.text ?? input.value;
+        editing.last = null;
+        fail(e);
+      }
       position();
     };
     input.oninput = () =>
@@ -416,7 +425,7 @@ const MakeTools = (() => {
         t.text = input.value.slice(0, 500) || ' ';
         remeasureText(t);
         if (t.curve) Art.bendText(t, t.curve);
-      });
+      }, 'type');
     input.onkeydown = e => {
       if (e.key === 'Enter' || e.key === 'Escape') {
         e.preventDefault();
@@ -438,25 +447,25 @@ const MakeTools = (() => {
       change(t => {
         t.bold = !t.bold;
         remeasureText(t);
-      }, false);
+      });
     $('#text-bar-italic').onclick = () =>
       change(t => {
         t.italic = !t.italic;
         remeasureText(t);
-      }, false);
+      });
     $('#text-bar-font').onchange = e =>
       change(t => {
         t.font = e.target.value;
         retainArtworkFonts(t);
         remeasureText(t);
-      }, false);
-    $('#text-bar-bend').oninput = e => change(t => Art.bendText(t, Number(e.target.value)));
+      });
+    $('#text-bar-bend').oninput = e => change(t => Art.bendText(t, Number(e.target.value)), 'bend');
     $('#text-bar-spacing').onchange = e =>
       change(t => {
         t.spacing = DM.number(e.target.value, -10, 50, 'Letter spacing');
         remeasureText(t);
-      }, false);
-    $('#text-bar-fill').onchange = e => change(t => (t.fill = e.target.value), false);
+      });
+    $('#text-bar-fill').onchange = e => change(t => (t.fill = e.target.value));
     $('#text-bar-done').onclick = () => finishText();
     position();
     input.focus();

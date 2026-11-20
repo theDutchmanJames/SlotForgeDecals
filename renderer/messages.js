@@ -104,7 +104,10 @@ const Messages = (() => {
     el.id = 'toast';
     el.className = 'notice' + (opts.error ? ' error' : '');
     el.innerHTML = `<span class="dot"></span><span class="msg-text">${E(clean(text))}</span>`;
-    const at = history.length;
+    // The exact undo step and sheet state this notice is about: any later change, undo or sheet
+    // switch replaces one of them (a count would not do once history is at its limit).
+    const step = history[history.length - 1],
+      state = project;
     const button = (label, run, primary) => {
       const b = document.createElement('button');
       b.className = primary ? 'primary' : 'ghost';
@@ -123,7 +126,7 @@ const Messages = (() => {
       button(
         'Undo',
         () => {
-          if (history.length !== at)
+          if (!step || history[history.length - 1] !== step || project !== state)
             throw Error('Other changes came after this one. Ctrl+Z undoes them one at a time.');
           actions.undo();
         },

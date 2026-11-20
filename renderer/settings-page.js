@@ -460,8 +460,12 @@ const SettingsPage = (() => {
     else if (e.target.id === 'sp-sample') sample = e.target.value;
     else if (e.target.id === 'font-search') fontQuery = e.target.value;
     else return;
-    render();
+    clearTimeout(typingTimer);
+    if (e.target.id === 'help-search') return render();
+    // The font fields redraw once typing pauses: the fonts tab draws up to 120 samples each time.
+    typingTimer = setTimeout(() => isOpen() && render(), 150);
   });
+  let typingTimer = 0;
   document.addEventListener('change', e => {
     if (!isOpen() || !root().contains(e.target)) return;
     if (e.target.id === 'sp-remind') {

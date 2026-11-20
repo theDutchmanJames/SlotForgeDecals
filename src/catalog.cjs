@@ -70,6 +70,8 @@ function writeDecal(db, value) {
     ...(keep.used ? { used: keep.used } : {})
   });
 }
+// Runs fn in one transaction, or inside the one already open.
+const batch = (db, fn) => (db.isTransaction ? fn() : S.transaction(db, fn));
 // Libraries saved before tag shelves get their tag keys on first use.
 function backfillTags(db) {
   const rows = db
@@ -77,11 +79,15 @@ function backfillTags(db) {
       "SELECT key,metadata FROM records WHERE scope='decals' AND json_extract(metadata,'$.tagKey') IS NULL"
     )
     .all();
+  if (!rows.length) return;
   const update = db.prepare("UPDATE records SET metadata=? WHERE scope='decals' AND key=?");
-  for (const r of rows) {
-    const m = JSON.parse(r.metadata);
-    update.run(JSON.stringify({ ...m, tagKey: tagKey(m.tags) }), r.key);
-  }
+  // One transaction: one commit per decal took seconds per thousand decals and held up autosave.
+  batch(db, () => {
+    for (const r of rows) {
+      const m = JSON.parse(r.metadata);
+      update.run(JSON.stringify({ ...m, tagKey: tagKey(m.tags) }), r.key);
+    }
+  });
 }
 // The shelves of the Decal Library: every tag with its count, favourites, recently used and kinds.
 function shelves(db) {
@@ -140,13 +146,20 @@ function usedOn(db, args) {
     )
     .all();
   const update = db.prepare("UPDATE records SET metadata=? WHERE scope='projects' AND key=?");
-  for (const r of missing) {
-    let ids = [];
-    try {
-      ids = S.libraryIds(S.unpack(db, r.document));
-    } catch {}
-    update.run(JSON.stringify({ ...JSON.parse(r.metadata), decals: ids }), r.key);
-  }
+  // One transaction for all of them. A sheet that cannot be read is left to try again next time,
+  // instead of being stored as using no decals for good.
+  if (missing.length)
+    batch(db, () => {
+      for (const r of missing) {
+        let ids;
+        try {
+          ids = S.libraryIds(S.unpack(db, r.document));
+        } catch {
+          continue;
+        }
+        update.run(JSON.stringify({ ...JSON.parse(r.metadata), decals: ids }), r.key);
+      }
+    });
   return query(db, { scope: 'projects', usesDecal: id, sort: 'updated', limit: 20 }).entries.map(e => ({
     id: e.id,
     name: e.name,
@@ -314,7 +327,10 @@ function query(db, args = {}) {
     limit,
     libraryCount: count(db),
     identity: S.state(db, 'identity'),
-    unreadable: db.prepare('SELECT count(*) n FROM migration_issues WHERE scope=?').get(scope).n
+    // Deleted sheets live in the history records.
+    unreadable: db
+      .prepare('SELECT count(*) n FROM migration_issues WHERE scope=?')
+      .get(scope === 'deleted' ? 'history' : scope).n
   };
 }
 function decalRow(db, entry) {
@@ -335,8 +351,11 @@ function save(db, args) {
     const value = validateDecal(args),
       id = value.decal.id;
     if (args.expected) {
-      const row = decalRow(db, { id, stamp: args.expected });
-      value.decal.added = JSON.parse(row.metadata).added;
+      const row = decalRow(db, { id, stamp: args.expected }),
+        stored = JSON.parse(row.metadata);
+      value.decal.added = stored.added;
+      // Updating the artwork keeps what the details panel set: the creator (tags come from the form).
+      if (!value.decal.creator && stored.creator) value.decal.creator = stored.creator;
     } else {
       if (db.prepare("SELECT 1 FROM records WHERE scope='decals' AND key=?").get(id))
         throw Error('This decal already exists. Refresh before updating it.');

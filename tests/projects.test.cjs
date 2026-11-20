@@ -1,3 +1,6 @@
+// These checks take a snapshot at every save (normally the newest stays for ten minutes). The
+// storage worker copies the environment when it starts, so this is set before anything runs.
+process.env.SLOTFORGE_SNAPSHOT_MS = '0';
 const { test } = require('node:test'),
   assert = require('node:assert/strict'),
   fs = require('node:fs/promises'),

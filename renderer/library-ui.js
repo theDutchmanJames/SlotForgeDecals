@@ -273,6 +273,9 @@ async function saveDecal() {
         if (host.isConnected) {
           master = r.entries[0];
           $('#update-master').disabled = !master;
+          // Show the saved tags, so updating the decal keeps them unless you change them.
+          const tags = $('#save-decal-tags');
+          if (master && tags && !tags.value) tags.value = master.tags || '';
         }
       })
       .catch(fail);

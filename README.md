@@ -261,7 +261,7 @@ Decals opens on the **Workshop** (redesigned in November 2026; Settings → When
 - **Continue where you left off:** the open sheet with its pages, facts, Versions and Export PDF.
 - **Start something new:** a blank sheet on the paper you pick, from an image, from a shared `.sfsheet` file, or the example sheet.
 - **Your sheets:** every saved sheet with its thumbnail, filters for scale and pinned sheets, search and an order that is remembered. Click a sheet for **Open**, **Rename**, **Duplicate**, **Share…**, **Pin** and **Delete**, with its **History** of earlier saves.
-- **Recover a sheet…:** deleted sheets and the automatic snapshots, each opened as a separate copy.
+- **Recover a sheet…:** deleted sheets and the automatic snapshots (up to three earlier states, at least ten minutes apart), each opened as a separate copy.
 
 Shift- or Ctrl-click several sheets and choose **Share selected…** to share an editable `.sfsheet` file. Each saved sheet keeps its own paper size, scale, artwork, imported fonts and pages. Use **Choose pages…** to share only part of a saved sheet. **Import Sheet(s)** lets you select which sheets and pages to add as independent copies; your current work stays open.
 

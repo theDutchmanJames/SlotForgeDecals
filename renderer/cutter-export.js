@@ -206,8 +206,11 @@ Scanning a printed sheet (Direct Cut / Scan to Cut Data):
     canvas.width = canvas.height = 1;
     return withDPI(new Uint8Array(await blob.arrayBuffer()));
   }
-  const fontsCSS = p =>
-    p.fonts.map(f => `@font-face{font-family:'${f.family}';src:url('${f.data}');}`).join('');
+  // Only the fonts the drawn decals use; every sheet font made each decal file megabytes larger.
+  const fontsCSS = (p, items = p.items) =>
+    DM.fontsFor(items, p.fonts)
+      .map(f => `@font-face{font-family:'${f.family}';src:url('${f.data}');}`)
+      .join('');
   const dataURL = bytes => {
     let binary = '';
     for (let n = 0; n < bytes.length; n += 8192)
@@ -245,7 +248,7 @@ Scanning a printed sheet (Direct Cut / Scan to Cut Data):
         wPx = Math.max(1, Math.round(w * PX_PER_MM)),
         hPx = Math.max(1, Math.round(h * PX_PER_MM));
       const border = polygons.length ? `<path d="${Cutlines.pathData(polygons)}" fill="#ffffff"/>` : '';
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${wPx}" height="${hPx}" viewBox="${x0} ${y0} ${w} ${h}" preserveAspectRatio="none"><style>${fontsCSS(p)}</style>${border}${Art.element(item, 'export' + n, 'colour')}</svg>`;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${wPx}" height="${hPx}" viewBox="${x0} ${y0} ${w} ${h}" preserveAspectRatio="none"><style>${fontsCSS(p, [item])}</style>${border}${Art.element(item, 'export' + n, 'colour')}</svg>`;
       const name = `${String(n).padStart(2, '0')} ${safe(item.name)}${count > 1 ? ' x' + count : ''} - ${mm(w)} x ${mm(h)} mm.png`;
       files.push({ path: 'Decals/' + name, data: await png(svg, wPx, hPx) });
     }
