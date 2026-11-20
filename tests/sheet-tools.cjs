@@ -118,19 +118,22 @@ async function main() {
     await shot('mirrored-pair');
     ok('mirrored copy added at', mirrored.x.toFixed(1), mirrored.y.toFixed(1));
 
-    // Recolour the mirrored copy: every colour listed, red → blue applied in one undo step.
+    // Recolour the mirrored copy in the Decal tab: every colour listed; red → blue in one undo step.
     await page.locator('#inspector [data-action="recolour"]').click();
-    const colours = await page.locator('[data-from]').evaluateAll(list => list.map(i => i.dataset.from));
+    const colours = await page
+      .locator('[data-recolour-from]')
+      .evaluateAll(list => list.map(i => i.dataset.recolourFrom));
     assert.ok(colours.length >= 2, 'colours found: ' + colours.join(' '));
-    await shot('recolour-dialog');
+    await shot('recolour-colours');
     const red = colours.find(c => c !== '#000000' && c !== '#111111' && c !== '#ffffff') || colours[0];
-    await page.locator(`[data-from="${red}"]`).evaluate(i => {
+    await page.locator(`[data-recolour-from="${red}"]`).click();
+    await page.waitForSelector('#recolour-other');
+    await shot('recolour-choices');
+    await page.locator('#recolour-other').evaluate(i => {
       i.value = '#245cc3';
-      i.dispatchEvent(new Event('input', { bubbles: true }));
+      i.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    await page.waitForTimeout(300);
-    await shot('recolour-dialog-set');
-    await page.locator('#recolour-apply').click();
+    await page.waitForFunction(() => document.querySelector('[data-recolour-from="#245cc3"]'));
     p = await P();
     const recoloured = JSON.stringify(p.items.find(i => i.id === mirrored.id));
     assert.ok(recoloured.toLowerCase().includes('#245cc3') && !recoloured.toLowerCase().includes(red));
@@ -151,7 +154,7 @@ async function main() {
 
     // Batch racing numbers 1–30 as pairs: 60 decals over extra pages, no overlaps.
     await page.locator('[data-action="shapes"]').click();
-    await page.locator('#dialog').getByRole('button', { name: 'Racing Number Plates' }).click();
+    await page.locator('#make-flyout [data-action="number-template"]').click();
     await page.locator('#number-w').fill('40');
     await page.locator('#number-batch').fill('1-30');
     await page.locator('#number-count').selectOption('2');

@@ -30,7 +30,11 @@ async function main() {
     await page.screenshot({ path: path.join(run, 'editor.png') });
     assert.equal(await page.locator('.library-card').count(), 6);
     assert.equal(await page.locator('#paper .sheet-item').count(), 22);
-    await page.locator('[data-create="text"]').click();
+    await page.locator('.tool-rail [data-flyout="text"]').click();
+    // The Text flyout waits for the sheet: Enter adds it in free space, Enter again ends typing.
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#text-inline');
+    await page.keyboard.press('Enter');
     await page.locator('#text-value').fill('JAMES');
     await page.locator('#text-value').press('Tab');
     await page.locator('#prop-h').fill('8');

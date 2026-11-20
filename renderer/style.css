@@ -5720,3 +5720,445 @@ dialog.bay-dialog .dialog-foot .hint {
     display: none;
   }
 }
+/* Making artwork on the canvas (remake option B, docs/ui-reference/making-2026-11): template flyouts
+   beside the tool rail, typing on the sheet with a text bar, Recolour in the Decal tab and Edit vector
+   over the sheet. */
+.wb-body {
+  position: relative;
+}
+.make-flyout {
+  position: absolute;
+  left: 66px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  width: 316px;
+  max-height: calc(100% - 16px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 0 18px 50px #0007;
+  overflow: hidden;
+}
+.make-flyout[hidden] {
+  display: none;
+}
+.make-flyout > header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.make-flyout > header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.make-flyout > header .icon {
+  color: var(--accent-text);
+}
+.make-flyout > header button {
+  width: 28px;
+  min-height: 28px;
+  border-color: transparent;
+}
+.fly-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  padding: 12px;
+  overflow-y: auto;
+}
+.fly-cell {
+  flex-direction: column;
+  gap: 5px;
+  min-height: 0;
+  padding: 7px 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ink) 3%, var(--panel));
+  color: color-mix(in srgb, var(--ink) 85%, var(--muted));
+  font-size: 11px;
+  white-space: normal;
+  line-height: 1.15;
+}
+.fly-cell img {
+  width: 70px;
+  height: 42px;
+  padding: 4px;
+  border-radius: 6px;
+  background: #fff;
+  object-fit: contain;
+}
+.fly-cell[aria-pressed='true'] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.make-flyout > footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--line);
+}
+.make-flyout > footer .hint {
+  margin: 0;
+}
+.fly-body {
+  padding: 12px 14px;
+  overflow-y: auto;
+}
+.fly-body .number-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fly-body .number-layout > section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.fly-body .number-styles {
+  display: flex;
+}
+.fly-body .number-styles button {
+  flex: 1;
+}
+.fly-body .number-colours {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.fly-body .number-colours .colour-kit {
+  display: none;
+}
+.fly-body .number-preview-box {
+  align-items: center;
+}
+.fly-body #number-preview {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 92px;
+  margin: 0;
+  border-radius: 8px;
+  background: #fff;
+}
+.fly-body #number-preview img {
+  max-height: 80px;
+}
+.fly-body #number-size {
+  margin: 6px 0 0;
+  text-align: center;
+}
+.fly-body .number-actions {
+  margin: 0;
+}
+.fly-body .number-actions button {
+  flex: 1;
+}
+.fly-body .hint {
+  margin: 0;
+}
+#paper.placing {
+  cursor: crosshair;
+}
+.place-dims {
+  position: absolute;
+  z-index: 7;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #2f8cff;
+  color: #fff;
+  font: 500 11px var(--font-numbers);
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.place-dims[hidden] {
+  display: none;
+}
+/* typing on the sheet */
+#text-inline {
+  position: absolute;
+  z-index: 8;
+  padding: 0 4px;
+  border: 2px solid #2f8cff;
+  border-radius: 3px;
+  background: #ffffffeb;
+  color: #111;
+  line-height: 1;
+  text-align: center;
+  outline: 0;
+  box-shadow: 0 4px 16px #0004;
+}
+.text-bar {
+  position: absolute;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--panel);
+  box-shadow: 0 10px 30px #0006;
+  white-space: nowrap;
+}
+.text-bar[hidden] {
+  display: none;
+}
+.text-bar select {
+  width: 150px;
+  padding: 4px 8px;
+}
+.text-bar button {
+  min-height: 28px;
+  padding: 0 9px;
+}
+.text-bar button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+}
+.text-bar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.text-bar input[type='range'] {
+  width: 90px;
+  padding: 0;
+  accent-color: var(--accent);
+}
+.text-bar input[type='number'] {
+  width: 56px;
+  padding: 4px 6px;
+}
+.text-bar input[type='color'] {
+  width: 34px;
+  height: 28px;
+  padding: 2px;
+}
+.text-bar .colour-kit {
+  display: none;
+}
+.text-bar-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--line);
+}
+/* Recolour in the Decal tab */
+.rc-swatches,
+.rc-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.rc-swatch {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 1px solid #0003;
+  border-radius: 8px;
+  background: var(--c);
+}
+.rc-swatch:hover:not(:disabled) {
+  background: var(--c);
+  border-color: var(--muted);
+}
+.rc-swatch[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 2px var(--panel),
+    0 0 0 4px var(--accent);
+}
+.rc-pick {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+.rc-pick .hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.rc-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #0003;
+  border-radius: 4px;
+  background: var(--c);
+}
+.rc-choices {
+  margin: 0;
+}
+.rc-choices .rc-swatch {
+  width: 26px;
+  min-height: 26px;
+}
+.rc-other {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.rc-other input {
+  width: 30px;
+  height: 26px;
+  padding: 1px;
+}
+#recolour-sec.flash {
+  animation: rc-flash 1.2s ease-out;
+}
+@keyframes rc-flash {
+  from {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  to {
+    background: transparent;
+  }
+}
+/* Edit vector over the sheet */
+.vector-lens {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px 16px;
+  background: #06080cc4;
+  backdrop-filter: blur(2px);
+}
+[data-theme='light'] .vector-lens {
+  background: #2a2620a6;
+}
+.lens-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  color: #fff;
+  font-size: 12.5px;
+}
+.lens-top b {
+  font:
+    italic 700 16px 'SF Barlow Condensed',
+    'Bahnschrift',
+    sans-serif;
+  text-transform: uppercase;
+}
+.lens-top label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lens-top select {
+  width: auto;
+  padding: 4px 8px;
+}
+.vector-lens .vector-view {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  border-radius: 6px;
+  box-shadow: 0 20px 60px #0009;
+}
+.lens-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 0 14px 40px #0008;
+}
+.lens-bar button {
+  min-height: 30px;
+  padding: 0 10px;
+}
+.lens-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--line);
+}
+.lens-status {
+  margin: 0;
+  color: #e8e6e1;
+  font-size: 12px;
+}
+.lens-error:empty {
+  display: none;
+}
+.vector-shapes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 10px;
+}
+.vs-row {
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+}
+.vs-row.active {
+  background: color-mix(in srgb, #2f8cff 17%, transparent);
+}
+.vs-main {
+  flex: 1;
+  justify-content: flex-start;
+  gap: 9px;
+  min-width: 0;
+  min-height: 0;
+  padding: 5px 6px;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+.vs-main:hover:not(:disabled) {
+  background: none;
+}
+.vs-main > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+}
+.vs-main small {
+  color: var(--muted);
+  font: 500 10.5px var(--font-numbers);
+}
+.vs-swatch {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 1px solid #0003;
+  border-radius: 6px;
+  background-image: linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%);
+  background-size: 8px 8px;
+}
+.vs-swatch[style*='rgb'] {
+  background-image: none;
+}
+.vs-row > .icon-only {
+  width: 28px;
+  min-height: 28px;
+  border-color: transparent;
+  color: var(--muted);
+}
+.vector-panel {
+  padding: 14px;
+}

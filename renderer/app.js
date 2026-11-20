@@ -502,7 +502,7 @@ const fmt = n => String(Number(n.toFixed(1)));
 function placeContextBar() {
   const bar = $('#ctx-bar'),
     nodes = [...selected].map(id => $(`#paper .sheet-item[data-id="${CSS.escape(id)}"]`)).filter(Boolean);
-  bar.hidden = !nodes.length || !!CanvasTools.active || drag?.kind === 'select';
+  bar.hidden = !nodes.length || !!CanvasTools.active || drag?.kind === 'select' || MakeTools.isEditing();
   if (bar.hidden) return;
   const panel = $('.editor-panel').getBoundingClientRect(),
     view = $('#sheet-scroll').getBoundingClientRect(),
@@ -676,6 +676,7 @@ function renderPaper() {
   CanvasTools.draw();
   drawCutPreview();
   placeContextBar();
+  MakeTools.position();
 }
 // Dashed cut lines drawn over the sheet. Contours are traced asynchronously and cached,
 // so a newer render simply replaces an older, unfinished one.
@@ -717,7 +718,7 @@ function renderInspector() {
     list = items();
   if (!i) {
     $('#inspector').innerHTML = list.length
-      ? `<div class="ins-head"><div class="ins-thumb many">${list.length}</div><div><b class="ins-title">${list.length} decals selected</b><small class="hint">Drag any of them to move them together</small></div></div><section class="ins-sec"><h3>Selection</h3><div class="ins-tiles">${tile('group', 'group', 'Group')}${tile('combine-shapes', 'merge', 'Merge / Cut Shapes')}${tile('arrange-selection', 'arrange', 'Align & arrange…')}${tile('mirror-pair', 'mirror', 'Add mirrored copy (other side)', 'title="Mirrored copy for directional graphics such as arrows, stripes and slanted shapes. Editable text stays readable; lettering inside imported logos is mirrored too."')}${tile('recolour', 'brush', 'Recolour…')}${tile('save-decal', 'star', 'Save to library')}${alias('grid-copies', 'grid', 'Repeat…')}${alias('move-page', 'move', 'Move to page…')}</div></section><div class="ins-foot"><button data-action="duplicate">${icon('copy')}Duplicate</button><span class="spacer"></span><button data-action="delete" class="danger">${icon('trash')}Delete</button></div>`
+      ? `<div class="ins-head"><div class="ins-thumb many">${list.length}</div><div><b class="ins-title">${list.length} decals selected</b><small class="hint">Drag any of them to move them together</small></div></div><section class="ins-sec"><h3>Selection</h3><div class="ins-tiles">${tile('group', 'group', 'Group')}${tile('combine-shapes', 'merge', 'Merge / Cut Shapes')}${tile('arrange-selection', 'arrange', 'Align & arrange…')}${tile('mirror-pair', 'mirror', 'Add mirrored copy (other side)', 'title="Mirrored copy for directional graphics such as arrows, stripes and slanted shapes. Editable text stays readable; lettering inside imported logos is mirrored too."')}${tile('recolour', 'brush', 'Recolour…')}${tile('save-decal', 'star', 'Save to library')}${alias('grid-copies', 'grid', 'Repeat…')}${alias('move-page', 'move', 'Move to page…')}</div></section>${recolourSection(list)}<div class="ins-foot"><button data-action="duplicate">${icon('copy')}Duplicate</button><span class="spacer"></span><button data-action="delete" class="danger">${icon('trash')}Delete</button></div>`
       : `<div class="no-selection"><strong>No decal selected</strong><p>Click a decal on the sheet to change it here, or drag on empty paper to select several.</p><div class="ins-tiles">${alias('import', 'image', 'Import an image')}${alias('text', 'text', 'Add text')}${alias('number-template', 'hash', 'Racing numbers')}${alias('shapes', 'shape', 'Shapes & patterns')}</div><p class="hint">Sheet-wide settings such as paper, white ink and cut lines are under Sheet &amp; paper.</p></div>`;
     return;
   }
@@ -781,8 +782,9 @@ function renderInspector() {
     `<section class="ins-sec"><h3>Colour</h3>${
       canPaint
         ? `<div class="fields2"><div class="field"><label for="fill">Fill colour</label><input type="color" id="fill" value="${i.fill === 'none' ? '#ffffff' : i.fill}"></div>${canOutline ? `<div class="field"><label for="stroke">Outline colour</label><input type="color" id="stroke" value="${i.stroke}"></div>` : ''}</div><label class="check"><input id="no-fill" type="checkbox" ${i.fill === 'none' ? 'checked' : ''}>Transparent fill</label><div class="fields2">${canOutline ? prop('Outline (mm)', 'strokeWidth', i.strokeWidth, 0, 50) : prop(i.kind === 'stripe' ? 'Overall stripe thickness (mm)' : 'Line thickness (mm)', 'thickness', i.h, 0.1, 1000)}${i.kind === 'rect' ? prop('Corner radius (mm)', 'radius', i.radius || 0, 0, 500) : ''}</div>${i.kind === 'stripe' ? `<p class="hint">Total height of both stripes and their gap. Length stays unchanged.</p><div class="field"><label for="fill2">Second stripe colour</label><input id="fill2" type="color" value="${i.fill2 || '#245cc3'}"></div>` : ''}`
-        : '<p class="hint">The original artwork keeps its colours. Use Recolour to swap them.</p>'
+        : ''
     }<div class="field"><label for="prop-opacity">Opacity</label><div class="opacity-control"><input id="opacity-range" type="range" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}" aria-label="Opacity slider"><div class="unit-input"><input id="prop-opacity" type="number" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}"><span>%</span></div></div></div></section>` +
+    (canPaint ? '' : recolourSection([i])) +
     `<section class="ins-sec"><h3>On the paper</h3><div class="field"><label for="ink">Ink</label><select id="ink"><option value="colour">Colour artwork</option><option value="colour-white">Colour + white backing</option><option value="white-only">White ink only</option></select></div><div class="field"><label for="cut-override">Cut line</label><select id="cut-override"><option value="">Sheet setting (${E({ shape: 'follow shape', rect: 'rectangle', none: 'no cut line' }[DM.cutSettings(project.cut).mode])})</option><option value="shape">Follow the decal shape</option><option value="rect">Rectangle</option><option value="none">No cut line</option></select></div></section>` +
     `<section class="ins-sec"><h3>Tools</h3><div class="ins-tiles">${tools.join('')}</div></section>` +
     `<div class="ins-foot"><button data-action="backward" title="Send backward">${icon('dn')}Back</button><button data-action="forward" title="Bring forward">${icon('up')}Forward</button><button data-action="lock">${icon(i.locked ? 'unlock' : 'lock')}${i.locked ? 'Unlock' : 'Lock'}</button><span class="spacer"></span><button class="danger icon-only" data-action="delete" title="Delete from sheet" aria-label="Delete from sheet">${icon('trash')}</button></div>`;
@@ -1122,6 +1124,7 @@ function finishSheetDrag(cancel = false) {
   if (sheetSurface.hasPointerCapture(d.pointerId)) sheetSurface.releasePointerCapture(d.pointerId);
   render();
 }
+let lastPress = {};
 sheetSurface.onpointerdown = e => {
   if (e.button !== 0 || drag) return;
   // Leave native scrollbars available.
@@ -1141,6 +1144,19 @@ sheetSurface.onpointerdown = e => {
   if (hit) {
     const id = hit.dataset.id,
       i = project.items.find(i => i.id === id);
+    // A second press on the same text within a moment types on the sheet. Each press re-renders the
+    // sheet, so the browser's own double-click never arrives.
+    const again =
+      lastPress.id === id &&
+      e.timeStamp - lastPress.t < 450 &&
+      Math.hypot(e.clientX - lastPress.x, e.clientY - lastPress.y) < 6 &&
+      !e.target.closest('[data-handle]');
+    lastPress = { id, t: e.timeStamp, x: e.clientX, y: e.clientY };
+    if (again && !additive && i.kind === 'text' && !i.locked) {
+      lastPress = {};
+      MakeTools.editText(id);
+      return;
+    }
     if (additive) {
       selected.has(id) ? selected.delete(id) : selected.add(id);
       renderSelection();
@@ -1746,7 +1762,7 @@ const HELP_TOPICS = [
   ],
   [
     'Text, shapes & paths',
-    '<p>Add <strong>Text</strong> and choose a font: the built-in fonts, <strong>Choose installed font…</strong> for any font on this computer, or <strong>Import font</strong> for a font file. Chosen fonts are embedded in the sheet. Text bend arches lettering up or down.</p><p>Open <strong>Shapes &amp; Patterns</strong> for basic shapes, stars, polygons, arrows, chevrons, shields, checkerboards and 1–12 racing stripes. <strong>Racing Number Plates</strong> offers editable roundels and plates, including matching pairs. Fill in <strong>More numbers</strong> (for example 1-30, 44, 51) to create a plate for every car in the field at once; they fill free space and add pages as needed.</p><p><strong>Path Tool</strong> draws lines or closed shapes; edit points and curve handles afterwards. <strong>Merge &amp; Cut</strong> combines filled native shapes on the canvas: union, cut, intersection or excluded overlap. Results remain editable paths; imports and text cannot be combined.</p><p>Colour fields offer an eyedropper and quick swatches of your recent colours and the colours on the sheet. <strong>Add silhouette outline</strong> creates an adjustable vector border around imported artwork. Select a group and choose <strong>Edit group</strong> to change its parts; Apply changes commits them together.</p>'
+    '<p>New artwork is made on the sheet. <strong>Text</strong>, <strong>Number</strong> and <strong>Shape</strong> on the tool rail open a small flyout next to it: pick a style, then click the sheet where it should go, drag to draw it at the size you want (a label shows the millimetres; Shift keeps proportions), or press <strong>Enter</strong> to add it in free space. Esc stops.</p><p><strong>Text</strong> styles include plain, bold, sponsor, outlined, arched and number lettering. After placing it you type straight on the sheet, with a small bar above it for the font, bold, italic, bend, letter spacing and colour; Enter or Done finishes. Double-click text on the sheet to type in it again. Choose <strong>Choose installed font…</strong> for any font on this computer, or <strong>Import font</strong> for a font file, in the Decal tab; chosen fonts are embedded in the sheet.</p><p>The <strong>Shape</strong> flyout has rectangles, circles, triangles, lines and double stripes, plus diamonds, stars, polygons, arrows, chevrons, trapezoids, shields, checkerboards and 1–12 racing stripes. <strong>Adjust Shape / Pattern</strong> in the Decal tab changes a placed shape or pattern. The <strong>Number</strong> flyout makes roundels, ovals and plates, one decal or a pair for each number. Fill in <strong>More numbers</strong> (for example 1-30, 44, 51) for every car in the field at once: <strong>Place on the sheet</strong> lays them in rows from where you click, <strong>Add in free space</strong> fills free space and adds pages as needed.</p><p><strong>Recolour</strong> is in the Decal tab: it lists every colour in the selected decals, including inside SVG artwork. Click one, then a new colour; the change applies at once and Ctrl+Z undoes it.</p><p><strong>Path Tool</strong> draws lines or closed shapes; edit points and curve handles afterwards. <strong>Merge &amp; Cut</strong> combines filled native shapes on the canvas: union, cut, intersection or excluded overlap. Results remain editable paths; imports and text cannot be combined.</p><p>Colour fields offer an eyedropper and quick swatches of your recent colours and the colours on the sheet. <strong>Add silhouette outline</strong> creates an adjustable vector border around imported artwork. Select a group and choose <strong>Edit group</strong> to change its parts; Apply changes commits them together.</p>'
   ],
   [
     'Size & car preview',
@@ -1778,7 +1794,7 @@ const HELP_TOPICS = [
   ],
   [
     'Keyboard shortcuts',
-    '<dl class="help-keys"><dt>Ctrl+C / Ctrl+X / Ctrl+V</dt><dd>Copy, cut and paste decals (also between sheets); paste images, screenshots or SVG code</dd><dt>Ctrl+D</dt><dd>Duplicate</dd><dt>Ctrl+G</dt><dd>Group</dd><dt>Ctrl+A</dt><dd>Select everything on the page</dd><dt>Delete</dt><dd>Remove the selection</dd><dt>Arrow keys</dt><dd>Move 1 mm · with Shift 0.1 mm</dd><dt>Ctrl+Z / Ctrl+Y</dt><dd>Undo and redo, up to 200 steps (Ctrl+Shift+Z also redoes)</dd><dt>Ctrl+S</dt><dd>Save the sheet to Sheets</dd><dt>Ctrl+K</dt><dd>Find a tool, decal or setting</dd><dt>Ctrl+P</dt><dd>Export PDF</dd><dt>V · I · T · N · S · P · M</dt><dd>Select, Image, Text, Number, Shape, Path, Merge</dd><dt>Ctrl+mousewheel</dt><dd>Zoom the sheet</dd><dt>Alt-drag</dt><dd>Move without snapping</dd><dt>Escape</dt><dd>Clear the selection or cancel a drag</dd></dl><p class="hint">On a Mac, use Cmd instead of Ctrl.</p>'
+    '<dl class="help-keys"><dt>Ctrl+C / Ctrl+X / Ctrl+V</dt><dd>Copy, cut and paste decals (also between sheets); paste images, screenshots or SVG code</dd><dt>Ctrl+D</dt><dd>Duplicate</dd><dt>Ctrl+G</dt><dd>Group</dd><dt>Ctrl+A</dt><dd>Select everything on the page</dd><dt>Delete</dt><dd>Remove the selection</dd><dt>Arrow keys</dt><dd>Move 1 mm · with Shift 0.1 mm</dd><dt>Ctrl+Z / Ctrl+Y</dt><dd>Undo and redo, up to 200 steps (Ctrl+Shift+Z also redoes)</dd><dt>Ctrl+S</dt><dd>Save the sheet to Sheets</dd><dt>Ctrl+K</dt><dd>Find a tool, decal or setting</dd><dt>Ctrl+P</dt><dd>Export PDF</dd><dt>V · I · T · N · S · P · M</dt><dd>Select, Image, Text, Number, Shape, Path, Merge</dd><dt>Enter · Esc</dt><dd>While placing new artwork: add it in free space · stop</dd><dt>Ctrl+mousewheel</dt><dd>Zoom the sheet</dd><dt>Alt-drag</dt><dd>Move without snapping</dd><dt>Escape</dt><dd>Clear the selection or cancel a drag</dd></dl><p class="hint">On a Mac, use Cmd instead of Ctrl.</p>'
   ]
 ];
 function helpDialog() {
@@ -2111,46 +2127,104 @@ async function installedFontsDialog() {
   $('#font-search').focus();
 }
 // Recolour: replace any colour used by the selected decals, e.g. for a team variant.
-function recolourDialog() {
-  const list = items();
-  if (!list.length) throw Error('Select a decal first.');
-  if (list.some(i => i.locked)) throw Error('Unlock the selected decals before recolouring.');
+// Recolour in the Decal tab (remake option B): click a colour of the selection, then a new one. The
+// sheet changes at once; Ctrl+Z takes it back.
+let recolourFrom = null,
+  recolourFor = '';
+const RECOLOUR_BASICS = [
+  '#d92b2b',
+  '#1d3f8f',
+  '#ffffff',
+  '#111111',
+  '#f2711c',
+  '#0e7a52',
+  '#f5c400',
+  '#7a3db8'
+];
+function recolourSection(list) {
+  const key = list.map(i => i.id).join(',');
+  if (key !== recolourFor) {
+    recolourFor = key;
+    recolourFrom = null;
+  }
   const colours = ColourKit.coloursIn(list).slice(0, 24);
   if (!colours.length)
-    throw Error('These decals contain only bitmap images. Trace them to vector first to recolour them.');
-  const rasters = list.some(i => DM.rasters(i).length);
-  const subject = list.length === 1 ? list[0].name : list.length + ' decals';
-  showDialog(
-    'Recolour',
-    `${colours.length} ${colours.length === 1 ? 'colour' : 'colours'} in ${subject}. Choose a new colour for any of them.`,
-    `<div class="recolour-list">${colours
-      .map(
-        c =>
-          `<div class="recolour-row"><span class="recolour-old" style="background:${c}" title="${c}"></span><code>${c}</code><span aria-hidden="true">→</span><div class="recolour-new"><input type="color" data-from="${c}" value="${c}" aria-label="New colour for ${c}"></div></div>`
-      )
-      .join(
-        ''
-      )}</div>${rasters ? '<p class="hint">Bitmap images inside these decals keep their colours.</p>' : ''}<p class="hint">Originals kept for tracing or vector editing stay unchanged. Undo reverts the recolour.</p>`,
-    '<button data-action="close">Cancel</button><button class="primary" id="recolour-apply">Apply colours</button>'
-  );
-  $('#recolour-apply').onclick = () => {
+    return `<section class="ins-sec" id="recolour-sec"><h3>Colours</h3><p class="hint">Bitmap images keep their colours. Trace them to vector first to change them.</p></section>`;
+  if (!colours.includes(recolourFrom)) recolourFrom = null;
+  const choices = [
+    ...new Set([
+      ...(settings.recentColours || []),
+      ...ColourKit.sheetColours(project.items),
+      ...RECOLOUR_BASICS
+    ])
+  ]
+    .map(c => ColourKit.normal(c))
+    .filter(c => c && c !== recolourFrom)
+    .slice(0, 14);
+  return `<section class="ins-sec" id="recolour-sec"><h3>Colours <small>click one to change it</small></h3><div class="rc-swatches">${colours
+    .map(
+      c =>
+        `<button class="rc-swatch" data-recolour-from="${c}" aria-pressed="${c === recolourFrom}" title="${c}" style="--c:${c}" aria-label="Change ${c}"></button>`
+    )
+    .join('')}</div>${
+    recolourFrom
+      ? `<div class="rc-pick"><span class="hint">Change <span class="rc-dot" style="--c:${recolourFrom}"></span> to</span><div class="rc-choices">${choices
+          .map(
+            c =>
+              `<button class="rc-swatch" data-recolour-to="${c}" title="${c}" style="--c:${c}" aria-label="Change to ${c}"></button>`
+          )
+          .join(
+            ''
+          )}<label class="rc-other" title="Another colour"><input type="color" id="recolour-other" value="${recolourFrom}" data-colour-kit aria-label="Another colour">Other…</label></div></div>`
+      : ''
+  }${list.some(i => DM.rasters(i).length) ? '<p class="hint">Bitmap images inside keep their colours.</p>' : ''}</section>`;
+}
+function recolourTo(to) {
+  const list = items();
+  if (!list.length || !recolourFrom) return;
+  if (list.some(i => i.locked)) throw Error('Unlock the selected decals before recolouring.');
+  const from = recolourFrom,
+    next = ColourKit.normal(to);
+  if (!next || next === from) return;
+  const ids = new Set(list.map(i => i.id));
+  mutate(() => {
+    for (const live of project.items) if (ids.has(live.id)) ColourKit.recolour(live, { [from]: next });
+  });
+  settings.recentColours = ColourKit.addRecent(settings.recentColours || [], next);
+  recolourFrom = next;
+  recolourFor = [...ids].join(',');
+  render();
+  toast(`Changed ${from} to ${next}. Ctrl+Z takes it back.`);
+}
+document.addEventListener('click', e => {
+  const from = e.target.closest('[data-recolour-from]'),
+    to = e.target.closest('[data-recolour-to]');
+  if (from) {
+    recolourFrom = recolourFrom === from.dataset.recolourFrom ? null : from.dataset.recolourFrom;
+    renderInspector();
+  }
+  if (to)
     try {
-      const map = {};
-      for (const input of $$('[data-from]'))
-        if (input.value.toLowerCase() !== input.dataset.from)
-          map[input.dataset.from] = input.value.toLowerCase();
-      const changed = Object.keys(map).length;
-      if (!changed) return closeDialog();
-      const ids = new Set(list.map(i => i.id));
-      mutate(() => {
-        for (const live of project.items) if (ids.has(live.id)) ColourKit.recolour(live, map);
-      });
-      closeDialog();
-      toast(`Changed ${changed} ${changed === 1 ? 'colour' : 'colours'}.`);
+      recolourTo(to.dataset.recolourTo);
     } catch (err) {
-      $('#dialog-error').textContent = err.message;
+      fail(err);
     }
-  };
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'recolour-other')
+    try {
+      recolourTo(e.target.value);
+    } catch (err) {
+      fail(err);
+    }
+});
+function recolourDialog() {
+  showTab('right', 'decal');
+  const sec = $('#recolour-sec');
+  if (!sec) throw Error('Select a decal first.');
+  sec.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  sec.classList.remove('flash');
+  requestAnimationFrame(() => sec.classList.add('flash'));
 }
 // Clean up or Image or vector on a decal of the sheet: the import bay at that step.
 async function editInBay(step) {
@@ -2279,8 +2353,9 @@ function addNumberBatch(plates, count) {
     `Added ${decals.length} racing number decals${pagesUsed > 1 ? ` across ${pagesUsed} pages` : ''}. Each stays editable.`
   );
 }
-function numberTemplate() {
-  CreationUI.numberDialog((art, count) => {
+// Racing numbers from the Number flyout, added in free space: one decal, a pair, or a batch.
+function numberCommit(art, count) {
+  {
     if (Array.isArray(art)) return addNumberBatch(art, count);
     mutate(() => {
       const s = DM.size(project),
@@ -2315,7 +2390,7 @@ function numberTemplate() {
         ? 'Matching pair added. Each decal can be edited independently.'
         : 'Racing number added as an editable group.'
     );
-  });
+  }
 }
 function outlineSelected() {
   const i = current();
@@ -2346,10 +2421,11 @@ const actions = {
   'artwork-outline': outlineSelected,
   'remove-outline': removeOutline,
   'edit-group': editGroup,
-  'number-template': numberTemplate,
+  'number-template': () => MakeTools.show('number'),
+  'text-tool': () => MakeTools.show('text'),
   'prepare-image': prepareSelected,
   'restore-prepared': restorePrepared,
-  shapes: () => ShapeToolsUI.open(),
+  shapes: () => MakeTools.show('shape'),
   'edit-shape': () => ShapeToolsUI.open(current()),
   orientation: () =>
     mutate(() => (project.orientation = project.orientation === 'portrait' ? 'landscape' : 'portrait')),
@@ -2699,7 +2775,7 @@ document.addEventListener('click', e => {
   if (shortcut)
     Promise.resolve()
       .then(() =>
-        shortcut.dataset.alias === 'text' ? addShape('text') : actions[shortcut.dataset.alias]?.()
+        shortcut.dataset.alias === 'text' ? MakeTools.show('text') : actions[shortcut.dataset.alias]?.()
       )
       .catch(fail);
   const create = e.target.closest('[data-create]');
@@ -2767,7 +2843,7 @@ const Finder = (() => {
       render();
       return;
     }
-    if (hit.action === 'text') return addShape('text');
+    if (hit.action === 'text') return MakeTools.show('text');
     if (hit.action === 'sheet-tab') return showTab('right', 'sheet');
     Promise.resolve()
       .then(() => actions[hit.action]())
@@ -3068,7 +3144,7 @@ document.addEventListener('keydown', e => {
   if (TOOL_KEYS[tool]) action = TOOL_KEYS[tool];
   if (tool === 't') {
     e.preventDefault();
-    addShape('text');
+    MakeTools.show('text');
     return;
   }
   if (ctrl && e.key.toLowerCase() === 'z') action = e.shiftKey ? 'redo' : 'undo';

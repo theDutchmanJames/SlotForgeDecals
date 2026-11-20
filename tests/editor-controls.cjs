@@ -43,11 +43,13 @@ async function main() {
     await page.locator('#name-submit').click();
     assert.match(await page.locator('#project-name').getAttribute('aria-label'), /Click to rename/);
     await gallery();
-    await page.locator('[data-create="rect"]').click();
+    await page.locator('[data-place=\"rect\"]').click();
+    await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(() => Studio.project.items.length), 1);
     assert(!(await page.locator('#dialog').evaluate(d => d.open)));
     await gallery();
-    await page.locator('[data-create="ellipse"]').click();
+    await page.locator('[data-place=\"ellipse\"]').click();
+    await page.keyboard.press('Enter');
     await page.evaluate(() => Studio.select(Studio.project.items.map(i => i.id)));
     const before = await page.evaluate(() => JSON.stringify(Studio.project.items));
     await page.locator('#inspector [data-action="save-decal"]').click();
@@ -124,7 +126,8 @@ async function main() {
     }
     // Existing double stripes can become a configurable pattern without losing placement.
     await gallery();
-    await page.locator('[data-create="stripe"]').click();
+    await page.locator('[data-place=\"stripe\"]').click();
+    await page.keyboard.press('Enter');
     const stripe = await page.evaluate(() => JSON.parse(JSON.stringify(Studio.project.items.at(-1))));
     await page.locator('[data-action="edit-shape"]').click();
     assert.equal(await page.locator('#shape-count').inputValue(), '2');
@@ -143,11 +146,17 @@ async function main() {
     await page.locator('#redo').click();
     // New native vector shapes and editable patterns, including adjust, cancel and undo.
     for (const type of ['star', 'arrow', 'checkerboard', 'stripes']) {
+      // Pick it in the Shape flyout, add it with Enter, then adjust it like any placed shape.
       await gallery();
-      await page.locator('[data-shape-type="' + type + '"]').click();
-      if (type === 'star') await page.locator('#shape-count').fill('7');
-      await page.locator('#shape-apply').click();
+      await page.locator('[data-place="' + type + '"]').click();
+      await page.keyboard.press('Enter');
       assert.equal(await page.evaluate(() => Studio.project.items.at(-1).shapeOptions.type), type);
+      if (type === 'star') {
+        await page.locator('[data-action="edit-shape"]').click();
+        await page.locator('#shape-count').fill('7');
+        await page.locator('#shape-apply').click();
+        assert.equal(await page.evaluate(() => Studio.project.items.at(-1).shapeOptions.count), 7);
+      }
     }
     // Physical square sizes and stripe widths stay fixed as counts and spacing change.
     await page.evaluate(() =>
@@ -256,7 +265,12 @@ async function main() {
     }
     await gallery();
     await page.screenshot({ path: path.join(run, 'shape-toolbox.png') });
-    await page.locator('[data-shape-type="checkerboard"]').click();
+    await page.locator('#make-flyout [data-fly-close]').click();
+    // A placed pattern is adjusted from the Decal tab: invalid counts cannot be applied.
+    await page.evaluate(() =>
+      Studio.select([Studio.project.items.find(i => i.shapeOptions?.type === 'checkerboard').id])
+    );
+    await page.locator('[data-action="edit-shape"]').click();
     await page.locator('#shape-columns').fill('21');
     assert(await page.locator('#shape-apply').isDisabled());
     await page.locator('#shape-columns').fill('6');

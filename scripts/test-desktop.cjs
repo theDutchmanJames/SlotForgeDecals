@@ -29,6 +29,7 @@ const suites = [
   'print-cut',
   'sheet-tools',
   'import-bay',
+  'make-tools',
   'update-check'
 ];
 for (const suite of suites) {

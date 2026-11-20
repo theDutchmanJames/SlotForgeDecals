@@ -31,7 +31,11 @@ async function main() {
     });
     await page.waitForFunction(() => window.Studio?.ready);
   };
-  const close = () => page.locator('#dialog [data-action="close"]').first().click();
+  // Edit vector works over the sheet: Cancel ends it; other windows still close with their ✕.
+  const close = async () => {
+    if (await page.locator('#vector-cancel').count()) await page.locator('#vector-cancel').click();
+    else await page.locator('#dialog [data-action="close"]').first().click();
+  };
   const open = () => page.locator('[data-action="edit-vector"]').click();
   const state = () => page.evaluate(() => DM.clone(Studio.project.items[0]));
   try {
@@ -166,7 +170,7 @@ async function main() {
     await page.locator('#vector-zoom').selectOption('2');
     await page.locator('[data-vector-bg="light"]').click();
     await page.screenshot({ path: path.join(run, 'vector-edited-light.png') });
-    const foot = await page.locator('.dialog-foot').boundingBox();
+    const foot = await page.locator('#vector-lens .lens-bar').boundingBox();
     assert(foot.y + foot.height <= (await page.evaluate(() => innerHeight)));
     await close();
     await app.close();

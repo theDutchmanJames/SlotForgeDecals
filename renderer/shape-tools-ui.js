@@ -1,36 +1,10 @@
 'use strict';
 const ShapeToolsUI = {
-  open(source = null) {
-    if (source) {
-      if (source.locked) throw Error('Unlock this decal before changing its shape.');
-      return this.configure(source.kind === 'stripe' ? 'stripes' : source.shapeOptions.type, source);
-    }
-    const basic = [
-      ['rect', 'Rectangle', '▭'],
-      ['ellipse', 'Circle / Ellipse', '○'],
-      ['triangle', 'Triangle', '△'],
-      ['line', 'Line', '╱'],
-      ['stripe', 'Double stripe', '☰']
-    ];
-    const tiles = Object.entries(ShapeTools.presets)
-      .map(([type, name]) => {
-        const i = ShapeTools.create(type);
-        return `<button data-shape-type="${type}"><img src="${E(Art.url(Art.standalone(i)))}" alt=""><span>${E(name)}</span></button>`;
-      })
-      .join('');
-    showDialog(
-      'Shapes & Patterns',
-      'Choose a shape or build an editable racing pattern.',
-      `<h3>Basic shapes</h3><div class="shape-gallery basic-shapes">${basic.map(([kind, name, symbol]) => `<button data-basic-shape="${kind}" data-create="${kind}"><span class="shape-symbol">${symbol}</span><span>${name}</span></button>`).join('')}</div><h3>Shapes & racing patterns</h3><div class="shape-gallery">${tiles}</div><p class="hint">All shapes stay vector. Set dimensions and colours before adding; adjust them later in the inspector. Patterns contain individually editable shapes.</p>`,
-      '<button data-action="number-template">Racing Number Plates</button><button data-action="close">Cancel</button>',
-      true
-    );
-    for (const button of $$('[data-basic-shape]'))
-      button.onclick = () => {
-        closeDialog();
-      };
-    for (const button of $$('[data-shape-type]'))
-      button.onclick = () => this.configure(button.dataset.shapeType);
+  // Adjusting a shape or pattern already on the sheet. New shapes come from the Shape flyout.
+  open(source) {
+    if (!source) return MakeTools.show('shape');
+    if (source.locked) throw Error('Unlock this decal before changing its shape.');
+    return this.configure(source.kind === 'stripe' ? 'stripes' : source.shapeOptions.type, source);
   },
   configure(type, source = null) {
     let draft;
@@ -107,7 +81,7 @@ const ShapeToolsUI = {
     for (const input of $$('[data-shape-value]')) input.oninput = update;
     if ($('#shape-transparent')) $('#shape-transparent').onchange = update;
     update();
-    $('#shape-back').onclick = () => (source ? closeDialog() : this.open());
+    $('#shape-back').onclick = () => closeDialog();
     $('#shape-apply').onclick = () => {
       if (!draft) return;
       try {

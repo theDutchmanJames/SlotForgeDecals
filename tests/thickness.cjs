@@ -28,7 +28,8 @@ const { _electron: electron } = require('playwright'),
     await page.waitForSelector('#workshop [data-action="demo"]');
     await page.locator('#workshop [data-ws="blank"]').click();
     await page.locator('[data-action="shapes"]').click();
-    await page.locator('[data-create="line"]').click();
+    await page.locator('[data-place=\"line\"]').click();
+    await page.keyboard.press('Enter');
     assert.equal(await page.locator('#prop-strokeWidth').count(), 0);
     await page.locator('#prop-thickness').fill('4');
     await page.locator('#prop-thickness').press('Tab');
@@ -45,7 +46,8 @@ const { _electron: electron } = require('playwright'),
     assert.equal(await page.evaluate(() => Studio.project.items[0].h), 1);
     await page.locator('[data-action="redo"]').click();
     await page.locator('[data-action="shapes"]').click();
-    await page.locator('[data-create="stripe"]').click();
+    await page.locator('[data-place=\"stripe\"]').click();
+    await page.keyboard.press('Enter');
     await page.locator('#prop-thickness').fill('10');
     await page.locator('#prop-thickness').press('Tab');
     assert.deepEqual(
@@ -97,7 +99,8 @@ const { _electron: electron } = require('playwright'),
     assert.ok(Math.abs(sizes[1] - 4.2) < 0.01);
     assert.ok(Math.abs(sizes[2] - 4.2) < 0.01);
     await page.locator('[data-action="shapes"]').click();
-    await page.locator('[data-create="rect"]').click();
+    await page.locator('[data-place=\"rect\"]').click();
+    await page.keyboard.press('Enter');
     assert.equal(await page.locator('#prop-strokeWidth').count(), 1);
     assert.equal(await page.locator('#prop-thickness').count(), 0);
     await page.evaluate(() => Studio.flush());

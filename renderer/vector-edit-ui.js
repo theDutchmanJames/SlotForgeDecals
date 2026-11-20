@@ -1,4 +1,6 @@
-/* Selective SVG editing. Source definitions and sibling order stay intact. */
+/* Selective SVG editing, on the canvas (remake option B, docs/ui-reference/making-2026-11): the sheet
+   dims, the artwork shows large over it, its shapes are listed in the Decal tab. Source definitions
+   and sibling order stay intact. */
 const VectorEdit = (() => {
   const drawable = 'path,rect,circle,ellipse,polygon,polyline,line,text,image,use';
   function load(source) {
@@ -44,17 +46,18 @@ const VectorEdit = (() => {
       undo = [],
       redo = [],
       restored = false;
-    showDialog(
-      'Edit Vector Artwork',
-      'Select a background shape and remove it. Your artwork stays vector.',
-      '<div class="vector-controls"><div class="row"><button data-vector-bg="transparent" aria-pressed="true">Transparent</button><button data-vector-bg="light" aria-pressed="false">Light</button><button data-vector-bg="dark" aria-pressed="false">Dark</button></div><label>Zoom <select id="vector-zoom"><option value="1">Fit</option><option value="2">200%</option><option value="4">400%</option><option value="8">800%</option></select></label></div>' +
-        '<div id="vector-view" class="vector-view" data-background="transparent"><div id="vector-surface"><div id="vector-art"></div><div id="vector-selection" hidden></div></div></div>' +
-        '<div class="vector-controls"><div class="row"><button id="vector-prev">Previous shape</button><button id="vector-next">Next shape</button><button id="vector-white">Next white shape</button><button class="danger" id="vector-remove" disabled>Remove selected shape</button></div><span id="vector-selected" role="status">Click a shape in the preview.</span></div>' +
-        '<p class="hint">White lettering and details are kept unless you select them. One path may contain several connected parts or cut-outs; removing it removes the whole path. Embedded bitmap backgrounds need the image preparation tool. Size and placement stay unchanged.</p>',
-      '<button data-action="close">Cancel</button><button id="vector-undo" disabled>Undo</button><button id="vector-redo" disabled>Redo</button><button id="vector-restore">Restore original</button><button id="vector-apply" class="primary" disabled>Apply changes</button>',
-      true
-    );
-    const dialog = $('#dialog'),
+    CanvasTools.resolve();
+    const lens = document.createElement('div');
+    lens.id = 'vector-lens';
+    lens.className = 'vector-lens';
+    lens.innerHTML =
+      `<div class="lens-top"><b>Edit vector</b><span>${E(item.name)} · on the sheet, enlarged</span><span class="spacer"></span><div class="seg" role="group" aria-label="Background"><button data-vector-bg="transparent" aria-pressed="true">Checker</button><button data-vector-bg="light" aria-pressed="false">White</button><button data-vector-bg="dark" aria-pressed="false">Dark</button></div><label>Zoom <select id="vector-zoom"><option value="1">Fit</option><option value="2">200%</option><option value="4">400%</option><option value="8">800%</option></select></label></div>` +
+      '<div id="vector-view" class="vector-view" data-background="transparent"><div id="vector-surface"><div id="vector-art"></div><div id="vector-selection" hidden></div></div></div>' +
+      `<div class="lens-bar"><button id="vector-prev" title="Previous shape">‹</button><button id="vector-next" title="Next shape">›</button><button id="vector-white">Next white shape</button><button class="danger" id="vector-remove" disabled>${icon('trash')}Remove</button><span class="lens-sep"></span><button id="vector-undo" disabled title="Undo (Ctrl+Z)">${icon('undo')}</button><button id="vector-redo" disabled title="Redo">${icon('redo')}</button><button id="vector-restore">Restore original</button><span class="lens-sep"></span><button id="vector-cancel">Cancel</button><button id="vector-apply" class="primary" disabled>${icon('check')}Done</button></div>` +
+      '<p id="vector-selected" class="lens-status" role="status">Click a shape in the picture or in the list.</p><p id="vector-error" class="dialog-error lens-error" role="alert"></p>';
+    $('.editor-panel').append(lens);
+    const dialog = lens,
+      error = text => ($('#vector-error').textContent = text || ''),
       host = $('#vector-art'),
       shadow = host.attachShadow({ mode: 'open' }),
       view = $('#vector-view'),
@@ -105,6 +108,32 @@ const VectorEdit = (() => {
         ? 'Shape ' + (selected + 1) + ' · ' + n.localName + ' · ' + (n.id || getComputedStyle(n).fill)
         : 'Click a shape, or use Next white shape.';
       highlight();
+      list();
+    }
+    // The shapes, listed in the Decal tab: a colour swatch, a name and a remove button each.
+    function list() {
+      const box = $('#vector-shapes');
+      if (!box) return;
+      const shown = available();
+      box.innerHTML =
+        shown
+          .map(n => {
+            const node = previewNodes[n],
+              fill = getComputedStyle(node).fill;
+            return `<div class="vs-row ${n === selected ? 'active' : ''}"><button class="vs-main" data-vector-node="${n}"><span class="vs-swatch" style="background:${E(fill === 'none' ? 'transparent' : fill)}"></span><span>${E(node.id || node.localName)}<small>${E(node.localName)}${fill && fill !== 'none' ? ' · ' + E(fill) : ''}</small></span></button><button class="ghost icon-only" data-vector-drop="${n}" title="Remove this shape" aria-label="Remove shape ${n + 1}">${icon('trash')}</button></div>`;
+          })
+          .join('') || '<p class="hint">No visible shapes.</p>';
+      $('#vector-count').textContent = shown.length;
+      for (const b of box.querySelectorAll('[data-vector-node]'))
+        b.onclick = () => {
+          selected = Number(b.dataset.vectorNode);
+          controls();
+        };
+      for (const b of box.querySelectorAll('[data-vector-drop]'))
+        b.onclick = () => {
+          selected = Number(b.dataset.vectorDrop);
+          remove();
+        };
     }
     function render() {
       shadow.replaceChildren(document.importNode(editor.root, true));
@@ -133,20 +162,19 @@ const VectorEdit = (() => {
           selected = -1;
           render();
         }
-        $('#dialog-error').textContent = '';
+        error();
       } catch (e) {
         editor = load(before.svg);
         restored = before.restored;
         selected = previousSelection;
         render();
-        $('#dialog-error').textContent = e.message;
+        error(e.message);
       }
     }
     function remove() {
       if (selected < 0) return;
       if (available().length <= 1) {
-        $('#dialog-error').textContent =
-          'Keep at least one drawing shape. Remove the whole decal from the sheet if it is empty.';
+        error('Keep at least one drawing shape. Remove the whole decal from the sheet if it is empty.');
         return;
       }
       change(() => editor.remove(selected));
@@ -156,16 +184,18 @@ const VectorEdit = (() => {
         i => !white || /^rgba?\(255,\s*255,\s*255(?:,\s*1)?\)$/.test(getComputedStyle(previewNodes[i]).fill)
       );
       if (!list.length) {
-        $('#dialog-error').textContent = white
-          ? 'No visible white-filled shapes found. Select another shape directly.'
-          : 'No visible shapes found.';
+        error(
+          white
+            ? 'No visible white-filled shapes found. Select another shape directly.'
+            : 'No visible shapes found.'
+        );
         return;
       }
       selected =
         direction > 0
           ? (list.find(i => i > selected) ?? list[0])
           : ([...list].reverse().find(i => i < selected) ?? list.at(-1));
-      $('#dialog-error').textContent = '';
+      error();
       controls();
     }
     shadow.addEventListener('click', e => {
@@ -185,7 +215,7 @@ const VectorEdit = (() => {
       restored = value.restored;
       selected = -1;
       render();
-      $('#dialog-error').textContent = '';
+      error();
     };
     $('#vector-undo').onclick = () => travel(undo, redo);
     $('#vector-redo').onclick = () => travel(redo, undo);
@@ -213,44 +243,65 @@ const VectorEdit = (() => {
         if (restored && clean.svg === Art.sanitize(original).svg) delete next.vectorSource;
         else next.vectorSource = { svg: original };
         DM.validateItem(next);
+        close();
         onApply(next);
-        closeDialog();
       } catch (e) {
-        $('#dialog-error').textContent = e.message;
+        error(e.message);
       }
     };
+    $('#vector-cancel').onclick = () => close();
     const keys = e => {
-      if (e.target.matches('input,select,textarea')) return;
+      if (e.target.matches('input,select,textarea')) return false;
       const mod = e.ctrlKey || e.metaKey;
       if (mod && ['z', 'y'].includes(e.key.toLowerCase())) {
         e.preventDefault();
-        e.stopPropagation();
         if (e.key.toLowerCase() === 'y' || e.shiftKey) travel(redo, undo);
         else travel(undo, redo);
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        e.stopPropagation();
-        remove();
+        return true;
       }
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        remove();
+        return true;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+        return true;
+      }
+      return false;
     };
-    dialog.addEventListener('keydown', keys);
     const observer = new ResizeObserver(highlight);
     observer.observe(surface);
     const dispose = () => {
       if (!alive) return;
       alive = false;
       observer.disconnect();
-      dialog.removeEventListener('keydown', keys);
-      dialog.removeEventListener('close', dispose);
-      changes.disconnect();
       undo = [];
       redo = [];
     };
-    const changes = new MutationObserver(() => {
-      if (!host.isConnected) dispose();
-    });
-    changes.observe($('#dialog-content'), { childList: true });
-    dialog.addEventListener('close', dispose, { once: true });
+    // A canvas tool: Escape, another tool or Done ends it; the Decal tab lists the shapes meanwhile.
+    function close() {
+      if (!alive) return;
+      dispose();
+      lens.remove();
+      if (CanvasTools.active === controller) CanvasTools.active = null;
+      globalThis.render();
+    }
+    const controller = {
+      kind: 'vector',
+      mount() {
+        $('#inspector').innerHTML =
+          `<section class="canvas-tool-panel vector-panel"><h2 class="inspector-title">${E(item.name)} · <span id="vector-count"></span> shapes</h2><p class="hint">Click a shape to select it; remove what should not print, such as a white background. One shape may hold several connected parts. Size and placement stay.</p><div id="vector-shapes" class="vector-shapes"></div></section>`;
+        list();
+      },
+      draw() {},
+      key: keys,
+      cancel: close
+    };
+    CanvasTools.active = controller;
+    showTab('right', 'decal', false);
+    globalThis.render();
     render();
   }
   return { load, open };

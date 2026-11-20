@@ -112,7 +112,8 @@ async function main() {
     await page.locator('#name-input').fill('Night Endurance');
     await page.locator('#name-submit').click();
     await page.locator('[data-action="shapes"]').click();
-    await page.locator('[data-create="stripe"]').click();
+    await page.locator('[data-place=\"stripe\"]').click();
+    await page.keyboard.press('Enter');
     await workshop();
     assert.equal(await page.locator('.ws-card').count(), 2);
     await page.locator('#ws-search').fill('GT');

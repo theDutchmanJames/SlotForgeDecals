@@ -75,15 +75,16 @@ Tracing works best for logos, numbers and flat-colour graphics. Photographs, gra
 
 Build your own designs directly on the sheet:
 
-- Add editable text, choose any font installed on your computer or import a font file, adjust spacing and bend lettering into an arc. Chosen fonts are embedded in the sheet, so PDFs and shared files keep them.
+- Make artwork on the sheet (redesigned in November 2026): **Text**, **Number** and **Shape** on the tool rail open a flyout of styles. Click the sheet to put one there, drag to draw it at a measured size, or press Enter to add it in free space.
+- Type text straight on the sheet, with a small bar for font, bold, italic, bend, spacing and colour; double-click text to type in it again. Choose any font installed on your computer or import a font file; chosen fonts are embedded in the sheet, so PDFs and shared files keep them.
 - Pick colours with an eyedropper or from quick swatches of your recent colours and the colours already on the sheet; set opacity with a percentage slider.
-- Draw rectangles, ellipses, triangles, lines and racing stripes, with colour and outline controls.
-- Create racing-number roundels, oval plates and rectangular plates, individually or as matching pairs, or for a whole grid at once (for example numbers 1-30, 44, 51).
-- Recolour a design: every colour in the selected decals, including inside SVG artwork, can be replaced in one step for team variants.
+- Draw rectangles, circles, triangles, lines and racing stripes, with colour and outline controls.
+- Create racing-number roundels, oval plates and rectangular plates, individually or as matching pairs, or for a whole grid at once (for example numbers 1-30, 44, 51), laid out in rows from where you click.
+- Recolour a design in the Decal tab: every colour in the selected decals, including inside SVG artwork, is listed; click one and pick a new colour for team variants. Ctrl+Z undoes it.
 - Add a silhouette outline around imported artwork, following its outer edge and transparent cut-outs.
 - Combine elements into a group, then edit individual parts—including nested groups—without rebuilding the design.
 
-**Edit Vector Artwork** lets you select and remove white background shapes from imported vectors, with preview backgrounds, zoom, undo/redo and a retained original you can restore later. White details stay intact unless selected; SVG artwork stays vector.
+**Edit Vector Artwork** works over the sheet itself: click shapes in the artwork or in the shape list beside it to select and remove white backgrounds, with preview backgrounds, zoom, undo/redo and a retained original you can restore later. White details stay intact unless selected; SVG artwork stays vector.
 
 Groups keep text and shapes editable. Silhouette outlines retain the source artwork and can be adjusted or removed; a bitmap with a vector outline still contains a bitmap. Save a finished design to the library when you want to reuse it.
 
@@ -175,7 +176,7 @@ The PDF includes a named white separation using a 600 PPI silhouette mask. Confi
 
 ### Shapes, patterns and clearer editor controls
 
-Open **Shapes & Patterns** for rectangles, ellipses, triangles and lines, plus diamonds, stars, regular polygons, arrows, chevrons, trapezoids and shields. Set exact dimensions, colours, transparent fills and outlines in a live preview. **Checkerboard** and **Racing stripes** create editable groups. Checkerboards grow by rows and columns of a chosen square size. Stripe count ranges from **1 to 12**, with individual widths, equal spacing in millimetres and two alternating colours. Adding stripes or spacing grows the pattern without thinning the stripes; existing double stripes can be upgraded through **Stripe Count & Spacing**. **Racing Number Plates** is in the same toolbox. New polygon shapes require a version of Decals that supports them.
+The **Shape** flyout has rectangles, ellipses, triangles and lines, plus diamonds, stars, regular polygons, arrows, chevrons, trapezoids and shields. Choose **Adjust Shape / Pattern** on a placed shape to set exact dimensions, colours, transparent fills and outlines in a live preview. **Checkerboard** and **Racing stripes** create editable groups. Checkerboards grow by rows and columns of a chosen square size. Stripe count ranges from **1 to 12**, with individual widths, equal spacing in millimetres and two alternating colours. Adding stripes or spacing grows the pattern without thinning the stripes; existing double stripes can be upgraded through **Stripe Count & Spacing**. **Racing numbers** is at the foot of the same flyout. New polygon shapes require a version of Decals that supports them.
 
 Select one or more canvas items and choose **Save Decal to Library**; multiple items become one reusable grouped decal after you name and save it. Both full library windows use **two columns in List view**. The sidebar library folds closed, offers its own grid/list switch, and scrolls within a height limit as collections grow.
 

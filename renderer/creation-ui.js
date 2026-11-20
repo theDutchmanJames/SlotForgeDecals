@@ -14,18 +14,25 @@
     fonts()
       .map(([f, name]) => `<option value="${E(f)}" ${f === selected ? 'selected' : ''}>${E(name)}</option>`)
       .join('');
-  function numberDialog(commit) {
-    showDialog(
-      'Racing numbers',
-      'Create an editable decal, or a matching pair for both sides of your car.',
-      `
-   <div class="number-layout"><section><div class="field"><label for="number-style">Template</label><select id="number-style">${Object.entries(
+  // Racing numbers, in the Number flyout (remake option B, docs/ui-reference/making-2026-11):
+  // commit(art or list, count) adds them in free space; place(…) waits for a click on the sheet.
+  function numberDialog(commit, host, place) {
+    host.innerHTML = `
+   <div class="number-layout"><div class="number-styles seg" role="group" aria-label="Number style">${Object.entries(
+     Creation.styles
+   )
+     .map(
+       ([k, v]) =>
+         `<button data-number-style="${k}" aria-pressed="${k === 'roundel'}">${{ roundel: 'Roundel', oval: 'Oval', plate: 'Plate' }[k] || v}</button>`
+     )
+     .join(
+       ''
+     )}</div><section><div class="field" hidden><label for="number-style">Template</label><select id="number-style">${Object.entries(
      Creation.styles
    )
      .map(([k, v]) => `<option value="${k}">${v}</option>`)
      .join('')}</select></div>
-   <div class="field"><label for="number-text">Race number</label><input id="number-text" value="27" maxlength="6"></div>
-   <div class="field"><label for="number-batch">More numbers (optional)</label><input id="number-batch" placeholder="For a whole grid, e.g. 1-12, 21, 33"></div>
+   <div class="fields2"><div class="field"><label for="number-text">Number</label><input id="number-text" value="27" maxlength="6"></div><div class="field"><label for="number-batch">More numbers</label><input id="number-batch" placeholder="e.g. 1-12, 21"></div></div>
    <div class="fields2"><div class="field"><label for="number-w">Width (mm)</label><input id="number-w" type="number" min="5" max="150" step=".1" value="18"></div><div class="field"><label for="number-h">Height (mm)</label><input id="number-h" type="number" min="5" max="150" step=".1" value="18" disabled></div></div>
    <div class="field"><label for="number-font">Typeface</label><select id="number-font">${fontOptions('Arial')}</select></div><label class="check"><input id="number-bold" type="checkbox" checked>Bold number</label>
    <div class="number-colours">${[
@@ -38,11 +45,8 @@
          `<div class="field"><label for="number-${key}">${label}</label><input id="number-${key}" type="color" value="${value}"></div>`
      )
      .join('')}</div>
-   <div class="fields2"><div class="field"><label for="number-border">Border (mm)</label><input id="number-border" type="number" min="0" max="3.6" step=".1" value=".6"></div><div class="field"><label for="number-count">Add to sheet</label><select id="number-count"><option value="1">One decal</option><option value="2">Matching pair</option></select></div></div></section>
-   <section><div id="number-preview" class="creation-preview"></div><p id="number-size" class="hint"></p><div class="notice">Numbers stay readable on both sides: a matching pair contains two identical, independent decals. Select one and choose Edit group to customise its text and shapes.</div></section></div>`,
-      '<button data-action="close">Cancel</button><button class="primary" id="number-add">Add to sheet</button>',
-      true
-    );
+   <div class="fields2"><div class="field"><label for="number-border">Border (mm)</label><input id="number-border" type="number" min="0" max="3.6" step=".1" value=".6"></div><div class="field"><label for="number-count">For each number</label><select id="number-count"><option value="1">One decal</option><option value="2">Pair · both sides</option></select></div></div></section>
+   <section class="number-preview-box"><div id="number-preview" class="creation-preview"></div><p id="number-size" class="hint"></p></section><p id="number-error" class="dialog-error" role="alert"></p><div class="row number-actions"><button id="number-add">Add in free space</button><button class="primary" id="number-place">Place on the sheet</button></div><p class="hint">Place on the sheet: the numbers follow your click. Pairs are two identical, independent decals; Edit group changes one.</p></div>`;
     let decal,
       batch = [],
       lastOptions = null;
@@ -74,31 +78,47 @@
         q('#number-size').textContent = batch.length
           ? `${decal.w.toFixed(1)} × ${decal.h.toFixed(1)} mm each · ${batch.length} numbers (${batch.slice(0, 4).join(', ')}${batch.length > 4 ? ', …' : ''}) · ${batch.length * per} decals · Vector artwork`
           : `${decal.w.toFixed(1)} × ${decal.h.toFixed(1)} mm each · ${per === 2 ? 'Two identical decals' : 'One decal'} · Vector artwork`;
-        q('#dialog-error').textContent = '';
-        q('#number-add').disabled = false;
+        q('#number-error').textContent = '';
+        q('#number-add').disabled = q('#number-place').disabled = false;
       } catch (e) {
         decal = null;
-        q('#dialog-error').textContent = e.message;
-        q('#number-add').disabled = true;
+        q('#number-error').textContent = e.message;
+        q('#number-add').disabled = q('#number-place').disabled = true;
       }
     }
-    for (const el of document.querySelectorAll('.number-layout input,.number-layout select'))
-      el.oninput = update;
+    for (const b of host.querySelectorAll('[data-number-style]'))
+      b.onclick = () => {
+        q('#number-style').value = b.dataset.numberStyle;
+        for (const x of host.querySelectorAll('[data-number-style]'))
+          x.setAttribute('aria-pressed', String(x === b));
+        update();
+      };
+    const made = () => {
+      update();
+      if (!decal) return null;
+      return [
+        batch.length
+          ? batch.map(text => Creation.numberTemplate({ ...lastOptions, text }, Art.textBox))
+          : decal,
+        Number(q('#number-count').value)
+      ];
+    };
+    q('#number-place').onclick = () => {
+      try {
+        const m = made();
+        if (m) place(...m);
+      } catch (e) {
+        q('#number-error').textContent = e.message;
+      }
+    };
+    for (const el of host.querySelectorAll('.number-layout input,.number-layout select')) el.oninput = update;
     q('#number-add').onclick = () => {
       try {
-        update();
-        if (!decal) return;
-        const count = Number(q('#number-count').value);
         // A batch builds one plate per number in the same style; otherwise just this decal.
-        commit(
-          batch.length
-            ? batch.map(text => Creation.numberTemplate({ ...lastOptions, text }, Art.textBox))
-            : decal,
-          count
-        );
-        closeDialog();
+        const m = made();
+        if (m) commit(...m);
       } catch (e) {
-        q('#dialog-error').textContent = e.message;
+        q('#number-error').textContent = e.message;
       }
     };
     update();

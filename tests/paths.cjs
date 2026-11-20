@@ -102,7 +102,11 @@ async function main() {
     assert(await page.locator('#path-apply').isDisabled());
     await page.locator('#redo').click();
     assert(!(await page.locator('#path-apply').isDisabled()));
-    await page.locator('.tool-rail [data-create="text"]').click();
+    await page.locator('.tool-rail [data-flyout="text"]').click();
+    // The Text flyout waits for the sheet: Enter adds it in free space, Enter again ends typing.
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#text-inline');
+    await page.keyboard.press('Enter');
     assert.equal(await page.locator('#path-controls').count(), 0);
     assert.deepEqual(await page.evaluate(() => Studio.project.items.map(i => i.kind)), ['path', 'text']);
     await page.locator('#undo').click();

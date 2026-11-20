@@ -29,10 +29,11 @@ const CanvasTools = {
         )
       );
     document.querySelector('#paper')?.classList.toggle('path-tool-active', this.active?.kind === 'path');
+    document.querySelector('#paper')?.classList.toggle('placing', this.active?.kind === 'place');
   },
   pointer(type, e) {
     const tool = this.active;
-    if (tool?.kind !== 'path') return false;
+    if (!tool?.pointer) return false;
     tool.pointer(type, e);
     return true;
   },
@@ -640,7 +641,9 @@ document.addEventListener(
   e => {
     if (
       !CanvasTools.active ||
-      e.target.closest('#inspector,#sheet-scroll,#dialog,#theme-toggle,[data-menu],.wb-tabs,[data-path-mode]')
+      e.target.closest(
+        '#inspector,#sheet-scroll,#dialog,#theme-toggle,[data-menu],.wb-tabs,[data-path-mode],#make-flyout,#text-bar,#text-inline,#vector-lens'
+      )
     )
       return;
     const action = e.target.closest('[data-action]')?.dataset.action;

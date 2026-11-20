@@ -36,7 +36,8 @@ async function main() {
     await attach();
     await page.locator('#workshop [data-ws="blank"]').click();
     await page.locator('[data-action="shapes"]').click();
-    await page.locator('[data-create="line"]').click();
+    await page.locator('[data-place=\"line\"]').click();
+    await page.keyboard.press('Enter');
     // The resize handle is only 2 mm wide: wait until the layout has settled (same position over
     // several frames) and the handle is what lies under the pointer, so the drag cannot miss it.
     const { handle, scale } = await (

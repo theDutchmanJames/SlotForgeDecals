@@ -41,7 +41,11 @@ const path = require('node:path'),
   const before = (await P()).items.length;
 
   // 1. Free placement: a new text must not overlap existing artwork on the page.
-  await page.locator('[data-create="text"]').click();
+  await page.locator('.tool-rail [data-flyout="text"]').click();
+  // The Text flyout waits for the sheet: Enter adds it in free space, Enter again ends typing.
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('#text-inline');
+  await page.keyboard.press('Enter');
   let p = await P();
   const text = p.items.at(-1);
   const overlap = await page.evaluate(id => {
