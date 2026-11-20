@@ -78,8 +78,8 @@ async function main() {
       w.showInactive();
     });
     await page.waitForFunction(() => window.Studio?.ready);
-    if (await page.locator('#dialog[open] [data-action="demo"]').count())
-      await page.locator('#dialog [data-action="demo"]').click();
+    if (await page.locator('#workshop:not([hidden]) [data-action="demo"]').count())
+      await page.locator('#workshop [data-action="demo"]').click();
     // This copy is the Windows installer, whatever computer runs the test.
     await app.evaluate(() => (global.updateCheck.edition = { platform: 'win32', arch: 'x64' }));
     return { app, page, errors };

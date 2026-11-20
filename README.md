@@ -191,7 +191,7 @@ Files containing these editable paths need a Decals version with path support.
 
 ### Keep a library and share editable designs
 
-Explicitly **Save decal to library** to keep a reusable design with a name and tags. **Decal Library** and **Sheet Library** share grid/list views, search, alphabetical sorting, newest-added and recently-updated sorting. Select items with checkboxes, Ctrl-click or Shift-click; use **Add to Sheet** or **Open Sheet** when you want to edit. Your view and sorting choices are remembered. Editing a sheet copy does not change its library master. Libraries load in pages, with previews fetched as you scroll; opening the app and autosaving no longer load or resend your whole decal collection. Search covers the entire library, and selections stay checked across pages.
+Explicitly **Save decal to library** to keep a reusable design with a name and tags. **Decal Library** has grid/list views, search, alphabetical sorting, newest-added and recently-updated sorting. Select items with checkboxes, Ctrl-click or Shift-click; use **Add to Sheet** when you want to place one. Your view and sorting choices are remembered. Editing a sheet copy does not change its library master. Libraries load in pages, with previews fetched as you scroll; opening the app and autosaving no longer load or resend your whole decal collection. Search covers the entire library, and selections stay checked across pages.
 
 | Format | Use it for |
 | --- | --- |
@@ -210,9 +210,18 @@ Sharing is currently file-based. Online galleries and direct Livery integration 
 
 ### Save, share and recover complete sheets
 
-The current workspace saves automatically. **Save to Sheets / Ctrl+S** (the arrow next to the sheet name) saves locally to your **Sheet Library**. Select one or more library entries and choose **Export Sheet(s)** to share an editable `.sfsheet` file. Each saved sheet keeps its own paper size, scale, artwork, imported fonts and pages. Use **Choose pages…** to share only part of a saved sheet. **Import Sheet(s)** lets you select which sheets and pages to add as independent copies; your current work stays open.
+The current workspace saves automatically. **Save to Sheets / Ctrl+S** (the arrow next to the sheet name) keeps a copy among your sheets.
 
-Earlier saved project versions and recent workspace backups can be previewed and recovered as separate sheet copies. Opening another project or starting a new sheet preserves the outgoing project first.
+Decals opens on the **Workshop** (redesigned in November 2026; App Settings → Appearance can open straight into the editor instead). On the very first start it is a welcome page with ways to begin. Afterwards it shows:
+
+- **Continue where you left off:** the open sheet with its pages, facts, Versions and Export PDF.
+- **Start something new:** a blank sheet on the paper you pick, from an image, from a shared `.sfsheet` file, or the example sheet.
+- **Your sheets:** every saved sheet with its thumbnail, filters for scale and pinned sheets, search and an order that is remembered. Click a sheet for **Open**, **Rename**, **Duplicate**, **Share…**, **Pin** and **Delete**, with its **History** of earlier saves.
+- **Recover a sheet…:** deleted sheets and the automatic snapshots, each opened as a separate copy.
+
+Shift- or Ctrl-click several sheets and choose **Share selected…** to share an editable `.sfsheet` file. Each saved sheet keeps its own paper size, scale, artwork, imported fonts and pages. Use **Choose pages…** to share only part of a saved sheet. **Import Sheet(s)** lets you select which sheets and pages to add as independent copies; your current work stays open.
+
+Earlier saved versions, deleted sheets and recent workspace backups can be previewed and recovered as separate sheet copies. Opening another project or starting a new sheet preserves the outgoing project first.
 
 Your files live in **Documents/SlotForge Decals**, separate from the installed application. **Settings → Open workspace folder** shows the actual location, including redirected Documents folders. Updating the app does not replace that folder.
 

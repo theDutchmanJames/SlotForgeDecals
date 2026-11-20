@@ -118,11 +118,11 @@ async function main() {
     assert.equal(stats.history, 1);
     assert.equal(await fs.readFile(path.join(workspace, 'workspace.json'), 'utf8'), original);
     await page.locator('nav [data-action="projects"]').click();
-    await page.locator('.collection-preview img').first().waitFor();
-    assert.equal(await page.locator('.collection-item').count(), 48);
-    assert((await page.locator('.collection-preview img').count()) < 20, 'Only nearby previews are loaded');
+    await page.locator('.ws-shot img[src]').first().waitFor();
+    assert.equal(await page.locator('.ws-card').count(), 48);
+    assert((await page.locator('.ws-shot img[src]').count()) < 20, 'Only nearby previews are loaded');
     await page.screenshot({ path: path.join(run, 'migrated-library.png') });
-    await page.locator('#dialog [data-action="close"]').first().click();
+    await page.locator('nav [data-action="editor"]').click();
     await page.evaluate(() => {
       Studio.select([project.items[0].id]);
       mutate(() => (current().x += 4));

@@ -36,7 +36,7 @@ const path = require('node:path'),
   const P = () => page.evaluate(() => JSON.parse(JSON.stringify(Studio.project)));
   const log = (...a) => console.log('✔', ...a);
 
-  await page.locator('#dialog [data-action="demo"]').click();
+  await page.locator('#workshop [data-action="demo"]').click();
   await page.waitForFunction(() => Studio.project.items.length > 0);
   const before = (await P()).items.length;
 

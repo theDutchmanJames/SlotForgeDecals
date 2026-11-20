@@ -25,7 +25,7 @@ async function main() {
   page.on('pageerror', e => errors.push(e.message));
   try {
     await page.waitForFunction(() => window.Studio?.ready);
-    await page.locator('#dialog [data-action="demo"]').click();
+    await page.locator('#workshop [data-action="demo"]').click();
     await page.waitForFunction(() => window.Studio.project.items.length > 0);
     await page.screenshot({ path: path.join(run, 'editor.png') });
     assert.equal(await page.locator('.library-card').count(), 6);

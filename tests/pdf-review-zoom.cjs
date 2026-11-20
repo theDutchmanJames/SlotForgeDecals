@@ -28,7 +28,7 @@ async function main() {
       w.setSize(1100, 800);
     });
     await page.waitForFunction(() => window.Studio?.ready);
-    await page.locator('#dialog [data-action="close"]').first().click();
+    await page.locator('#workshop [data-ws="blank"]').click();
     await page.evaluate(() => {
       const c = document.createElement('canvas');
       c.width = c.height = 1000;

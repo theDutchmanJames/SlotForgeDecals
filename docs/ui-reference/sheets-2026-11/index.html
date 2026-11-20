@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sheets and welcome redesign</title>
+<!-- Preview only: made-up sheets, nothing is wired up. Two concepts for the start of Decals and the Sheet Library. -->
+<style>
+@font-face{font-family:'SF Barlow Condensed';src:url('../../../renderer/fonts/barlowcondensed/BarlowCondensed-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic}
+@font-face{font-family:'SF Roboto Mono';src:url('../../../renderer/fonts/robotomono/RobotoMono[wght].ttf') format('truetype');font-weight:100 700}
+:root{--bg:#14181e;--canvas:#101318;--panel:#1d232b;--raised:#252c36;--ink:#e8e6e1;--ink2:#c4c8ce;--muted:#98a0ab;--faint:#6b7380;--line:#323946;--line2:#272d37;--accent:#e5484d;--ok:#3ecf8e;--amber:#edbd6a;--blue:#79b5ed;--violet:#a88cda;--teal:#5cc8c0;
+  --cond:'SF Barlow Condensed','Bahnschrift',sans-serif;--mono:'SF Roboto Mono',Consolas,monospace;--ui:'Segoe UI',system-ui,sans-serif;color-scheme:dark}
+[data-theme=light]{--bg:#f1efea;--canvas:#e4e1da;--panel:#fff;--raised:#f3f1ec;--ink:#1d2229;--ink2:#3a414c;--muted:#656c76;--faint:#8a929d;--line:#d9d6cf;--line2:#e6e3dd;--accent:#c92424;--ok:#1f9a62;--amber:#a7741c;--blue:#236db4;--violet:#7950a6;--teal:#17807a;color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--ui);overflow:hidden}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+h1,h2,h3,h4{font-family:var(--cond);font-style:italic;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0}
+.eye{font:600 10px var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}.faint{color:var(--faint)}.grow{flex:1}.mono{font-family:var(--mono);font-weight:500}
+.row{display:flex;align-items:center;gap:8px}
+.switch{position:relative;z-index:50;display:flex;align-items:center;gap:14px;height:46px;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--line2)}
+.switch b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.switch p{margin:0 0 0 auto;font-size:12px;color:var(--faint)}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+.seg button{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.seg button.on{background:color-mix(in srgb,var(--ink) 12%,var(--panel));color:var(--ink);font-weight:600}
+.seg.sm button{height:22px;padding:0 8px;font-size:12px}
+.opt{position:absolute;inset:46px 0 0;display:flex;flex-direction:column}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 13px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);font-size:13px;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+.btn.icon{width:32px;padding:0}.btn.sm{height:27px;padding:0 9px;font-size:12px}.btn.sm.icon{width:27px}
+.btn.danger{color:var(--accent)}
+.inp{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--bg) 70%,var(--panel));color:var(--faint)}
+.inp input{flex:1;min-width:0;border:0;background:none;outline:0}
+.chip{height:26px;padding:0 10px;border:1px solid var(--line);border-radius:13px;background:none;color:var(--muted);font-size:12px}
+.chip.on{background:var(--ink);color:var(--panel);border-color:var(--ink);font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:10px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.pill.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.pill.red{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
+.pill.blue{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none;display:inline-block}
+kbd{font:500 10px var(--mono);padding:1px 5px;border:1px solid var(--line);border-radius:4px;color:var(--faint);background:var(--bg)}
+.sheet{display:block;background:#fff;border-radius:3px;box-shadow:0 4px 16px rgba(0,0,0,.28)}
+[data-theme=light] .sheet{box-shadow:0 3px 12px rgba(40,30,10,.14)}
+/* shared app top bar (the new Workbench one) */
+.top{display:flex;align-items:center;gap:12px;height:56px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
+.logo{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;font:700 italic 17px var(--cond)}
+.brand{font:700 italic 21px var(--cond)}
+.nav{display:flex;gap:2px;padding:3px;border-radius:10px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.nav button{height:30px;padding:0 12px;border:0;border-radius:7px;background:none;color:var(--muted);font-size:12.5px}
+.nav button.on{background:color-mix(in srgb,var(--ink) 12%,var(--panel));color:var(--ink);font-weight:600}
+[data-theme=light] .nav button.on{background:var(--panel);box-shadow:0 1px 0 var(--line)}
+
+/* ================= A · WORKSHOP HOME ================= */
+#A .home{flex:1;display:flex;min-height:0}
+#A .main{flex:1;overflow:auto;padding:26px 34px 40px}
+#A .wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+.hero{display:grid;grid-template-columns:1fr 330px;gap:18px}
+.cont{position:relative;display:flex;gap:26px;align-items:center;padding:26px 28px;border:1px solid var(--line);border-radius:16px;background:radial-gradient(ellipse at 85% 30%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 60%),var(--panel);overflow:hidden;min-height:250px}
+.cont .txt{flex:1;display:flex;flex-direction:column;gap:10px;z-index:1}
+.cont h1{font-size:44px;line-height:.95}
+.cont .eye{color:var(--accent)}
+.cont .facts{display:flex;gap:18px;font-size:12px;color:var(--muted)}
+.cont .facts b{display:block;font:500 15px var(--mono);color:var(--ink)}
+.cont .pages{display:flex;gap:14px;align-items:flex-end;transform:rotate(-3deg)}
+.quick{display:flex;flex-direction:column;gap:10px;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.quick h3{font-size:16px}
+.qt{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:var(--raised);text-align:left}
+.qt .ic{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--ink2);flex:none}
+.qt b{display:block;font-size:13px}.qt small{color:var(--muted);font-size:11.5px}
+.qt.main .ic{background:var(--accent);color:#fff}
+.papers{display:flex;gap:6px;margin-top:2px}
+.papers button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0 6px;border:1px solid var(--line);border-radius:9px;background:none;font-size:11px;color:var(--muted)}
+.papers button i{background:#fff;border-radius:2px;border:1px solid #ccc}
+.papers button.on{border-color:var(--accent);color:var(--ink)}
+.sec-head{display:flex;align-items:center;gap:12px}
+.sec-head h2{font-size:22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(218px,1fr));gap:16px}
+.card{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:13px;background:var(--panel);overflow:hidden;cursor:pointer}
+.card:hover{border-color:var(--faint)}
+.card.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.card .shot{position:relative;display:grid;place-items:center;height:186px;background:linear-gradient(color-mix(in srgb,var(--ink) 3%,var(--canvas)),color-mix(in srgb,var(--ink) 7%,var(--canvas)))}
+.card .shot .pgs{position:absolute;right:8px;bottom:8px;font:600 10.5px var(--mono);padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff}
+.card .shot .cur{position:absolute;left:8px;bottom:8px}
+.card .body{padding:11px 13px 12px}
+.card h4{font-size:16px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .meta{display:flex;gap:6px;margin-top:4px;font:500 11px var(--mono);color:var(--muted)}
+.card .when{margin-top:3px;font-size:11.5px;color:var(--faint)}
+.side{width:380px;flex:none;display:flex;flex-direction:column;border-left:1px solid var(--line);background:var(--panel)}
+.side header{display:flex;align-items:center;gap:8px;padding:16px 16px 12px;border-bottom:1px solid var(--line2)}
+.side h3{font-size:18px}
+.side .big{display:flex;gap:10px;justify-content:center;padding:18px;background:var(--canvas)}
+.side .acts{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line2)}
+.side .acts .primary{grid-column:1/-1}
+.tl{flex:1;overflow:auto;padding:12px 16px}
+.tl h4{font-size:13.5px;margin:4px 0 10px}
+.ver{position:relative;display:flex;gap:11px;padding:0 0 14px 22px}
+.ver::before{content:'';position:absolute;left:6px;top:14px;bottom:0;width:2px;background:var(--line)}
+.ver:last-child::before{display:none}
+.ver i{position:absolute;left:1px;top:6px;width:12px;height:12px;border-radius:50%;border:2px solid var(--line);background:var(--panel)}
+.ver.now i{border-color:var(--ok);background:var(--ok)}
+.ver.auto i{border-style:dashed}
+.ver .t{flex:1;font-size:12.5px}.ver small{display:block;color:var(--faint);font-size:11.5px}
+.ver .mini{width:34px;height:48px;flex:none}
+.ver button{align-self:center}
+
+/* ================= B · SHEET BINDER ================= */
+#B .stage{flex:1;position:relative;min-height:0;overflow:hidden}
+.fake{position:absolute;inset:0;display:flex;filter:saturate(.9)}
+.fake .rail{width:58px;background:var(--panel);border-right:1px solid var(--line)}
+.fake .lp{width:282px;background:var(--panel);border-right:1px solid var(--line)}
+.fake .cv{flex:1;display:grid;place-items:center;background:var(--canvas)}
+.fake .rp{width:322px;background:var(--panel);border-left:1px solid var(--line)}
+.fake .ph{height:14px;margin:16px;border-radius:5px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.scrim{position:absolute;inset:0;background:rgba(10,12,16,.55);backdrop-filter:blur(2px)}
+[data-theme=light] .scrim{background:rgba(60,55,45,.28)}
+.binder{position:absolute;left:0;top:0;bottom:0;width:min(1040px,calc(100% - 120px));display:grid;grid-template-columns:400px 1fr;background:var(--panel);border-right:1px solid var(--line);box-shadow:20px 0 60px rgba(0,0,0,.4)}
+.blist{display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
+.blist header{display:flex;flex-direction:column;gap:10px;padding:16px 16px 12px;border-bottom:1px solid var(--line2)}
+.blist h2{font-size:22px}
+.blist .items{flex:1;overflow:auto;padding:6px 8px 12px}
+.grp{padding:12px 8px 6px}
+.it{display:flex;gap:12px;align-items:center;width:100%;padding:8px;border:0;border-radius:10px;background:none;text-align:left}
+.it:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.it.on{background:color-mix(in srgb,var(--accent) 12%,transparent);box-shadow:inset 3px 0 0 var(--accent)}
+.it .tn{width:40px;height:56px;flex:none}
+.it b{display:block;font-size:13px}
+.it small{display:block;font:500 11px var(--mono);color:var(--muted)}
+.it .when{margin-left:auto;align-self:flex-start;font-size:11px;color:var(--faint);white-space:nowrap}
+.blist footer{display:flex;gap:6px;padding:12px 16px;border-top:1px solid var(--line2)}
+.bprev{display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+.bprev .ttl{display:flex;align-items:flex-start;gap:10px;padding:18px 22px 10px}
+.bprev h2{font-size:30px;line-height:1}
+.bprev .stagebig{flex:1;display:flex;align-items:center;justify-content:center;gap:16px;padding:10px 22px;min-height:0}
+.bprev .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:0 22px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line)}
+.bprev .facts div{padding:10px 12px;background:var(--panel)}
+.bprev .facts b{display:block;font:500 15px var(--mono)}
+.bprev .facts small{color:var(--muted);font-size:11px}
+.bprev .bact{display:flex;gap:8px;padding:14px 22px}
+.hist{display:flex;gap:10px;align-items:stretch;padding:12px 22px 18px;overflow:hidden;border-top:1px solid var(--line2)}
+.hv{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:11px;min-width:96px}
+.hv.now{border-color:var(--ok)}
+.hv.auto{border-style:dashed}
+.hv small{color:var(--faint)}
+/* first start: coach card */
+.coach{position:absolute;left:356px;bottom:84px;width:400px;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden}
+.coach header{padding:18px 20px 12px;background:radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 65%)}
+.coach h2{font-size:24px}
+.coach .step{display:flex;gap:12px;padding:11px 20px;border-top:1px solid var(--line2);align-items:center}
+.coach .n{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);font:700 12px var(--mono);color:var(--muted);flex:none}
+.coach .step.done .n{border-color:var(--ok);background:var(--ok);color:#fff}
+.coach .step b{display:block;font-size:13px}.coach .step small{color:var(--muted);font-size:11.5px}
+.coach footer{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--line2);background:color-mix(in srgb,var(--ink) 3%,transparent)}
+.firstA{display:grid;grid-template-columns:1.1fr 1fr;gap:26px;align-items:center;min-height:calc(100vh - 220px)}
+.firstA h1{font-size:62px;line-height:.92}
+.firstA p{font-size:15px;color:var(--ink2);max-width:520px}
+.starts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.starts .qt{padding:16px}
+.starts .qt.wide{grid-column:1/-1}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+ <symbol id="d-forge" viewBox="0 0 170 70"><text x="85" y="40" text-anchor="middle" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="50" fill="#111" letter-spacing="1">FORGE</text><path d="M14 44h150l-6 7H8z" fill="#d92b2b"/><text x="88" y="66" text-anchor="middle" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="18" fill="#111" letter-spacing="2">RACING</text></symbol>
+ <symbol id="d-dutch" viewBox="0 0 170 60"><text x="6" y="34" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="42" fill="#111">DUTCH</text><path d="M108 14h58l-3 7h-58zM104 24h58l-3 7h-58z" fill="#f2711c"/><path d="M100 34h58l-3 6h-58z" fill="#2546b8"/><text x="6" y="55" font-family="Segoe UI" font-weight="700" font-size="15" fill="#111" letter-spacing="1">MOTORSPORT</text></symbol>
+ <symbol id="d-shield" viewBox="0 0 60 66"><path d="M30 3l26 8v20c0 17-12 27-26 32C16 58 4 48 4 31V11z" fill="#19253f" stroke="#d92b2b" stroke-width="4"/><text x="30" y="42" text-anchor="middle" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="26" fill="#fff">SF</text></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-image" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 9h.01"/></symbol>
+ <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+ <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 14v7h14v-7"/></symbol>
+ <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 14v7h14v-7"/></symbol>
+ <symbol id="i-search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></symbol>
+ <symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 8h12v12H8zM4 16V4h12"/></symbol>
+ <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+ <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 7V4h14v3M12 4v16M9 20h6"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+ <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 3"/></symbol>
+ <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+ <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 15l2-5c.5-1 1.5-2 3-2h7c1.5 0 2.5.6 3.5 1.8L21 13v3H3zM7.5 18.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM16.5 18.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol>
+ <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M6 2h9l4 4v16H6zM14 2v5h5M9 13h6M9 17h6"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+ <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/></symbol>
+</defs></svg>
+
+<div class="switch">
+ <b>Design</b><div class="seg" id="sw-opt"><button class="on" data-v="A">A · Workshop home</button><button data-v="B">B · Sheet binder</button></div>
+ <b>Moment</b><div class="seg" id="sw-state"><button class="on" data-v="back">Coming back</button><button data-v="first">First start</button></div>
+ <b>Theme</b><div class="seg" id="sw-theme"><button class="on" data-v="dark">Dark</button><button data-v="light">Light</button></div>
+ <p>Preview only · made-up sheets · click sheets and Versions</p>
+</div>
+
+<!-- ================= A ================= -->
+<section class="opt" id="A">
+ <header class="top"><span class="logo">D</span><span class="brand">DECALS</span><nav class="nav"><button class="on">Workshop</button><button>Editor</button><button>Decal Library</button><button>Import &amp; Export</button></nav><span class="grow"></span><div class="inp" style="width:280px"><svg class="i"><use href="#i-search"/></svg><input placeholder="Find a sheet…"></div></header>
+ <div class="home">
+  <main class="main">
+   <div class="wrap" id="A-back">
+    <div class="hero">
+     <div class="cont">
+      <div class="txt">
+       <span class="eye">Continue where you left off</span>
+       <h1>Club Racing<br>No. 27</h1>
+       <div class="facts"><div><b>26</b>decals</div><div><b>3</b>pages</div><div><b>A4</b>clear paper</div><div><b>1:32</b>Modern GT</div></div>
+       <span class="faint" style="font-size:12px">Edited 12 minutes ago · saved</span>
+       <div class="row" style="margin-top:6px"><button class="btn primary">Open in the editor<svg class="i"><use href="#i-arrow"/></svg></button><button class="btn" data-ver="0"><svg class="i"><use href="#i-history"/></svg>Versions</button><button class="btn"><svg class="i"><use href="#i-pdf"/></svg>Export PDF</button></div>
+      </div>
+      <div class="pages" id="A-heropages"></div>
+     </div>
+     <div class="quick">
+      <h3>Start something new</h3>
+      <button class="qt main"><span class="ic"><svg class="i"><use href="#i-plus"/></svg></span><span class="grow"><b>Blank sheet</b><small>Pick the paper, then start</small></span></button>
+      <div class="papers"><button class="on"><i style="width:15px;height:21px"></i>A4</button><button><i style="width:11px;height:15px"></i>A5</button><button><i style="width:14px;height:21px"></i>4×6</button><button><i style="width:15px;height:20px"></i>Letter</button><button><i style="width:14px;height:18px;border-style:dashed"></i>Other</button></div>
+      <button class="qt"><span class="ic"><svg class="i"><use href="#i-image"/></svg></span><span><b>From an image or logo</b><small>PNG, JPG, SVG, EPS or PDF</small></span></button>
+      <button class="qt"><span class="ic"><svg class="i"><use href="#i-down"/></svg></span><span><b>Open a shared sheet</b><small>An .sfsheet file from a friend</small></span></button>
+      <button class="qt"><span class="ic"><svg class="i"><use href="#i-star"/></svg></span><span><b>Example sheet</b><small>Starter decals to play with</small></span></button>
+     </div>
+    </div>
+    <div class="sec-head"><h2>Your sheets</h2><span class="faint mono" style="font-size:12px">7</span><span class="grow"></span>
+     <div class="row" style="gap:6px"><button class="chip on">All</button><button class="chip">1:32</button><button class="chip">1:24</button><button class="chip">With white ink</button><button class="chip">★ Pinned</button></div>
+     <div class="seg sm"><button class="on">Last edited</button><button>Name</button><button>Added</button></div>
+    </div>
+    <div class="grid" id="A-grid"></div>
+    <div class="row faint" style="font-size:12px;gap:14px"><span>Select several sheets with Shift or Ctrl to share them as one file.</span><span class="grow"></span><button class="btn sm ghost"><svg class="i"><use href="#i-history"/></svg>Recover from a backup…</button></div>
+   </div>
+   <div class="wrap" id="A-first" hidden>
+    <div class="firstA">
+     <div>
+      <span class="eye" style="color:var(--accent)">Welcome to SlotForge Decals</span>
+      <h1 style="margin:10px 0 16px">Your artwork.<br>Your scale.<br>Your decals.</h1>
+      <p>Make decal sheets for your slot cars: bring your own logos and numbers, size them in millimetres against the car, and print them on decal paper. Everything stays on this computer.</p><img src="../../../assets/car-side.png" alt="" style="width:min(520px,100%);margin-top:18px;opacity:.9">
+     </div>
+     <div class="starts">
+      <button class="qt main wide"><span class="ic"><svg class="i"><use href="#i-image"/></svg></span><span><b>Start from an image or logo</b><small>PNG, JPG, SVG, EPS or PDF · or drop it here</small></span></button>
+      <button class="qt"><span class="ic"><svg class="i"><use href="#i-plus"/></svg></span><span><b>Blank A4 sheet</b><small>Add text, numbers and shapes</small></span></button>
+      <button class="qt"><span class="ic"><svg class="i"><use href="#i-star"/></svg></span><span><b>Example sheet</b><small>Starter decals to play with</small></span></button>
+      <button class="qt"><span class="ic"><svg class="i"><use href="#i-down"/></svg></span><span><b>Open a shared sheet</b><small>An .sfsheet file</small></span></button>
+      <button class="qt"><span class="ic"><svg class="i"><use href="#i-book"/></svg></span><span><b>How it works</b><small>Five short topics in Help</small></span></button>
+     </div>
+    </div>
+   </div>
+  </main>
+  <aside class="side" id="A-side">
+   <header><h3 id="A-sname">Endurance GT · #2</h3><span class="grow"></span><button class="btn sm ghost icon" id="A-close"><svg class="i"><use href="#i-x"/></svg></button></header>
+   <div class="big" id="A-sbig"></div>
+   <div class="acts"><button class="btn primary">Open in the editor</button><button class="btn sm"><svg class="i"><use href="#i-text"/></svg>Rename</button><button class="btn sm"><svg class="i"><use href="#i-copy"/></svg>Duplicate</button><button class="btn sm"><svg class="i"><use href="#i-share"/></svg>Share…</button><button class="btn sm danger"><svg class="i"><use href="#i-trash"/></svg>Delete</button></div>
+   <div class="tl"><h4>History</h4><div id="A-tl"></div><p class="faint" style="font-size:11.5px;margin:4px 0 0">Opening an older version makes a separate copy; this sheet stays as it is. Dashed: saved automatically.</p></div>
+  </aside>
+ </div>
+</section>
+
+<!-- ================= B ================= -->
+<section class="opt" id="B" hidden>
+ <header class="top"><span class="logo">D</span><div style="padding-left:12px;border-left:1px solid var(--line)"><div id="B-title" style="font:700 italic 20px/1.1 var(--cond);text-transform:uppercase">Club Racing · No. 27</div><div class="faint" style="font-size:11px"><span class="dot"></span> <span id="B-sub">Saved · A4 · portrait · 1:32 · 3 pages</span></div></div><button class="btn sm" style="margin-left:8px"><svg class="i"><use href="#i-book"/></svg>Sheets<kbd>Ctrl O</kbd></button><span class="grow"></span><nav class="nav"><button class="on">Editor</button><button>Decal Library</button><button>Import &amp; Export</button></nav><button class="btn primary" style="margin-left:8px"><svg class="i"><use href="#i-pdf"/></svg>Export PDF</button></header>
+ <div class="stage">
+  <div class="fake"><div class="rail"></div><div class="lp"><div class="ph"></div><div class="ph" style="width:60%"></div><div class="ph"></div></div><div class="cv" id="B-cv"></div><div class="rp"><div class="ph"></div><div class="ph" style="width:50%"></div><div class="ph"></div><div class="ph" style="width:70%"></div></div></div>
+  <div id="B-back">
+   <div class="scrim"></div>
+   <div class="binder">
+    <div class="blist">
+     <header><div class="row"><h2>Sheets</h2><span class="faint mono" style="font-size:12px">7</span><span class="grow"></span><button class="btn sm ghost icon"><svg class="i"><use href="#i-x"/></svg></button></div>
+      <div class="inp"><svg class="i"><use href="#i-search"/></svg><input placeholder="Find a sheet by name, paper or scale…"></div>
+      <div class="row" style="gap:6px"><button class="chip on">All</button><button class="chip">★ Pinned</button><button class="chip">1:32</button><button class="chip">1:24</button></div>
+     </header>
+     <div class="items" id="B-list"></div>
+     <footer><button class="btn primary sm"><svg class="i"><use href="#i-plus"/></svg>New sheet</button><button class="btn sm"><svg class="i"><use href="#i-down"/></svg>Open a file…</button><span class="grow"></span><button class="btn sm ghost"><svg class="i"><use href="#i-history"/></svg>Recover…</button></footer>
+    </div>
+    <div class="bprev">
+     <div class="ttl"><div class="grow"><span class="eye" id="B-eyebrow">Open now</span><h2 id="B-name">Club Racing · No. 27</h2></div><button class="btn sm ghost icon" title="Pin"><svg class="i"><use href="#i-star"/></svg></button></div>
+     <div class="stagebig" id="B-big"></div>
+     <div class="facts" id="B-facts"></div>
+     <div class="bact"><button class="btn primary" id="B-open">Keep editing</button><button class="btn"><svg class="i"><use href="#i-text"/></svg>Rename</button><button class="btn"><svg class="i"><use href="#i-copy"/></svg>Duplicate</button><button class="btn"><svg class="i"><use href="#i-share"/></svg>Share…</button><span class="grow"></span><button class="btn danger"><svg class="i"><use href="#i-trash"/></svg>Delete</button></div>
+     <div class="hist" id="B-hist"></div>
+    </div>
+   </div>
+  </div>
+  <div id="B-first" hidden>
+   <div class="coach">
+    <header><span class="eye" style="color:var(--accent)">Welcome to SlotForge Decals</span><h2 style="margin-top:4px">Your first decal in three steps</h2><p class="muted" style="margin:6px 0 0;font-size:12.5px">This is a blank A4 sheet. Everything stays on this computer.</p></header>
+    <div class="step"><span class="n">1</span><div class="grow"><b>Add artwork</b><small>Import a logo, or add text, a number or a shape</small></div><button class="btn sm primary"><svg class="i"><use href="#i-image"/></svg>Import</button></div>
+    <div class="step"><span class="n">2</span><div class="grow"><b>Size it on the car</b><small>Watch the Fit check while you change its millimetres</small></div><svg class="i" style="color:var(--teal)"><use href="#i-car"/></svg></div>
+    <div class="step"><span class="n">3</span><div class="grow"><b>Print a sizing proof</b><small>On plain paper first, then on decal paper</small></div><svg class="i" style="color:var(--muted)"><use href="#i-pdf"/></svg></div>
+    <footer><button class="btn sm"><svg class="i"><use href="#i-star"/></svg>Show me the example sheet</button><span class="grow"></span><button class="btn sm ghost">I know my way</button></footer>
+   </div>
+  </div>
+ </div>
+</section>
+
+<script>
+// Made-up sheets. Each sheet is drawn from a few simple decals in millimetres on its paper.
+const roundel = (n, c = '#d92b2b') => `<g><circle cx="50" cy="50" r="45" fill="#fff" stroke="${c}" stroke-width="8"/><text x="50" y="72" text-anchor="middle" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="64" fill="#111">${n}</text></g>`;
+const plate = (n, bg) => `<g><rect x="4" y="14" width="92" height="72" rx="10" fill="${bg}"/><text x="50" y="70" text-anchor="middle" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="58" fill="#fff">${n}</text></g>`;
+const stripe = (a, b) => `<g><rect width="100" height="40" fill="${a}"/><rect y="60" width="100" height="40" fill="${b}"/></g>`;
+function art(kind, x, y, w, h) {
+  if (kind.startsWith('use:')) return `<use href="#d-${kind.slice(4)}" x="${x}" y="${y}" width="${w}" height="${h}"/>`;
+  return `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="0 0 100 100" preserveAspectRatio="none">${kind}</svg>`;
+}
+function layout(spec) { // spec: rows of [kind, count, w, h]
+  const out = []; let y = 14;
+  for (const [k, count, w, h] of spec) { for (let i = 0; i < count; i++) out.push([typeof k === 'function' ? k(i) : k, 12 + i * (w + 8), y, w, h]); y += h + 12; }
+  return out;
+}
+const SHEETS = [
+  { name: 'Club Racing · No. 27', paper: 'A4', scale: '1:32', pages: 3, decals: 26, when: '12 min ago', group: 'Today', current: true, ink: 'Clear',
+    items: layout([[i => roundel(27), 4, 30, 30], ['use:forge', 4, 38, 16], ['use:dutch', 4, 38, 14], [stripe('#e5484d', '#2546b8'), 2, 80, 6], ['use:shield', 5, 14, 15]]) },
+  { name: 'Endurance GT · #2', paper: 'A4', scale: '1:32', pages: 1, decals: 18, when: 'Yesterday', group: 'This week', ink: 'White ink',
+    items: layout([[i => plate(2, '#1d3f8f'), 4, 30, 24], [stripe('#f2a900', '#1d3f8f'), 2, 82, 9], [i => roundel(2, '#1d3f8f'), 5, 22, 22], ['use:forge', 3, 44, 18]]) },
+  { name: 'Rally Hatch · Night stage', paper: 'A5', scale: '1:24', pages: 1, decals: 11, when: 'Tue', group: 'This week', ink: 'Clear',
+    items: layout([[i => plate(14 + i, '#0e7a52'), 3, 30, 22], [stripe('#0e7a52', '#f5c400'), 1, 110, 10], ['use:shield', 4, 18, 20]]) },
+  { name: 'Group C · #7', paper: 'A4', scale: '1:32', pages: 2, decals: 22, when: '3 Nov', group: 'Earlier', ink: 'White paper',
+    items: layout([[i => roundel(7, '#111'), 4, 30, 30], [stripe('#f07c00', '#fff'), 2, 82, 8], ['use:dutch', 4, 38, 14], [i => roundel(7, '#111'), 6, 18, 18]]) },
+  { name: 'Touring Cup 2026', paper: 'Letter', scale: '1:32', pages: 4, decals: 40, when: '28 Oct', group: 'Earlier', ink: 'Clear',
+    items: layout([[i => plate(10 + i, '#a3141e'), 4, 30, 22], [i => plate(20 + i, '#333'), 4, 30, 22], ['use:forge', 4, 38, 16], ['use:shield', 6, 14, 15]]) },
+  { name: 'Spare numbers 1–30', paper: 'A4', scale: '1:32', pages: 2, decals: 60, when: '12 Oct', group: 'Earlier', ink: 'Clear',
+    items: layout(Array.from({ length: 6 }, (_, r) => [i => roundel(r * 5 + i + 1), 5, 26, 26])) },
+  { name: 'Classic GT · Le Mans', paper: '4×6', scale: '1:32', pages: 1, decals: 9, when: '2 Sep', group: 'Earlier', ink: 'Clear',
+    items: layout([[i => roundel(5 + i, '#2a6b45'), 3, 24, 24], [stripe('#fff', '#2a6b45'), 1, 70, 8], ['use:forge', 2, 36, 15]]) }
+];
+const PAPER = { A4: [210, 297], A5: [148, 210], Letter: [216, 279], '4×6': [102, 152] };
+function sheet(s, w, opts = {}) {
+  const [W, H] = PAPER[s.paper], h = (w * H) / W;
+  return `<svg class="sheet" width="${w}" height="${h}" viewBox="0 0 ${W} ${H}" style="${opts.style || ''}">${s.items.map(i => art(...i)).join('')}</svg>`;
+}
+
+// ---------- A ----------
+document.getElementById('A-heropages').innerHTML = sheet(SHEETS[0], 120, { style: 'transform:translateY(10px)' }) + sheet(SHEETS[0], 150) + sheet(SHEETS[0], 120, { style: 'transform:translateY(16px)' });
+document.getElementById('A-grid').innerHTML = SHEETS.map((s, n) => `<div class="card" data-sheet="${n}"><div class="shot">${sheet(s, s.paper === 'A5' || s.paper === '4×6' ? 104 : 118)}${s.current ? '<span class="pill ok cur"><span class="dot"></span>Open now</span>' : ''}<span class="pgs">${s.pages} ${s.pages === 1 ? 'page' : 'pages'}</span></div><div class="body"><h4>${s.name}</h4><div class="meta"><span>${s.paper}</span>·<span>${s.scale}</span>·<span>${s.decals} decals</span></div><div class="when">Edited ${s.when}</div></div></div>`).join('');
+function versions(s) {
+  return [['Now', 'This sheet as it is', 'now'], ['Saved', s.when + ' · ' + s.decals + ' decals', ''], ['Saved automatically', '3 Nov · 21 decals', 'auto'], ['Saved', '1 Nov · 14 decals', ''], ['First saved', '28 Oct · 3 decals', '']];
+}
+function sideOpen(n) {
+  const s = SHEETS[n];
+  document.querySelectorAll('#A .card').forEach(c => c.classList.toggle('on', +c.dataset.sheet === n));
+  document.getElementById('A-side').hidden = false;
+  document.getElementById('A-sname').textContent = s.name;
+  document.getElementById('A-sbig').innerHTML = sheet(s, 150) + (s.pages > 1 ? sheet(s, 150, { style: 'opacity:.8' }) : '');
+  document.getElementById('A-tl').innerHTML = versions(s).map(([t, sub, k]) => `<div class="ver ${k}"><i></i>${sheet(s, 34, { style: 'width:34px;height:48px;flex:none' })}<div class="t">${t}<small>${sub}</small></div>${k === 'now' ? '' : '<button class="btn sm">Open a copy</button>'}</div>`).join('');
+}
+document.getElementById('A-grid').onclick = e => { const c = e.target.closest('[data-sheet]'); if (c) sideOpen(+c.dataset.sheet); };
+document.querySelector('[data-ver]').onclick = () => sideOpen(0);
+document.getElementById('A-close').onclick = () => { document.getElementById('A-side').hidden = true; document.querySelectorAll('#A .card').forEach(c => c.classList.remove('on')); };
+sideOpen(1);
+
+// ---------- B ----------
+document.getElementById('B-cv').innerHTML = sheet(SHEETS[0], 430);
+let cur = 0;
+function bList() {
+  let last = '';
+  document.getElementById('B-list').innerHTML = SHEETS.map((s, n) => {
+    const head = s.group !== last ? `<div class="grp eye">${(last = s.group)}</div>` : '';
+    return head + `<button class="it ${n === cur ? 'on' : ''}" data-sheet="${n}">${sheet(s, 40, { style: 'width:40px;height:56px;flex:none' })}<span><b>${s.name}</b><small>${s.paper} · ${s.scale} · ${s.decals} decals</small></span><span class="when">${s.current ? '<span class="pill ok">Open</span>' : s.when}</span></button>`;
+  }).join('');
+}
+function bShow(n) {
+  cur = n; const s = SHEETS[n]; bList();
+  document.getElementById('B-eyebrow').textContent = s.current ? 'Open now' : 'Edited ' + s.when;
+  document.getElementById('B-name').textContent = s.name;
+  document.getElementById('B-big').innerHTML = Array.from({ length: Math.min(3, s.pages) }, (_, k) => sheet(s, k ? 170 : 230, { style: k ? 'opacity:.85' : '' })).join('');
+  document.getElementById('B-facts').innerHTML = [[s.decals, 'decals'], [s.pages, s.pages === 1 ? 'page' : 'pages'], [s.paper, s.ink], [s.scale, 'model scale']].map(([b, t]) => `<div><b>${b}</b><small>${t}</small></div>`).join('');
+  document.getElementById('B-open').textContent = s.current ? 'Keep editing' : 'Open this sheet';
+  document.getElementById('B-hist').innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;min-width:110px"><span class="eye">History</span><span class="faint" style="font-size:11px;margin-top:4px">Click one to open a copy</span></div>` + versions(s).map(([t, sub, k]) => `<div class="hv ${k}">${sheet(s, 38)}<b style="font-size:11.5px">${t}</b><small>${sub.split(' · ')[0]}</small></div>`).join('');
+}
+document.getElementById('B-list').onclick = e => { const b = e.target.closest('[data-sheet]'); if (b) bShow(+b.dataset.sheet); };
+bShow(0);
+
+// ---------- switches ----------
+function pick(id, fn) { const s = document.getElementById(id); s.onclick = e => { const b = e.target.closest('button'); if (!b) return; s.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); fn(b.dataset.v); }; }
+let state = 'back';
+function apply() {
+  document.getElementById('A-back').hidden = state !== 'back'; document.getElementById('A-first').hidden = state !== 'first';
+  document.getElementById('A-side').hidden = state !== 'back' || !document.querySelector('#A .card.on');
+  document.getElementById('B-back').hidden = state !== 'back'; document.getElementById('B-first').hidden = state !== 'first';
+  document.getElementById('B-title').textContent = state === 'first' ? 'Untitled sheet' : 'Club Racing · No. 27';
+  document.getElementById('B-sub').textContent = state === 'first' ? 'Saved · A4 · portrait · 1:32 · 1 page' : 'Saved · A4 · portrait · 1:32 · 3 pages';
+  document.getElementById('B-cv').innerHTML = state === 'first' ? '<svg class="sheet" width="430" height="608" viewBox="0 0 210 297"></svg>' : sheet(SHEETS[0], 430);
+}
+pick('sw-opt', v => { document.getElementById('A').hidden = v !== 'A'; document.getElementById('B').hidden = v !== 'B'; });
+pick('sw-state', v => { state = v; apply(); });
+pick('sw-theme', v => (document.documentElement.dataset.theme = v));
+const q = new URLSearchParams(location.search);
+if (q.get('opt') === 'B') document.querySelector('#sw-opt [data-v="B"]').click();
+if (q.get('state') === 'first') document.querySelector('#sw-state [data-v="first"]').click();
+if (q.get('theme') === 'light') document.querySelector('#sw-theme [data-v="light"]').click();
+</script>
+</body>
+</html>

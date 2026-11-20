@@ -578,6 +578,27 @@ function saveSheet(db, { project, thumbnail }, failAt) {
   put(db, 'projects', key, data, meta(p));
   return { name: key, file: key };
 }
+// Deleting a sheet keeps it: its last saved state moves into its history, marked as deleted, so
+// Workshop → Recover can open it again. Its earlier versions stay in history too.
+function deleteSheet(db, { id, stamp }) {
+  if (typeof id !== 'string' || id.length > 200) throw Error('Invalid sheet.');
+  const rows = db
+    .prepare("SELECT * FROM records WHERE scope='projects' AND json_extract(metadata,'$.id')=?")
+    .all(id);
+  if (!rows.length) throw Error('This sheet is no longer saved. Refresh the Workshop.');
+  const latest = rows.reduce((a, b) =>
+    JSON.parse(b.metadata).modified > JSON.parse(a.metadata).modified ? b : a
+  );
+  if (stamp && stamp !== token(db, latest)) throw Error('This sheet changed. Refresh the Workshop first.');
+  const old = sheet(unpack(db, latest.document)),
+    deleted = new Date().toISOString();
+  put(db, 'history', latest.key.slice(0, -8) + '-deleted-' + crypto.randomUUID() + '.sfsheet', old, {
+    ...meta(old.project, deleted),
+    deleted
+  });
+  for (const row of rows) db.prepare("DELETE FROM records WHERE scope='projects' AND key=?").run(row.key);
+  return true;
+}
 function stats(db, file) {
   return {
     bytes: fs.statSync(file).size,
@@ -770,6 +791,8 @@ function run(db, file, method, args = {}) {
       return thumbnail(db, args);
     case 'saveSheet':
       return transaction(db, () => saveSheet(db, args));
+    case 'deleteSheet':
+      return transaction(db, () => deleteSheet(db, args));
     case 'import':
       return transaction(db, () => {
         if (!Array.isArray(args) || !args.length || args.length > 100)
@@ -809,6 +832,7 @@ module.exports = {
   workspaceRead,
   workspaceSave,
   saveSheet,
+  deleteSheet,
   FILE,
   APP,
   VERSION,

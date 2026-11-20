@@ -25,8 +25,8 @@ const { _electron: electron } = require('playwright'),
   page.on('pageerror', e => errors.push(e.message));
   try {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
-    await page.waitForSelector('#dialog [data-action="demo"]');
-    await page.locator('#dialog [data-action="close"]').last().click();
+    await page.waitForSelector('#workshop [data-action="demo"]');
+    await page.locator('#workshop [data-ws="blank"]').click();
     await page.locator('[data-action="shapes"]').click();
     await page.locator('[data-create="line"]').click();
     assert.equal(await page.locator('#prop-strokeWidth').count(), 0);

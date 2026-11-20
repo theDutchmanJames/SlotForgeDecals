@@ -29,7 +29,7 @@ async function main() {
   try {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
     await page.waitForFunction(() => window.Studio?.ready);
-    await page.locator('#dialog [data-action="close"]').first().click();
+    await page.locator('#workshop [data-ws="blank"]').click();
     // The paper size lives in the Sheet & paper tab of the right panel.
     await page.locator('[data-right-tab="sheet"]').click();
     const picker = page.getByLabel('Paper size', { exact: true });

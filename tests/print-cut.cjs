@@ -55,7 +55,7 @@ async function main() {
   const P = () => page.evaluate(() => JSON.parse(JSON.stringify(Studio.project)));
   try {
     await page.waitForFunction(() => window.Studio?.ready);
-    await page.locator('#dialog [data-action="demo"]').click();
+    await page.locator('#workshop [data-action="demo"]').click();
     await page.waitForFunction(() => Studio.project.items.length > 0);
     const decals = (await P()).items.length;
 

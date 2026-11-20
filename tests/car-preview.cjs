@@ -27,8 +27,8 @@ async function main() {
   const state = () => page.evaluate(() => JSON.parse(JSON.stringify(Studio.project.items)));
   try {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
-    await page.waitForSelector('#dialog [data-action="demo"]');
-    await done();
+    await page.waitForSelector('#workshop [data-action="demo"]');
+    await page.locator('#workshop [data-ws="blank"]').click();
     await page.evaluate(() => {
       const c = document.createElement('canvas');
       c.width = 240;

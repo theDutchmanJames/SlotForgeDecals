@@ -20,7 +20,7 @@ async function main() {
   try {
     const page = await app.firstWindow();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
-    await page.locator('#dialog [data-action="close"]').last().click();
+    await page.locator('#workshop [data-ws="blank"]').click();
     const file = {
       name: 'Square.svg',
       mimeType: 'image/svg+xml',

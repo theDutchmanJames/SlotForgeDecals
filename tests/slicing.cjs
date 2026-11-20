@@ -39,7 +39,7 @@ async function main() {
   try {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
     await page.waitForFunction(() => window.Studio?.ready);
-    await close();
+    await page.locator('#workshop [data-ws="blank"]').click();
     await page.evaluate(() => {
       Studio.project.name = 'Slice test';
       Studio.project.items = [

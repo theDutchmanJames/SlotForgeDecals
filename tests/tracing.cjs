@@ -25,7 +25,7 @@ async function main() {
   page.on('pageerror', e => errors.push(e.message));
   try {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
-    await page.waitForSelector('#dialog [data-action="demo"]');
+    await page.waitForSelector('#workshop [data-action="demo"]');
     // Create a raster fixture, then use the real artwork chooser from the welcome screen.
     const png = await page.evaluate(() => {
       const c = document.createElement('canvas');
@@ -47,7 +47,7 @@ async function main() {
     const fixture = path.join(run, 'My racing number.png');
     await fs.writeFile(fixture, Buffer.from(png, 'base64'));
     const chooser = page.waitForEvent('filechooser');
-    await page.locator('#dialog [data-action="import"]').click();
+    await page.locator('#workshop [data-ws="image"]').click();
     await (await chooser).setFiles(fixture);
     await page.locator('#import-width').fill('18');
     await page.locator('#place-import').click();

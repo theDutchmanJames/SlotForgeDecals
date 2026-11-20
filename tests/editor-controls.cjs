@@ -35,7 +35,7 @@ async function main() {
   const gallery = () => page.locator('[data-action="shapes"]').click();
   try {
     await attach();
-    await close();
+    await page.locator('#workshop [data-ws="blank"]').click();
     assert.equal(await page.locator('#inspector [data-action="save-decal"]').count(), 0);
     assert.equal(await page.locator('.library-panel [data-action="import"]').count(), 0);
     await page.locator('#project-name').click();
@@ -108,7 +108,7 @@ async function main() {
     assert(!(await page.locator('#library-grid').isVisible()));
     await page.locator('[data-left-tab="library"]').click();
     assert(await page.locator('#library-grid').isVisible());
-    for (const action of ['library', 'projects']) {
+    for (const action of ['library']) {
       await page.locator('nav [data-action="' + action + '"]').click();
       await page.waitForSelector('.collection-item');
       await page.locator('button[data-view="list"]').click();

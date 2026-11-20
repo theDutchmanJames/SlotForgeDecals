@@ -26,8 +26,7 @@ async function main() {
   page.on('pageerror', e => errors.push(e.message));
   try {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
-    await page.waitForSelector('#dialog [data-action="close"]');
-    await page.locator('#dialog [data-action="close"]').last().click();
+    await page.locator('#workshop [data-ws="blank"]').click();
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="18mm" height="10mm" viewBox="0 0 180 100"><defs><linearGradient id="grad"><stop stop-color="#f00"/><stop offset="1" stop-color="#00f"/></linearGradient><clipPath id="clip"><rect width="180" height="100" rx="20"/></clipPath></defs><style>.logo{fill:url(#grad)}</style><rect class="logo" width="180" height="100" clip-path="url(#clip)"/></svg>';
     await page

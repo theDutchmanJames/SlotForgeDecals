@@ -31,7 +31,7 @@ async function main() {
   try {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
     await page.waitForFunction(() => window.Studio?.ready);
-    await done();
+    await page.locator('#workshop [data-ws="blank"]').click();
     await page.evaluate(() => {
       Studio.project.items = [
         DM.item('stripe', { id: 'a', name: 'Side stripes', x: 20, y: 20, w: 30, h: 6 }),

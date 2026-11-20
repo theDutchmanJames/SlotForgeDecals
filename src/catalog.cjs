@@ -124,7 +124,8 @@ function rowMeta(db, row) {
 }
 function query(db, args = {}) {
   const { scope = 'decals', search = '', sort = 'added', filter = 'all', projectId, excludeId } = args;
-  if (!['decals', 'projects', 'history', 'workspace'].includes(scope)) throw Error('Invalid library.');
+  if (!['decals', 'projects', 'history', 'workspace', 'deleted'].includes(scope))
+    throw Error('Invalid library.');
   const limit = args.limit ?? 48,
     offset = args.offset ?? 0;
   if (
@@ -144,8 +145,13 @@ function query(db, args = {}) {
     recent: "json_extract(metadata,'$.recent') DESC"
   };
   if (!fields[sort]) throw Error('Invalid library order.');
-  const params = [scope],
+  // Deleted sheets are history entries marked as deleted whose sheet was not saved again since.
+  const params = [scope === 'deleted' ? 'history' : scope],
     where = ['scope=?'];
+  if (scope === 'deleted')
+    where.push(
+      "json_extract(metadata,'$.deleted') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM records live WHERE live.scope='projects' AND json_extract(live.metadata,'$.id')=json_extract(records.metadata,'$.id'))"
+    );
   if (scope === 'workspace') where.push("key<>'current'");
   if (scope === 'projects')
     where.push(

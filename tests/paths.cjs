@@ -64,7 +64,7 @@ async function main() {
   };
   try {
     await attach();
-    await close();
+    await page.locator('#workshop [data-ws="blank"]').click();
     // Drafts stay on the main canvas and are not accidentally saved or lost on tool changes.
     await newPath();
     const pressAt = await pos(20, 20),

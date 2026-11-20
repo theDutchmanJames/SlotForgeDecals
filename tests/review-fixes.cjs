@@ -34,7 +34,7 @@ async function main() {
     done = () => page.locator('#dialog [data-action="close"]').last().click();
   try {
     await attach();
-    await done();
+    await page.locator('#workshop [data-ws="blank"]').click();
     await page.locator('[data-action="shapes"]').click();
     await page.locator('[data-create="line"]').click();
     // The resize handle is only 2 mm wide: wait until the layout has settled (same position over

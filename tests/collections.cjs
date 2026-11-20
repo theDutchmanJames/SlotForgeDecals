@@ -37,17 +37,27 @@ async function main() {
     await page.locator('#collection-confirm').click();
     await page.waitForFunction(() => !document.querySelector('#dialog').open);
   };
+  // Saved sheets live in the Workshop page.
   const browser = async () => {
     await page.locator('nav [data-action="projects"]').click();
-    await page.waitForSelector('.collection-item');
+    await page.waitForSelector('.ws-card');
   };
+  const sheetsLoaded = n =>
+    page.waitForFunction(
+      n =>
+        document.querySelector('#ws-grid')?.dataset.loading === 'false' &&
+        document.querySelectorAll('.ws-card').length === n,
+      n
+    );
+  const sheetCard = name =>
+    page.locator('.ws-card').filter({ has: page.locator('h3', { hasText: new RegExp('^' + name + '$') }) });
   const card = name =>
     page
       .locator('.collection-item')
       .filter({ has: page.locator('h3', { hasText: new RegExp('^' + name + '$') }) });
   try {
     await attach();
-    await close();
+    await page.locator('#workshop [data-ws="blank"]').click();
     await page.evaluate(async () => {
       const p = Studio.project;
       p.name = 'Zulu Current';
@@ -115,39 +125,31 @@ async function main() {
     }
     await close();
     await browser();
-    await page.locator('#project-sort').selectOption('name');
-    await page.waitForFunction(
-      () => document.querySelector('#collection-items')?.dataset.loading === 'false'
-    );
-    await page.screenshot({ path: path.join(run, 'sheet-library-grid.png') });
-    assert.deepEqual(await page.locator('.collection-name h3').allTextContents(), [
+    await page.locator('#ws-sort').selectOption('name');
+    await sheetsLoaded(3);
+    await page.screenshot({ path: path.join(run, 'workshop-sheets.png') });
+    // The open sheet comes first, then the saved ones by name.
+    assert.deepEqual(await page.locator('.ws-card h3').allTextContents(), [
       'Zulu Current',
       'Alfa Sprint',
       'Bravo Endurance'
     ]);
-    assert(await page.locator('#library-export-selected').isDisabled());
-    await card('Zulu Current').locator('.collection-name').click();
-    await card('Bravo Endurance')
-      .locator('.collection-name')
-      .click({ modifiers: ['Shift'] });
-    assert.match(await page.locator('#collection-count').textContent(), /^3 selected/);
-    await card('Bravo Endurance')
-      .locator('.collection-name')
-      .click({ modifiers: [process.platform === 'darwin' ? 'Meta' : 'Control'] });
-    assert.match(await page.locator('#collection-count').textContent(), /^2 selected/);
+    assert(await page.locator('#ws-share-picked').isHidden());
+    const mod = process.platform === 'darwin' ? 'Meta' : 'Control';
+    await sheetCard('Zulu Current').click({ modifiers: ['Shift'] });
+    await sheetCard('Alfa Sprint').click({ modifiers: [mod] });
+    await sheetCard('Bravo Endurance').click({ modifiers: [mod] });
+    assert.match(await page.locator('#ws-picked').textContent(), /^3 sheets selected/);
+    await sheetCard('Bravo Endurance').click({ modifiers: [mod] });
+    assert.match(await page.locator('#ws-picked').textContent(), /^2 sheets selected/);
     assert.deepEqual(await state(), original);
-    await page.locator('[data-view="list"]').click();
-    await page.locator('#project-search').fill('Alfa');
-    await page.waitForFunction(
-      () =>
-        document.querySelector('.collection-name h3')?.textContent === 'Alfa Sprint' &&
-        document.querySelectorAll('.collection-item').length === 1
-    );
-    assert.match(await page.locator('#collection-count').textContent(), /1 on other pages or hidden/);
-    await page.locator('#project-search').fill('');
-    await page.waitForFunction(() => document.querySelectorAll('.collection-item').length === 3);
-    await page.screenshot({ path: path.join(run, 'sheet-library-list.png') });
-    await page.locator('#library-export-selected').click();
+    // Searching keeps the chosen sheets chosen.
+    await page.locator('#ws-search').fill('Alfa');
+    await sheetsLoaded(1);
+    await page.locator('#ws-search').fill('');
+    await sheetsLoaded(3);
+    assert.match(await page.locator('#ws-picked').textContent(), /^2 sheets selected/);
+    await page.locator('#ws-share-picked').click();
     await page.waitForSelector('#collection-confirm');
     await page.waitForFunction(
       () => document.querySelector('#collection-items')?.dataset.loading === 'false'
@@ -183,6 +185,7 @@ async function main() {
     assert.equal(all.length, 6);
     assert.equal(new Set(all.map(e => e.id)).size, 6);
     // Legacy single-sheet export, page selection on import, and a blank template.
+    await page.locator('nav [data-action="editor"]').click();
     await page.locator('#print-menu-button').click();
     await page.locator('#print-menu [data-action="export-sheet"]').click();
     await confirm();
@@ -322,10 +325,9 @@ async function main() {
     assert.equal(await page.evaluate(() => Studio.libraryCount), 4);
     await close();
     await browser();
-    assert.equal(await page.locator('#collection-items').getAttribute('data-view'), 'list');
-    assert.equal(await page.locator('#project-sort').inputValue(), 'name');
+    assert.equal(await page.locator('#ws-sort').inputValue(), 'name', 'the Workshop remembers its order');
     assert.deepEqual(errors, []);
-    await close();
+    await page.locator('nav [data-action="editor"]').click();
     await page.evaluate(() => setTheme('dark'));
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1100, 720));
     await page.locator('nav [data-action="library"]').click();
@@ -342,7 +344,7 @@ async function main() {
     });
     page = await app.firstWindow();
     await attach();
-    await close();
+    await page.locator('#workshop [data-ws="blank"]').click();
     const recipientBefore = await state();
     await page.locator('#project-file').setInputFiles(file);
     await confirm();

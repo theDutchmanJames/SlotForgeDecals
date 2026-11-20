@@ -46,7 +46,13 @@ else {
           throw Error('Invalid request.');
         return fn(arg);
       });
-    handle('load', async () => ({ ...(await workspace.read()), root, version: app.getVersion() }));
+    // Test runs open straight into the editor unless a test asks for the Workshop start page.
+    handle('load', async () => ({
+      ...(await workspace.read()),
+      root,
+      version: app.getVersion(),
+      startOnWorkshop: !process.env.SLOTFORGE_TEST_PROFILE || !!process.env.SLOTFORGE_TEST_WORKSHOP
+    }));
     // "A new version is available" (from SlotForge Circuit, docs/update-check-handoff.md): installed
     // and portable apps ask GitHub once, 5 seconds after starting; a newer version opens a window with
     // What's new, Skip and Download. Development copies only check when asked in Settings.
@@ -164,6 +170,7 @@ else {
     handle('projects-read', ({ entry, remember }) => projects.read(entry, { remember: remember === true }));
     handle('projects-thumbnail', entry => projects.thumbnail(entry));
     handle('projects-save', data => projects.save(data));
+    handle('projects-delete', entry => projects.remove(entry));
     handle('projects-import', data => projects.importMany(data));
     handle('folder', () => shell.openPath(root));
     handle('storage-stats', () => workspace.stats());

@@ -24,7 +24,7 @@ async function main() {
     page.on('pageerror', e => errors.push(e.message));
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
     await page.waitForFunction(() => window.Studio?.ready);
-    await page.locator('#dialog [data-action="close"]').first().click();
+    await page.locator('#workshop [data-ws="blank"]').click();
     await page.evaluate(() => {
       Studio.project.items = [
         DM.item('rect', { name: 'Left edge marker', x: 1, y: 10, w: 3, h: 10, fill: '#00ff00' })

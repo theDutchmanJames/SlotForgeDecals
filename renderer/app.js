@@ -251,7 +251,9 @@ async function start() {
     applyTheme();
     render();
     $('#save-status').innerHTML = '<i></i>Saved locally';
-    if (!loaded.data) welcome();
+    // The Workshop is the start page: the welcome on the very first start, the sheets afterwards.
+    if (!loaded.data) Workshop.show({ welcome: true });
+    else if (loaded.startOnWorkshop && settings.startOnWorkshop !== false) Workshop.show();
     startUpdates();
     // Load the path library once the editor is idle, so the Path Tool opens without a wait.
     requestIdleCallback(() => PathTools.ready().catch(() => {}), { timeout: 4000 });
@@ -1664,9 +1666,9 @@ function settingsDialog() {
     ['updates', 'update', 'Updates', 'Checks whether a newer Decals has been published.']
   ];
   const bodies = {
-    appearance: `<div class="ss-sheet">${settingsRow('Theme', 'Dark or light windows and panels. Sheets always print the same.', `<span class="seg" role="group" aria-label="Theme"><button data-theme-pick="dark">Dark</button><button data-theme-pick="light">Light</button></span><select id="theme-setting" hidden aria-hidden="true" tabindex="-1"><option value="dark">SlotForge Dark</option><option value="light">SlotForge Light</option></select>`)}</div>`,
+    appearance: `<div class="ss-sheet">${settingsRow('Theme', 'Dark or light windows and panels. Sheets always print the same.', `<span class="seg" role="group" aria-label="Theme"><button data-theme-pick="dark">Dark</button><button data-theme-pick="light">Light</button></span><select id="theme-setting" hidden aria-hidden="true" tabindex="-1"><option value="dark">SlotForge Dark</option><option value="light">SlotForge Light</option></select>`)}${settingsRow('Start on the Workshop', 'Show your sheets and a quick way to continue when Decals opens. Off: open straight into the editor.', `<label class="switch-row"><input id="start-workshop" type="checkbox" role="switch" ${settings.startOnWorkshop !== false ? 'checked' : ''}><span class="sw" aria-hidden="true"></span></label>`)}</div>`,
     workspace: `<div class="ss-sheet">${settingsRow('Workspace folder', `<code class="ss-path">${E(rootPath)}</code>`, '<button data-action="folder">Open folder</button>')}${settingsRow('Database', 'Sheets, decals, artwork and history are stored in decals.sqlite in this folder.', '')}<div class="ss-stats" id="storage-usage" role="status"><span class="hint">Reading storage usage…</span></div></div><p class="ss-note">Installing a new version never replaces this folder. Three previous workspace versions are kept inside the database, and older files stay unchanged as recovery copies.</p>`,
-    backup: `<div class="ss-sheet">${settingsRow('Complete backup', 'Every saved sheet with its history, your decal library and all artwork, in one file.', '<button data-action="complete-backup">Export Complete Backup</button>')}${settingsRow('Restore a complete backup', 'Replaces the workspace with the backup. A recovery copy is kept first.', '<button data-action="complete-restore">Restore Complete Backup</button>')}${settingsRow('Recover a sheet', 'Bring back an earlier version of a sheet or a recovered copy.', '<button data-action="recover-workspace">Recover a sheet</button>')}${settingsRow('Sheet Library', 'Every saved sheet, with its versions.', '<button data-action="projects">Open Sheet Library</button>')}</div><h4 class="ss-gh">Only if you need it</h4><details class="settings-advanced ss-sheet" id="legacy-backups"><summary>Older backup format (.sfbackup)</summary>${settingsRow('Workspace backup', 'Only for exchanging with older Decals versions. Contains the current sheet and up to 1,000 library decals, not every saved sheet.', '<button data-action="backup">Export Workspace Backup</button><button data-action="restore-backup">Restore Workspace Backup</button>')}</details>`,
+    backup: `<div class="ss-sheet">${settingsRow('Complete backup', 'Every saved sheet with its history, your decal library and all artwork, in one file.', '<button data-action="complete-backup">Export Complete Backup</button>')}${settingsRow('Restore a complete backup', 'Replaces the workspace with the backup. A recovery copy is kept first.', '<button data-action="complete-restore">Restore Complete Backup</button>')}${settingsRow('Recover a sheet', 'Bring back an earlier version of a sheet or a recovered copy.', '<button data-action="recover-workspace">Recover a sheet</button>')}${settingsRow('Your sheets', 'Every saved sheet with its history, in the Workshop.', '<button data-action="projects">Open the Workshop</button>')}</div><h4 class="ss-gh">Only if you need it</h4><details class="settings-advanced ss-sheet" id="legacy-backups"><summary>Older backup format (.sfbackup)</summary>${settingsRow('Workspace backup', 'Only for exchanging with older Decals versions. Contains the current sheet and up to 1,000 library decals, not every saved sheet.', '<button data-action="backup">Export Workspace Backup</button><button data-action="restore-backup">Restore Workspace Backup</button>')}</details>`,
     updates:
       '<div id="update-settings"></div><p class="ss-note">Decal artwork stays on your computer. No account is needed; the internet is only used to check for new versions.</p>'
   };
@@ -1689,6 +1691,11 @@ function settingsDialog() {
     status('appearance', settings.theme === 'light' ? 'Light' : 'Dark');
   };
   status('backup', 'Complete backups · recovery');
+  $('#start-workshop').onchange = e => {
+    settings.startOnWorkshop = e.target.checked;
+    revision++;
+    scheduleSave();
+  };
   desktop
     .storageStats()
     .then(s => {
@@ -1791,7 +1798,7 @@ function sharingDialog() {
       button('export-pack', 'Export Decals', 'Choose saved decals to share with other builders.', true) +
       button('import-pack', 'Import Decals', 'Choose decals from an .sfdecal file to add to your library.') +
       button('pdf', 'Export PDF', 'Print your current sheet at its exact physical size.', true) +
-      '</div></section><p class="hint">Save Sheet keeps your work in Sheet Library. Editable sheet and decal files preserve editing; PDF is for printing. Workspace backups are in Settings → Backup & Recovery.</p>',
+      '</div></section><p class="hint">Save to Sheets keeps your work in the Workshop. Editable sheet and decal files preserve editing; PDF is for printing. Workspace backups are in Settings → Backup & Recovery.</p>',
     '<button data-action="close">Done</button>',
     true
   );
@@ -1800,7 +1807,7 @@ function sharingDialog() {
 const HELP_TOPICS = [
   [
     'Getting started',
-    '<p>The usual workflow: <strong>import or create</strong> artwork, set its <strong>printed size</strong> in millimetres, check it in the <strong>Fit check</strong>, <strong>arrange</strong> the sheet, print a plain-paper <strong>sizing proof</strong>, then <strong>Export PDF</strong> for your decal paper.</p><p>Everything is saved locally and automatically. <strong>Save to Sheets</strong> (Ctrl+S) also keeps a copy in your Sheet Library.</p>'
+    '<p>The usual workflow: <strong>import or create</strong> artwork, set its <strong>printed size</strong> in millimetres, check it in the <strong>Fit check</strong>, <strong>arrange</strong> the sheet, print a plain-paper <strong>sizing proof</strong>, then <strong>Export PDF</strong> for your decal paper.</p><p>Everything is saved locally and automatically. <strong>Save to Sheets</strong> (Ctrl+S) also keeps a copy among your sheets.</p><p>Decals opens on the <strong>Workshop</strong>: continue the open sheet, start a new one (blank on the paper you pick, from an image, a shared file or the example), or pick any saved sheet. App Settings → Appearance can open straight into the editor instead.</p>'
   ],
   [
     'The editor',
@@ -1828,7 +1835,7 @@ const HELP_TOPICS = [
   ],
   [
     'Libraries & sharing',
-    '<p><strong>Save decal to library</strong> keeps a reusable design with a name and tags. Copies on sheets stay independent. Share saved decals as an .sfdecal pack with Export Decals.</p><p><strong>Sheet Library</strong> holds complete saved sheets. New sheet (the arrow next to the sheet name) saves the outgoing work and starts another. Export selected sheets as one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent copies while your current work stays open. Versions and Recover a sheet open earlier work as separate copies.</p><p>Back up everything with <strong>App Settings → Export Complete Backup</strong>.</p>'
+    '<p><strong>Save decal to library</strong> keeps a reusable design with a name and tags. Copies on sheets stay independent. Share saved decals as an .sfdecal pack with Export Decals.</p><p>The <strong>Workshop</strong> holds every saved sheet. Click one to see it large with <strong>Open</strong>, <strong>Rename</strong>, <strong>Duplicate</strong>, <strong>Share…</strong>, <strong>Pin</strong> and <strong>Delete</strong>, and its <strong>History</strong>: every earlier save opens as a separate copy. Shift- or Ctrl-click several sheets to share them as one file. <strong>Recover a sheet…</strong> brings back deleted sheets and automatic snapshots. New sheet (the arrow next to the sheet name) saves the outgoing work and starts another. Export selected sheets as one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent copies while your current work stays open. Versions and Recover a sheet open earlier work as separate copies.</p><p>Back up everything with <strong>App Settings → Export Complete Backup</strong>.</p>'
   ],
   [
     'Print & white ink',
@@ -1874,13 +1881,6 @@ function helpDialog() {
     $('#help-content').scrollTop = 0;
     rail.mark();
   };
-}
-function welcome() {
-  showDialog(
-    'Welcome to SlotForge Decals',
-    'Your artwork. Your scale. Your decal workshop.',
-    `<p>Import your own pictures or logos, create text and shapes, or explore the example sheet.</p><div class="welcome-actions"><button class="primary" data-action="import">Import an Image<small>PNG · JPG · SVG · EPS · PDF</small></button><button data-action="demo">Open example sheet<small>Includes editable starter decals</small></button><button data-action="close">Start with a blank sheet<small>Import artwork or add text and shapes</small></button></div><p class="hint">Everything is saved locally. The car preview is an illustrated reference you can calibrate or replace.</p>`
-  );
 }
 function svgAsset(name, content, w, h) {
   return DM.item('svg', {
@@ -2441,8 +2441,14 @@ const actions = {
     mutate(() => (project.orientation = project.orientation === 'portrait' ? 'landscape' : 'portrait')),
   'sidebar-grid': () => setSidebarView('grid'),
   'sidebar-list': () => setSidebarView('list'),
-  projects: projectBrowser,
-  'recover-workspace': () => projectVersions(),
+  projects: () => {
+    closeDialog();
+    Workshop.show();
+  },
+  'recover-workspace': () => {
+    closeDialog();
+    Workshop.show({ recover: true });
+  },
   'open-sheet-file': () => $('#project-file').click(),
   'arrange-selection': arrangeSelectionDialog,
   'grid-copies': gridCopiesDialog,
@@ -2458,7 +2464,10 @@ const actions = {
     const svg = Art.standalone(i, activeFonts());
     if (await desktop.exportFile('svg', i.name, svg)) toast('SVG exported at the current printed size.');
   },
-  editor: () => closeDialog(),
+  editor: () => {
+    closeDialog();
+    Workshop.hide();
+  },
   close: closeDialog,
   rename: () => nameDialog('Name your sheet', project.name, n => mutate(() => (project.name = n))),
   import: () => $('#art-file').click(),
@@ -2492,6 +2501,7 @@ const actions = {
       projectRun(async () => {
         await saveCurrentProject();
         await demo();
+        Workshop.hide();
       });
     if (project.items.length) {
       confirmDialog(
@@ -3097,7 +3107,12 @@ $('#car-file').onchange = async e => {
   }
 };
 document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.querySelector('dialog[open]')) {
+  if (
+    (e.ctrlKey || e.metaKey) &&
+    e.key.toLowerCase() === 'k' &&
+    !document.querySelector('dialog[open]') &&
+    !Workshop.isOpen()
+  ) {
     e.preventDefault();
     Finder.open();
     return;
@@ -3120,7 +3135,7 @@ document.addEventListener('keydown', e => {
     closeMenus();
     return;
   }
-  if (!$('#finder').hidden) return;
+  if (!$('#finder').hidden || Workshop.isOpen()) return;
   if (e.target.matches('input,textarea,select') || document.querySelector('dialog[open]')) return; // also the update window
   const ctrl = e.ctrlKey || e.metaKey;
   let action;

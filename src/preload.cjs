@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('desktop', {
   readProject: (entry, remember = false) => ipcRenderer.invoke('projects-read', { entry, remember }),
   projectThumbnail: entry => ipcRenderer.invoke('projects-thumbnail', entry),
   saveProject: data => ipcRenderer.invoke('projects-save', data),
+  deleteProject: entry => ipcRenderer.invoke('projects-delete', entry),
   importProjects: data => ipcRenderer.invoke('projects-import', data),
   exportFile: (type, name, data) => ipcRenderer.invoke('export-file', { type, name, data }),
   exportPDF: payload => ipcRenderer.invoke('export-pdf', payload),

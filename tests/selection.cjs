@@ -55,7 +55,7 @@ async function main() {
   try {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
     await page.waitForFunction(() => window.Studio?.ready);
-    await done();
+    await page.locator('#workshop [data-ws="blank"]').click();
     await page.evaluate(() => {
       Studio.project.pages = 2;
       Studio.project.items = [

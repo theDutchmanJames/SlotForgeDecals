@@ -22,6 +22,9 @@ class Projects {
   save(data) {
     return call(this.root, 'saveSheet', data);
   }
+  remove(entry) {
+    return call(this.root, 'deleteSheet', { id: entry?.id, stamp: entry?.stamp });
+  }
   importMany(data) {
     return call(this.root, 'import', data);
   }

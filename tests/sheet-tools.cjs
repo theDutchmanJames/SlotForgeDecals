@@ -35,7 +35,7 @@ async function main() {
   const ok = (...a) => console.log('✔', ...a);
   try {
     await page.waitForFunction(() => window.Studio?.ready);
-    await page.locator('#dialog [data-action="demo"]').click();
+    await page.locator('#workshop [data-action="demo"]').click();
     await page.waitForFunction(() => Studio.project.items.length > 0);
 
     // Paper: US Letter, then a custom size via the dialog, then change it, then cancel a change.

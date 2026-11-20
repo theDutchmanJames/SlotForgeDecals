@@ -1,6 +1,5 @@
 'use strict';
-let projectTask = false,
-  projectBrowserGeneration = 0;
+let projectTask = false;
 const projectDate = value => {
   const date = new Date(typeof value === 'string' ? value : NaN);
   return Number.isNaN(date.getTime())
@@ -31,7 +30,7 @@ async function projectRun(fn) {
     showDialog(
       'Saving your sheet',
       'Please wait…',
-      '<p class="hint">Keeping your work in the local workspace.</p>'
+      '<p class="hint" id="project-task-note">Keeping your work in the local workspace.</p>'
     );
   $('#dialog-content').inert = true;
   try {
@@ -39,7 +38,8 @@ async function projectRun(fn) {
   } finally {
     projectTask = false;
     $('#dialog-content').inert = false;
-    if (owned && $('#dialog').open) closeDialog();
+    // Close only its own "Saving" note, not a window the task opened (such as a recovery preview).
+    if (owned && $('#dialog').open && $('#project-task-note')) closeDialog();
   }
 }
 async function saveCurrentProject(includeBlank = false) {
@@ -58,7 +58,8 @@ async function saveCurrentProject(includeBlank = false) {
 async function saveEditableProject() {
   if (projectTask) return;
   await projectRun(() => saveCurrentProject(true));
-  toast('Saved to Sheet Library. Earlier saved versions are kept.');
+  toast('Saved to your sheets in the Workshop. Earlier saved versions are kept.');
+  Workshop.render();
 }
 async function exportEditableProject(entry = null) {
   await sheetExportDialog(entry ? [entry] : undefined);
@@ -96,11 +97,12 @@ async function switchProject(incoming, { recovered = false, imported = false } =
   }
   closeDialog();
   render();
+  Workshop.hide();
   toast(
     recovered
       ? 'Opened a recovered copy. Your other sheets and decal library are kept.'
       : imported
-        ? 'Imported an independent copy into Sheet Library.'
+        ? 'Imported an independent copy into your sheets.'
         : 'Opened ' + next.name + '.'
   );
 }
@@ -112,11 +114,6 @@ async function openProjectEntry(entry) {
 }
 async function newProject() {
   await projectRun(() => switchProject(DM.project()));
-}
-async function saveProjectFromBrowser() {
-  if (projectTask) return;
-  await saveEditableProject();
-  await projectBrowser();
 }
 function sheetRow(p, source = {}) {
   return {
@@ -183,38 +180,6 @@ async function sheetPreviews(session, entries) {
   session.watchPreviews(sheetThumbnail);
 }
 
-async function projectBrowser() {
-  const session = collectionBrowser({
-    title: 'Sheet Library',
-    subtitle: 'Select sheets across pages to export. Open a sheet to continue editing.',
-    kind: 'sheets',
-    query: sheetEntries,
-    preview: sheetPreview,
-    selectionLimit: 100,
-    empty: 'Save your current sheet to start your collection.',
-    footer:
-      '<button data-action="open-sheet-file">Import Sheet(s)</button><button id="library-export-selected" class="collection-export" disabled>Export Sheet(s)</button><button data-action="new">Add Sheet</button><button id="project-save-current">Save Current Sheet</button><button data-action="recover-workspace">Recovery</button>',
-    actions: (e, n) =>
-      '<button data-collection-action="open" data-project-open="' +
-      n +
-      '" data-index="' +
-      n +
-      '">' +
-      (e.current ? 'Continue editing' : 'Open Sheet') +
-      '</button><button data-collection-action="versions" data-project-versions="' +
-      n +
-      '" data-index="' +
-      n +
-      '">Versions</button>',
-    action: async (action, e) => {
-      if (action === 'versions') await projectVersions(e);
-      else if (e.current) closeDialog();
-      else await openProjectEntry(e);
-    }
-  });
-  $('#library-export-selected').onclick = () => sheetExportDialog(session.selected()).catch(fail);
-  $('#project-save-current').onclick = () => saveProjectFromBrowser().catch(fail);
-}
 async function sheetExportDialog(
   selected = [sheetRow({ ...project, count: project.items.length }, { current: true })]
 ) {
@@ -272,31 +237,6 @@ async function sheetImportDialog(raw) {
   });
   sheetPreviews(session, entries).catch(fail);
 }
-async function projectVersions(entry) {
-  const workspace = !entry;
-  collectionBrowser({
-    title: workspace ? 'Workspace sheet recovery' : 'Saved versions',
-    subtitle: workspace ? 'Recover a sheet from the last three automatic snapshots.' : entry.name,
-    kind: 'sheets',
-    query: async args => {
-      const result = await desktop.queryLibrary({
-        ...args,
-        scope: workspace ? 'workspace' : 'history',
-        projectId: entry?.id
-      });
-      return {
-        ...result,
-        entries: result.entries.map(e => ({ ...sheetRow(e, e), id: e.scope + ':' + e.file }))
-      };
-    },
-    preview: sheetPreview,
-    note: 'Recovery opens a separate copy. Your decal library and preferences stay as they are.',
-    footer: '<button data-action="projects">Back to Sheet Library</button>',
-    actions: (e, n) =>
-      `<button data-recover-preview="${n}" data-collection-action="recover" data-index="${n}">Preview & recover</button>`,
-    action: (_action, e) => recoveryPreview(e)
-  });
-}
 async function recoveryPreview(entry) {
   await projectRun(async () => {
     const data = await desktop.readProject(entry),
@@ -307,7 +247,7 @@ async function recoveryPreview(entry) {
       'Recover this sheet?',
       p.name,
       `<div class="recovery-preview"><img src="${E(thumbnail)}" alt="Recovered sheet preview"><div><p><strong>${p.count ?? p.items.length} decals · ${p.pages} ${E(DM.pageFormat(p).label)} ${p.pages === 1 ? 'page' : 'pages'}</strong></p><p class="hint">${E(projectDate(p.updated))}</p><p>A separate recovered copy will open. Your current sheet is saved first. Your library and preferences are kept.</p></div></div>`,
-      '<button data-action="projects">Back to Sheet Library</button><button id="recover-project" class="primary">Open recovered copy</button>',
+      '<button data-action="projects">Back to the Workshop</button><button id="recover-project" class="primary">Open recovered copy</button>',
       true
     );
     // Keep the reviewed snapshot in memory: rotating workspace backup filenames cannot change it.

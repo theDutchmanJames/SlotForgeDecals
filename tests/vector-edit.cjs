@@ -36,7 +36,7 @@ async function main() {
   const state = () => page.evaluate(() => DM.clone(Studio.project.items[0]));
   try {
     await attach();
-    await close();
+    await page.locator('#workshop [data-ws="blank"]').click();
     const source =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60"><style>:root{fill:white} .paint{fill:url(#paint)} rect:nth-child(2){stroke:none}</style><defs><linearGradient id="paint"><stop stop-color="#ff0000"/><stop offset="1" stop-color="#0000ff"/></linearGradient><clipPath id="clip"><rect width="60" height="40"/></clipPath><path id="glyph" d="M0 0h8v8h-8z"/></defs><rect id="background" width="100" height="60"/><g transform="translate(20 10)" clip-path="url(#clip)"><rect id="colour" class="paint" width="60" height="40"/><rect id="white-detail" x="20" y="10" width="10" height="10" fill="white"/><use id="instance" href="#glyph" x="40" y="20" fill="black"/></g></svg>';
     await page.evaluate(svg => {

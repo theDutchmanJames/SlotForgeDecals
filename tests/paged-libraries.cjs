@@ -63,7 +63,7 @@ async function main() {
   const close = () => page.locator('#dialog [data-action="close"]').first().click();
   try {
     await attach();
-    await close();
+    await page.locator('#workshop [data-ws="blank"]').click();
     await page.locator('#library-grid [data-lib]').first().waitFor();
     assert.equal(await page.evaluate(() => Studio.libraryCount), 155);
     assert.equal(await page.locator('#library-grid .library-card').count(), 24);
@@ -115,24 +115,23 @@ async function main() {
       () => Studio.project.items.length === 1 && !document.querySelector('#dialog').open
     );
     assert.equal(await page.evaluate(() => Studio.project.items[0].src), png);
+    // The Workshop shows 48 sheets at a time; Show more adds the next ones.
+    const cards = n =>
+      page.waitForFunction(
+        n =>
+          document.querySelector('#ws-grid')?.dataset.loading === 'false' &&
+          document.querySelectorAll('.ws-card').length === n,
+        n
+      );
     await page.locator('nav [data-action="projects"]').click();
-    await loaded();
-    assert.equal(await page.locator('.collection-item').count(), 48);
-    await page.locator('[data-view="list"]').click();
-    assert.equal(
-      await page
-        .locator('#collection-items')
-        .evaluate(e => getComputedStyle(e).gridTemplateColumns.split(' ').length),
-      2
-    );
-    await page.locator('#collection-next').click();
-    await loaded();
-    assert.equal(await page.locator('.collection-item').count(), 48);
-    await page.locator('#collection-next').click();
-    await loaded();
-    assert.equal(await page.locator('.collection-item').count(), 15);
+    await cards(48);
+    await page.locator('#ws-more').click();
+    await cards(96);
+    await page.locator('#ws-more').click();
+    await cards(111);
+    assert(await page.locator('#ws-more').isHidden());
     await page.screenshot({ path: path.join(run, 'paged-sheets-dark.png') });
-    await close();
+    await page.locator('nav [data-action="editor"]').click();
     await page.evaluate(() => setTheme('light'));
     await page.locator('nav [data-action="library"]').click();
     await loaded();

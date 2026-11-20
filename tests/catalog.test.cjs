@@ -258,3 +258,31 @@ test('legacy workspace recovery attaches the embedded fonts used by its sheet', 
   assert.deepEqual(run('read', { entry }).project.fonts, [font]);
   assert.equal(run('read', { entry }).project.items[0].text, 'Recover me');
 });
+test('deleting a sheet keeps it recoverable and lists it once among deleted sheets', t => {
+  const { run } = fixture(t);
+  run('load');
+  const keep = D.project('Keep me'),
+    gone = D.project('Delete me');
+  run('saveSheet', { project: keep });
+  run('saveSheet', { project: gone });
+  run('saveSheet', { project: { ...gone, name: 'Delete me, saved twice' } });
+  const live = run('catalog-query', { scope: 'projects' }).entries;
+  assert.deepEqual(live.map(e => e.name).sort(), ['Delete me, saved twice', 'Keep me']);
+  const entry = live.find(e => e.id === gone.id);
+  assert.throws(() => run('deleteSheet', { id: gone.id, stamp: 'stale' }), /changed/);
+  assert(run('deleteSheet', { id: gone.id, stamp: entry.stamp }));
+  assert.deepEqual(
+    run('catalog-query', { scope: 'projects' }).entries.map(e => e.name),
+    ['Keep me']
+  );
+  const deleted = run('catalog-query', { scope: 'deleted' }).entries;
+  assert.equal(deleted.length, 1);
+  assert.equal(deleted[0].name, 'Delete me, saved twice');
+  assert.equal(run('read', { entry: deleted[0] }).project.name, 'Delete me, saved twice');
+  // Its earlier version stays in its history.
+  assert.equal(run('catalog-query', { scope: 'history', projectId: gone.id }).total, 2);
+  assert.throws(() => run('deleteSheet', { id: gone.id }), /no longer saved/);
+  // Saving the sheet again (opening a recovered copy uses a new id) takes it off the deleted list.
+  run('saveSheet', { project: { ...gone, name: 'Back again' } });
+  assert.equal(run('catalog-query', { scope: 'deleted' }).total, 0);
+});
