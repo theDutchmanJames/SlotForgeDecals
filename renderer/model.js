@@ -67,7 +67,11 @@
     'classic-gt': Object.freeze({ label: 'Classic endurance GT', length: 4180 }),
     touring: Object.freeze({ label: 'Touring saloon', length: 4800 }),
     rally: Object.freeze({ label: 'Rally hatchback', length: 4100 }),
-    'group-c': Object.freeze({ label: 'Group C prototype', length: 4800 })
+    'group-c': Object.freeze({ label: 'Group C prototype', length: 4800 }),
+    'classic-formula': Object.freeze({ label: 'Classic formula car', length: 4400 }),
+    'modern-formula': Object.freeze({ label: 'Modern formula car', length: 5600 }),
+    'modern-prototype': Object.freeze({ label: 'Modern endurance prototype', length: 5100 }),
+    'stock-car': Object.freeze({ label: 'Stock car', length: 4912 })
   });
   const fileVersion = p => (pageFormat(p) === PAGE_SIZES.a4 ? 1 : 2);
   const proofBars = p => {

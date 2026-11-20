@@ -102,7 +102,7 @@ The **Car** page (redesigned in November 2026, next to the Editor in the top bar
 
 - **Every decal of the sheet** is listed with SIDE / TOP marks for where it sits. Drag one from the list onto the car, or choose it and press **Place**.
 - **On the car**, drag a decal to move it and drag a corner to resize it. Resizing changes the decal on the sheet too: one decal, one size. Each change is one undo step, and Esc cancels a drag. **Take off** (or Delete) removes a decal from the car, never from the sheet.
-- **Your car** picks one of five built-in cars — modern GT, classic endurance GT, touring saloon, rally hatchback or Group C prototype — sized from the real car's length at your model scale. Type your model's length and height straight onto the drawing, and its width.
+- **Your car** picks one of nine built-in cars — modern GT, classic endurance GT, touring saloon, rally hatchback, Group C prototype, classic formula car, modern formula car, modern endurance prototype or stock car — sized from the real car's length at your model scale. Type your model's length and height straight onto the drawing, and its width.
 - **Your own model:** load a straight-on side or top photo, click its nose and its tail, and type how long your model is. The photo is cropped to the car and sized to that length.
 
 The **fit check** in the corner of the editor still shows the selection on the car while you work; its arrow opens the Car page and its gear opens Your car. Placements on the car are saved with the sheet.

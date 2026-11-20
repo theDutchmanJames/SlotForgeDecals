@@ -109,5 +109,93 @@ globalThis.CAR_BOUNDS = {
         "h": 556
       }
     }
+  },
+  "classic-formula": {
+    "side": {
+      "width": 1465,
+      "height": 372,
+      "bounds": {
+        "x": 2,
+        "y": 2,
+        "w": 1461,
+        "h": 368
+      }
+    },
+    "top": {
+      "width": 1416,
+      "height": 512,
+      "bounds": {
+        "x": 2,
+        "y": 2,
+        "w": 1412,
+        "h": 509
+      }
+    }
+  },
+  "modern-formula": {
+    "side": {
+      "width": 1692,
+      "height": 363,
+      "bounds": {
+        "x": 2,
+        "y": 1,
+        "w": 1688,
+        "h": 360
+      }
+    },
+    "top": {
+      "width": 1694,
+      "height": 467,
+      "bounds": {
+        "x": 2,
+        "y": 2,
+        "w": 1690,
+        "h": 464
+      }
+    }
+  },
+  "modern-prototype": {
+    "side": {
+      "width": 1476,
+      "height": 389,
+      "bounds": {
+        "x": 1,
+        "y": 2,
+        "w": 1473,
+        "h": 386
+      }
+    },
+    "top": {
+      "width": 1470,
+      "height": 519,
+      "bounds": {
+        "x": 1,
+        "y": 1,
+        "w": 1467,
+        "h": 517
+      }
+    }
+  },
+  "stock-car": {
+    "side": {
+      "width": 1459,
+      "height": 418,
+      "bounds": {
+        "x": 1,
+        "y": 2,
+        "w": 1456,
+        "h": 414
+      }
+    },
+    "top": {
+      "width": 1443,
+      "height": 507,
+      "bounds": {
+        "x": 1,
+        "y": 1,
+        "w": 1441,
+        "h": 504
+      }
+    }
   }
 };

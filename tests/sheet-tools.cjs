@@ -79,7 +79,16 @@ async function main() {
     // undistorted proportions, and can be undone.
     const roundel = (await P()).items.find(i => i.name === 'Roundel 27');
     await page.evaluate(id => Studio.select([id]), roundel.id);
-    const bodies = { 'classic-gt': 4180, touring: 4800, rally: 4100, 'group-c': 4800 };
+    const bodies = {
+      'classic-gt': 4180,
+      touring: 4800,
+      rally: 4100,
+      'group-c': 4800,
+      'classic-formula': 4400,
+      'modern-formula': 5600,
+      'modern-prototype': 5100,
+      'stock-car': 4912
+    };
     for (const [body, real] of Object.entries(bodies)) {
       await page.locator('#car-body').selectOption(body);
       await page.waitForFunction(b => Studio.project.preview.body === b, body);
@@ -95,14 +104,14 @@ async function main() {
           b => document.querySelector('#car-stage image')?.getAttribute('href').includes(b),
           body
         );
-        if (body === 'group-c' || view === 'side')
+        if (['group-c', 'modern-formula', 'stock-car'].includes(body) || view === 'side')
           await page.locator('#car-stage').screenshot({ path: path.join(run, `car-${body}-${view}.png`) });
       }
       await page.locator('#car-side').click();
       ok(`${body}: ${pv.length} × ${pv.width} × ${pv.height} mm at 1:32`);
     }
     await page.locator('#undo').click();
-    assert.equal((await P()).preview.body, 'rally', 'undo returns to the previous car');
+    assert.equal((await P()).preview.body, 'modern-prototype', 'undo returns to the previous car');
     await page.locator('#car-body').selectOption('gt');
     assert.ok(Math.abs((await P()).preview.length - 140) < 0.06);
     // Mirrored pair of a decal: copy flipped, placed without overlapping, undoable.
