@@ -263,6 +263,38 @@
         .reduce((sum, i) => sum + DM.bounds(i).w * DM.bounds(i).h, 0);
     return Math.max(0, Math.min(1, 1 - used / printable));
   }
+  // Print-check fixes. Into the margins: the decal moves just far enough to sit inside them.
+  function intoMargins(p, id) {
+    const out = DM.clone(p),
+      i = out.items.find(x => x.id === id);
+    if (!i) throw Error('This decal is no longer on the sheet.');
+    if (i.locked) throw Error('Unlock this decal first.');
+    const s = DM.size(out),
+      m = out.margin,
+      b = DM.bounds(i);
+    if (b.w > s.w - 2 * m + 0.00001 || b.h > s.h - 2 * m + 0.00001)
+      throw Error(`“${i.name}” is larger than the printable area. Make it smaller first.`);
+    i.x += Math.max(m - b.x, Math.min(0, s.w - m - (b.x + b.w)));
+    i.y += Math.max(m - b.y, Math.min(0, s.h - m - (b.y + b.h)));
+    return out;
+  }
+  // Too close to cut: the decal moves to free space on its page, keeping the cutting gap.
+  function toFreeSpot(p, id) {
+    const out = DM.clone(p),
+      i = out.items.find(x => x.id === id);
+    if (!i) throw Error('This decal is no longer on the sheet.');
+    if (i.locked) throw Error('Unlock this decal first.');
+    const spot = DM.freeSpot(
+      i,
+      out,
+      out.items.filter(x => x.page === i.page && x !== i)
+    );
+    if (!spot)
+      throw Error('There is no free space left on this page. Move it to another page in the Layout tab.');
+    i.x = spot.x;
+    i.y = spot.y;
+    return out;
+  }
   function mirror(p, ids, axis) {
     if (!['x', 'y'].includes(axis)) throw Error('Invalid mirror direction.');
     const out = DM.clone(p),
@@ -343,6 +375,8 @@
     fill,
     pack,
     freeShare,
+    intoMargins,
+    toFreeSpot,
     mirror,
     movePage,
     mirroredPair

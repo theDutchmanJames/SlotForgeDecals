@@ -62,7 +62,7 @@ async function main() {
     assert.equal((await P()).customPage.w, 160, 'cancel keeps the size');
     assert.equal(await page.locator('#sheet-size-select').inputValue(), 'custom');
     await page.locator('#export-pdf').click();
-    await page.locator('#export-anyway').click();
+    await page.locator('#pp-save').click();
     await page.waitForFunction(() => !busy, null, { timeout: 60000 });
     const pdf = (await fs.readdir(path.join(run, 'exports'))).find(f => f.endsWith('.pdf'));
     const { PDFDocument } = require('../src/pdf-lib.cjs');
@@ -72,6 +72,7 @@ async function main() {
     assert.ok(Math.abs((pdfSize.width / 72) * 25.4 - 160) < 0.2, 'PDF width ' + pdfSize.width);
     assert.ok(Math.abs((pdfSize.height / 72) * 25.4 - 230) < 0.2, 'PDF height ' + pdfSize.height);
     ok('US Letter, custom 160 × 230 mm (validated, editable, cancel-safe) and PDF page size');
+    await page.locator('nav [data-action="editor"]').click();
     await page.locator('#sheet-size-select').selectOption('a4');
 
     // Car bodies: each built-in car loads, sizes the model from its real length at 1:32 with

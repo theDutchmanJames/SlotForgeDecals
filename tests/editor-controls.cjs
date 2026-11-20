@@ -365,13 +365,15 @@ async function main() {
     assert.equal(await page.locator('[data-select]:checked').count(), 1);
     await close();
     await page.locator('nav [data-action="sharing"]').click();
-    await page.locator('#dialog [data-action="export-sheet"]').click();
+    await page.locator('.pp-step[data-pp-step="share"]').click();
+    await page.locator('#print-page [data-alias="export-sheet"]').click();
     await page.waitForSelector('#collection-confirm');
     await page.waitForFunction(
       () => document.querySelector('#collection-items')?.dataset.loading === 'false'
     );
     assert.equal(await page.locator('[data-select]:checked').count(), 1);
     await close();
+    await page.locator('nav [data-action="editor"]').click();
     await page.locator('#sheet-menu-button').click();
     await page.locator('#sheet-menu [data-action="new"]').click();
     await page.waitForFunction(() => !projectTask);

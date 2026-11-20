@@ -169,13 +169,14 @@ Inkjet printers print white as no ink, so the white border stays invisible on th
 
 **Export PDF** produces pages at the selected paper dimensions and orientation. Supported vector artwork, text and shapes remain vectors; imported bitmap content remains raster. Export individual decal artwork as SVG when you need a reusable graphic.
 
-For a reliable printing workflow:
+**Print & share** in the top bar (redesigned in November 2026) walks through printing step by step, with the printed page always in view:
 
-1. Review the **print notes** and resolve sizing or spacing problems.
-2. Export a **sizing proof** and print it on ordinary paper.
-3. Choose matching paper in your printer settings and print at **Actual size / 100%**, with **Fit to page** disabled.
-4. Measure the proof's labelled reference bars and check the cut-out decals against your model.
-5. Export the production PDF for your decal paper or print shop.
+1. **Check the sheet:** every problem (outside the margin, too close to cut, a soft picture, white ink needed) is numbered on the page, with a one-click fix such as *Move inside the margin* or *Move to free space*. Ctrl+Z undoes a fix.
+2. **Test print:** save the plain-paper proof, print it at **Actual size / 100 %** with **Fit to page** off, and measure the reference bar. Answer *Yes* once it measures right; *No* explains which printer settings shrink prints.
+3. **Print on decal paper:** clear or white paper, white ink and its spot name, printed cut lines, and the artwork types in the PDF; then **Save the PDF**.
+4. **Cut out:** by hand (the PDF with cut lines) or a package for Silhouette, Cricut or ScanNCut, with the cut line style and offset.
+
+**Export PDF** opens step 3; the print notes in the status bar open step 1.
 
 Proofs use 100 mm reference bars, with a 50 mm bar on the short side of a Photo 4×6 sheet. A PDF preserves page dimensions, but your printer settings still determine the final physical output.
 
@@ -193,7 +194,7 @@ Select one or more canvas items and choose **Save Decal to Library**; multiple i
 
 The editor is one screen (redesigned in November 2026):
 
-- **Top bar:** the sheet's name (click to rename) with its saved state and paper. The arrow next to it saves to Sheets, starts a **New sheet** (the outgoing work is saved first) or opens a saved one. **Export PDF** sits on the right; its arrow lists Export for cutter, the sizing proof, **Share this sheet…** (the same selection window as Import & Export) and the print notes. **Ctrl+K** finds any tool, decal on the sheet or setting.
+- **Top bar:** the sheet's name (click to rename) with its saved state and paper. The arrow next to it saves to Sheets, starts a **New sheet** (the outgoing work is saved first) or opens a saved one. **Export PDF** sits on the right and opens the Print step of **Print & share**; its arrow lists Cut out, the test print, **Share this sheet…** and Check the sheet. **Ctrl+K** finds any tool, decal on the sheet or setting.
 - **Tools** down the left edge: Select, Image, Text, Number, Shape, Path, Merge, Slice and Arrange, with Snap at the bottom. Single keys pick them: V, I, T, N, S, P and M.
 - **Left panel:** the decal **Library**, the **Layers** of the current page (top first, each with a thumbnail and a lock) and the **Pages**.
 - **Right panel:** **Decal** shows the selection's size and place, colour, ink and cut line, and its tools; **Layout** aligns, spaces, repeats, moves between pages and auto-arranges; **Sheet & paper** holds the paper size, orientation, model scale, margins, white ink and cut lines.
@@ -230,7 +231,7 @@ Search covers names, tags and creators; the order you choose is remembered. Edit
 
 The library supports **10,000 decals**, and a sharing pack can contain up to **500**. Send the files yourself; sharing works without an online account. Editable A5 and Photo sheets need Decals 0.2.13 or newer. PDFs can be viewed independently of the app. Only redistribute artwork and fonts you have permission to share.
 
-**Import & Export** puts imports on the left and exports on the right. **Import an Image** adds artwork to the canvas; **Import Decals** and **Export Decals** let you choose saved decals. **Export PDF** keeps the existing print-review workflow. Multi-sheet collection files require a Decals version with collection support; older single-sheet files remain importable. Up to 100 saved sheets can travel in one collection.
+**Share & back up**, the last step of Print & share, groups sending (this sheet or more sheets, decals, a printable PDF), bringing in (a shared sheet, shared decals, artwork) and the complete backup. Drop an .sfsheet or .sfdecal file on it to open it. Multi-sheet collection files require a Decals version with collection support; older single-sheet files remain importable. Up to 100 saved sheets can travel in one collection.
 
 Sharing is currently file-based. Online galleries and direct Livery integration are not included.
 

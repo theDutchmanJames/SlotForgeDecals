@@ -52,6 +52,7 @@ const Workshop = (() => {
     if (options.recover) side = { kind: 'recover' };
     Shelf.hide();
     CarPage.hide();
+    PrintPage.hide();
     root().hidden = false;
     document.body.classList.add('workshop-mode');
     for (const b of $$('.wb-nav .nav')) b.classList.toggle('active', b.dataset.action === 'projects');

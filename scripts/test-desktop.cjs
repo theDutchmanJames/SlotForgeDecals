@@ -33,6 +33,7 @@ const suites = [
   'decal-shelf',
   'layout-tab',
   'car-page',
+  'print-page',
   'update-check'
 ];
 for (const suite of suites) {

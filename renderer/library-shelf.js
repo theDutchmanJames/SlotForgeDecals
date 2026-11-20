@@ -56,6 +56,7 @@ const Shelf = (() => {
     }
     Workshop.hide();
     CarPage.hide();
+    PrintPage.hide();
     closeDialog();
     if (options.focus) focus = options.focus;
     root().hidden = false;

@@ -395,6 +395,7 @@
         if (x.page === y.page && overlaps(boxes.get(x), boxes.get(y), p.gap))
           out.push({
             id: x.id,
+            other: y.id,
             type: 'spacing',
             text: `${x.name} and ${y.name}: less than ${p.gap} mm cutting space.`
           });

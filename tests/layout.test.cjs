@@ -225,3 +225,25 @@ test('pack arranges by scope and order, keeps locked decals and mirrored pairs t
   assert.throws(() => L.pack(p, { scope: 'selection', ids: [] }), /Select/);
   assert(L.freeShare(p, 0) > 0.8 && L.freeShare(p, 0) < 1);
 });
+test('print fixes: into the margins and to free space keep the decal size', () => {
+  const p = M.project();
+  p.margin = 8;
+  p.gap = 3;
+  p.items = [
+    M.item('rect', { id: 'a', x: 200, y: -2, w: 20, h: 10 }),
+    M.item('rect', { id: 'b', x: 30, y: 30, w: 20, h: 10 }),
+    M.item('rect', { id: 'c', x: 51, y: 30, w: 20, h: 10 })
+  ];
+  const s = M.size(p),
+    inside = L.intoMargins(p, 'a').items[0];
+  assert.equal(inside.x + 20, s.w - 8);
+  assert.equal(inside.y, 8);
+  assert.equal(inside.w, 20);
+  const spacing = M.warnings(p).find(w => w.type === 'spacing');
+  assert.equal(spacing.id, 'b');
+  assert.equal(spacing.other, 'c');
+  const moved = L.toFreeSpot(p, 'c');
+  assert(!M.warnings(moved).some(w => w.type === 'spacing' && [w.id, w.other].includes('c')));
+  p.items[0].w = 400;
+  assert.throws(() => L.intoMargins(p, 'a'), /larger than the printable area/);
+});

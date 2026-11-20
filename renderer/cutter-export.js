@@ -282,71 +282,29 @@ Scanning a printed sheet (Direct Cut / Scan to Cut Data):
     files.push({ path: 'INSTRUCTIONS.txt', data: instructions(machine, info).replace(/\n/g, '\r\n') });
     return files;
   }
-  function open(project) {
+  // Builds the package for a machine and lets the user choose its folder. "By hand" is the PDF with
+  // printed cut lines instead. Resolves with a short message, or null when the folder was cancelled.
+  async function run(project, machine, status = () => {}) {
+    if (!MACHINES[machine]) throw Error('Choose how you cut.');
     if (!project.items.length) throw Error('Add artwork to your sheet first.');
-    const cut = DM.cutSettings(project.cut);
-    showDialog(
-      'Export for cutter',
-      `Cut lines ${cut.mode === 'none' ? 'are switched off' : `${cut.mode === 'rect' ? 'are rectangles' : 'follow each decal'} with a ${cut.offset} mm offset`}. Change this under Print & cut.`,
-      `${pageNote('export', 'Export for cutter saves a folder for your cutting machine.', 'Each decal becomes a 300 DPI picture with a white border along its cut line; the folder has step-by-step instructions for the software you choose.', 'Print on plain paper first, then open the folder in Silhouette Studio, Cricut Design Space or ScanNCut.')}<div class="cutter-choices" role="radiogroup" aria-label="Cutting method">${Object.entries(
-        MACHINES
-      )
-        .map(
-          ([key, m], n) =>
-            `<label class="cutter-choice"><input type="radio" name="cutter" value="${key}" ${n === 0 ? 'checked' : ''}><strong>${m.label}</strong><small>${m.description}</small></label>`
-        )
-        .join(
-          ''
-        )}</div><p class="hint" id="cutter-note"></p><p class="hint">Each package is saved as a folder with an INSTRUCTIONS.txt for your machine. The cutter software adds its own registration marks.</p>`,
-      '<button data-action="close">Cancel</button><button class="primary" id="cutter-go">Choose folder & export</button>',
-      true
-    );
-    const note = () => {
-      const machine = $('[name="cutter"]:checked').value;
-      $('#cutter-note').textContent =
-        machine === 'hand'
-          ? 'Exports the PDF with thin cut lines printed around every decal.'
-          : machine === 'silhouette'
-            ? 'Decal PNGs with a white cut border, plus a page PNG and DXF cut lines for the exact layout.'
-            : 'Decal PNGs with a white cut border, plus an SVG of each page with print and cut layers.';
-      $('#cutter-go').textContent =
-        machine === 'hand' ? 'Export PDF with cut lines' : 'Choose folder & export';
-    };
-    for (const r of $$('[name="cutter"]')) r.onchange = note;
-    note();
-    $('#cutter-go').onclick = async () => {
-      const machine = $('[name="cutter"]:checked').value,
-        button = $('#cutter-go');
-      try {
-        if (
-          DM.cutSettings(project.cut).mode === 'none' &&
-          project.items.every(i => !i.cutMode || i.cutMode === 'none')
-        )
-          throw Error('Cut lines are switched off. Choose a cut line under Print & cut first.');
-        if (machine === 'hand') {
-          closeDialog();
-          return Studio.exportWithCutLines();
-        }
-        button.disabled = true;
-        const snapshot = DM.clone(project);
-        const files = await build(snapshot, machine, text => ($('#cutter-note').textContent = text));
-        $('#cutter-note').textContent = 'Choose where to save the package…';
-        const folder = await desktop.exportCutPackage({
-          name: `${snapshot.name} - ${MACHINES[machine].folder}`,
-          files
-        });
-        if (!folder) {
-          note();
-          button.disabled = false;
-          return;
-        }
-        closeDialog();
-        toast(`Cutter package saved with ${files.length} files. Open INSTRUCTIONS.txt for the steps.`);
-      } catch (e) {
-        $('#dialog-error').textContent = e.message;
-        button.disabled = false;
-      }
-    };
+    if (
+      DM.cutSettings(project.cut).mode === 'none' &&
+      project.items.every(i => !i.cutMode || i.cutMode === 'none')
+    )
+      throw Error('Cut lines are switched off. Choose a cut line first.');
+    if (machine === 'hand') {
+      await Studio.exportWithCutLines();
+      return 'hand';
+    }
+    const snapshot = DM.clone(project);
+    const files = await build(snapshot, machine, status);
+    status('Choose where to save the package…');
+    const folder = await desktop.exportCutPackage({
+      name: `${snapshot.name} - ${MACHINES[machine].folder}`,
+      files
+    });
+    if (!folder) return null;
+    return `Cutter package saved with ${files.length} files. Open INSTRUCTIONS.txt for the steps.`;
   }
-  return { MACHINES, safe, crc32, withDPI, dxf, cutSVG, instructions, build, open };
+  return { MACHINES, safe, crc32, withDPI, dxf, cutSVG, instructions, build, run };
 });

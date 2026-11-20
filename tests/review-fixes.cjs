@@ -117,9 +117,10 @@ async function main() {
     });
     assert.ok(preview.svg.includes('width="30mm"'));
     assert.deepEqual(preview.pixel, [255, 0, 0, 255]);
+    // Export PDF opens the Print step of Print & share, with the open checks pointed out.
     await page.locator('[data-action="pdf"]').first().click();
-    assert.ok((await page.locator('#dialog h2').textContent()).includes('Review before'));
-    await done();
+    assert.ok(await page.locator('#pp-save').isVisible());
+    await page.locator('nav [data-action="editor"]').click();
     await page.locator('[data-action="arrange"]').click();
     await page.locator('#pack-apply').click();
     assert.deepEqual(await page.evaluate(() => DM.warnings(Studio.project)), []);

@@ -88,12 +88,18 @@ async function main() {
     // Cutter packages for each machine.
     const packages = {};
     for (const machine of ['silhouette', 'cricut', 'scanncut']) {
+      // Export for cutter opens the Cut step of Print & share.
+      await page.locator('nav [data-action="editor"]').click();
       await page.locator('[data-right-tab="sheet"]').click();
       await page.locator('#cut-folder [data-action="cutter-export"]').click();
       await page.locator(`[name="cutter"][value="${machine}"]`).check();
       if (machine === 'silhouette') await shot('cutter-dialog');
+      const before = (await fs.readdir(exportsDir).catch(() => [])).length;
       await page.locator('#cutter-go').click();
-      await page.waitForFunction(() => !document.querySelector('#dialog').open, null, { timeout: 120000 });
+      await page.waitForFunction(() => !document.querySelector('#cutter-go').disabled, null, {
+        timeout: 120000
+      });
+      assert((await fs.readdir(exportsDir)).length > before, machine + ' package saved');
       const folders = (await fs.readdir(exportsDir)).filter(n => !packages[n] && !n.endsWith('.pdf'));
       const folder = folders.find(n => !Object.values(packages).includes(n));
       packages[machine] = folder;
@@ -132,14 +138,15 @@ async function main() {
     await fs.copyFile(silhouetteFiles[0], path.join(run, 'decal-sample.png'));
 
     // By hand: PDF with printed cut lines (setting switched on via the dialog).
+    await page.locator('nav [data-action="editor"]').click();
     await page.locator('[data-right-tab="sheet"]').click();
     await page.locator('#cut-folder [data-action="cutter-export"]').click();
     await page.locator('[name="cutter"][value="hand"]').check();
     await page.locator('#cutter-go').click();
-    await page.waitForSelector('#export-anyway');
-    assert.equal((await P()).cut.pdfLines, true);
-    await page.locator('#export-anyway').click();
+    await page.waitForFunction(() => !busy && Studio.project.cut.pdfLines, null, { timeout: 60000 });
     await page.waitForFunction(() => !busy, null, { timeout: 60000 });
+    assert.equal((await P()).cut.pdfLines, true);
+    await page.locator('nav [data-action="editor"]').click();
     const pdfs = (await fs.readdir(exportsDir)).filter(n => n.endsWith('.pdf'));
     assert.equal(pdfs.length, 1);
     const pdfSize = (await fs.stat(path.join(exportsDir, pdfs[0]))).size;

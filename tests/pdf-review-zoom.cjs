@@ -95,7 +95,11 @@ async function main() {
       Studio.select([]);
     });
     const original = await page.evaluate(() => JSON.stringify(Studio.project));
-    const open = () => page.locator('#export-pdf').click(),
+    // Export PDF opens the Print step; the artwork list is under "Artwork in this PDF".
+    const open = async () => {
+        await page.locator('#export-pdf').click();
+        await page.locator('.pp-details summary').click();
+      },
       close = () => page.locator('#dialog [data-action="close"]').first().click();
     await open();
     assert.equal(await page.locator('.pdf-artwork-list tbody tr').count(), 5);
@@ -114,14 +118,15 @@ async function main() {
       'Traced vector'
     );
     await page.screenshot({ path: path.join(run, 'review-dark.png') });
-    await close();
+    await page.locator('nav [data-action="editor"]').click();
     assert.equal(await page.evaluate(() => JSON.stringify(Studio.project)), original);
     await page.locator('[data-action="theme-light"]').click();
     await open();
     await page.screenshot({ path: path.join(run, 'review-light.png') });
-    await page.locator('#export-anyway').click();
+    await page.locator('#pp-save').click();
     await page.waitForFunction(() => !busy);
     assert((await fs.stat(path.join(run, 'exports', 'Artwork review.pdf'))).size > 0);
+    await page.locator('nav [data-action="editor"]').click();
     // Slice review covers only decals included in the selected area and page.
     await page.locator('[data-action="slice"]').click();
     await page.locator('#slice-crop').click();
@@ -137,9 +142,9 @@ async function main() {
       Studio.select([]);
     });
     await open();
-    assert.equal(await page.locator('.pdf-raster-warning').count(), 0);
-    assert.match(await page.locator('.pdf-white-note').textContent(), /600 PPI/);
-    await close();
+    assert.equal(await page.locator('#print-page .pdf-raster-warning').count(), 0);
+    assert.match(await page.locator('#print-page .pdf-white-note').textContent(), /600 PPI/);
+    await page.locator('nav [data-action="editor"]').click();
     // Zoom changes the viewport, never decal dimensions or the Electron UI scale.
     const beforeZoom = await page.evaluate(() => JSON.stringify(Studio.project));
     for (let n = 0; n < 6; n++) await page.locator('[data-action="zoom-in"]').click();
@@ -193,7 +198,7 @@ async function main() {
         )
       );
     assert.equal((await point()).w, frozen);
-    await close();
+    await page.locator('nav [data-action="editor"]').click();
     await page.locator('#sheet-scroll').evaluate(el => {
       for (let n = 0; n < 80; n++)
         el.dispatchEvent(

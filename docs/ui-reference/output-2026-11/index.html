@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Output redesign</title>
+<!-- Preview only: made-up decals, nothing is wired up. Two concepts for print checks, the sizing proof, PDF, cutter files, sharing and backups. -->
+<style>
+@font-face{font-family:'SF Barlow Condensed';src:url('../../../renderer/fonts/barlowcondensed/BarlowCondensed-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic}
+@font-face{font-family:'SF Roboto Mono';src:url('../../../renderer/fonts/robotomono/RobotoMono[wght].ttf') format('truetype');font-weight:100 700}
+:root{--bg:#14181e;--canvas:#101318;--panel:#1d232b;--raised:#252c36;--ink:#e8e6e1;--ink2:#c4c8ce;--muted:#98a0ab;--faint:#6b7380;--line:#323946;--line2:#272d37;--accent:#e5484d;--ok:#3ecf8e;--blue:#2f8cff;--gold:#f0b429;--warn:#f0b429;
+  --cond:'SF Barlow Condensed','Bahnschrift',sans-serif;--mono:'SF Roboto Mono',Consolas,monospace;--ui:'Segoe UI',system-ui,sans-serif;color-scheme:dark}
+[data-theme=light]{--bg:#f1efea;--canvas:#e4e1da;--panel:#fff;--raised:#f3f1ec;--ink:#1d2229;--ink2:#3a414c;--muted:#656c76;--faint:#8a929d;--line:#d9d6cf;--line2:#e6e3dd;--accent:#c92424;--ok:#1f9a62;--blue:#1f6fd6;--gold:#b7820a;--warn:#b7820a;color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--ui);overflow:hidden}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+h1,h2,h3,h4{font-family:var(--cond);font-style:italic;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0}
+.muted{color:var(--muted)}.faint{color:var(--faint)}.grow{flex:1}.mono{font-family:var(--mono);font-weight:500}
+.row{display:flex;align-items:center;gap:8px}
+.switch{position:relative;z-index:50;display:flex;align-items:center;gap:14px;height:46px;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--line2)}
+.switch b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.switch p{margin:0 0 0 auto;font-size:12px;color:var(--faint);max-width:520px;line-height:1.3}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+.seg button{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:26px;padding:0 11px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.seg button.on{background:color-mix(in srgb,var(--ink) 12%,var(--panel));color:var(--ink);font-weight:600}
+.seg.sm button{height:22px;padding:0 8px;font-size:12px}
+.opt{position:absolute;inset:46px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 13px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);font-size:13px;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+.btn.sm{height:27px;padding:0 9px;font-size:12px}
+.btn.big{height:42px;padding:0 18px;font-size:14px}
+.inp{display:flex;align-items:center;gap:6px;min-width:0;height:30px;padding:0 9px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--bg) 70%,var(--panel))}
+.inp input,.inp select{flex:1;min-width:0;width:100%;border:0;background:none;outline:0}
+.check{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.check i{width:16px;height:16px;border-radius:4px;background:var(--accent);display:grid;place-items:center;color:#fff;font-style:normal;font-size:11px;flex:none}
+.check i.off{background:none;border:1.5px solid var(--line)}
+.tog{display:flex;align-items:center;gap:9px;font-size:12.5px}
+.tog i{width:30px;height:17px;border-radius:9px;background:var(--line);position:relative;flex:none}
+.tog i::after{content:'';position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff}
+.tog i.on{background:var(--accent)}.tog i.on::after{left:15px}
+.app{position:absolute;inset:0;display:flex;flex-direction:column}
+.top{height:56px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 14px;flex:none}
+.logo{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;font:700 italic 17px var(--cond)}
+.brand{font:700 italic 21px var(--cond)}
+.sheetname{font:700 italic 19px var(--cond);text-transform:uppercase;margin-left:14px}
+.nav{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:10px;margin-left:60px}
+.nav span{padding:5px 12px;border-radius:7px;color:var(--muted)}
+.nav span.on{background:color-mix(in srgb,var(--ink) 11%,var(--panel));color:var(--ink);font-weight:600}
+.body{flex:1;display:flex;min-height:0}
+.paper{position:relative;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.35);flex:none}
+.paper .margin{position:absolute;border:1px dashed rgba(47,140,255,.4)}
+.dc{position:absolute}
+.dc svg{display:block;width:100%;height:100%}
+.cutl{position:absolute;border:1.2px dashed #d6249f;border-radius:3px}
+.issue{position:absolute;border:2px solid var(--warn);border-radius:4px;box-shadow:0 0 0 4px color-mix(in srgb,var(--warn) 25%,transparent)}
+.issue b{position:absolute;left:-11px;top:-11px;width:20px;height:20px;border-radius:50%;background:var(--warn);color:#111;display:grid;place-items:center;font-size:11px}
+.issue.red{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 25%,transparent)}
+.issue.red b{background:var(--accent);color:#fff}
+.white{position:absolute;background:repeating-linear-gradient(45deg,#9aa6b5 0 2px,transparent 2px 5px);border-radius:2px;opacity:.75}
+/* ===== A · page ===== */
+.steps{width:250px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px 10px;gap:4px}
+.step{display:flex;align-items:flex-start;gap:11px;padding:10px;border-radius:10px;border:0;background:none;text-align:left;color:var(--ink2)}
+.step .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--line);font-weight:700;font-size:12px;color:var(--ink);flex:none}
+.step b{display:block;font-size:13.5px;color:var(--ink)}
+.step small{color:var(--muted);font-size:11.5px}
+.step.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.step.on .n{background:var(--accent);color:#fff}
+.step.done .n{background:var(--ok);color:#fff}
+.step.warn .n{background:var(--warn);color:#111}
+.steps hr{border:0;border-top:1px solid var(--line);margin:8px 4px}
+.mid{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--canvas)}
+.midbar{display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid var(--line2);background:var(--bg)}
+.midbar h2{font-size:24px}
+.stagep{flex:1;display:flex;align-items:center;justify-content:center;gap:24px;overflow:hidden;padding:20px}
+.side{width:380px;flex:none;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:auto}
+.side section{padding:16px 18px;border-bottom:1px solid var(--line2);display:flex;flex-direction:column;gap:10px}
+.side h3{font-size:15px}
+.iss{display:flex;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px;align-items:flex-start}
+.iss .b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--warn);color:#111;font-size:11px;font-weight:700;flex:none}
+.iss.red .b{background:var(--accent);color:#fff}
+.iss b{display:block}
+.iss p{margin:2px 0 6px;color:var(--muted);font-size:12px}
+.iss.ok .b{background:var(--ok);color:#fff}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:12.5px}
+.kv span:nth-child(odd){color:var(--muted)}
+.kv b{font-family:var(--mono);font-weight:500}
+.mach{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mc{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px;background:var(--raised)}
+.mc .pic{height:52px;border-radius:8px;background:color-mix(in srgb,var(--ink) 6%,transparent);display:grid;place-items:center;color:var(--muted)}
+.mc b{font-size:13px}.mc small{color:var(--muted);font-size:11.5px}
+.mc.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:24px;align-content:start;overflow:auto}
+.card{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:18px;display:flex;flex-direction:column;gap:10px}
+.card h3{font-size:17px}
+.card .ext{display:inline-flex;align-self:flex-start;padding:2px 8px;border-radius:6px;background:color-mix(in srgb,var(--ink) 8%,transparent);font:500 11px var(--mono);color:var(--muted)}
+.card p{margin:0;color:var(--muted);font-size:12.5px}
+.card .row{margin-top:auto}
+.groupt{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:6px}
+.groupt h4{font-size:13px;color:var(--muted)}
+.groupt hr{flex:1;border:0;border-top:1px solid var(--line)}
+.ruler{position:absolute;background:#fff;border:1px solid #333}
+/* ===== B · panel ===== */
+.ed{flex:1;display:flex;min-width:0}
+.rail{width:60px;background:var(--panel);border-right:1px solid var(--line);flex:none}
+.cv{flex:1;position:relative;background:var(--canvas);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.outp{width:470px;flex:none;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;box-shadow:-18px 0 40px rgba(0,0,0,.3)}
+.ophead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line2)}
+.ophead h2{font-size:22px}
+.ribbon{margin:14px 18px 4px;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;background:color-mix(in srgb,var(--warn) 14%,transparent);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent)}
+.ribbon.ok{background:color-mix(in srgb,var(--ok) 13%,transparent);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+.ribbon .big{font:700 italic 26px var(--cond)}
+.ribbon small{display:block;color:var(--muted);font-size:12px}
+.jobs{flex:1;overflow:auto;padding:10px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.job{border:1px solid var(--line);border-radius:13px;background:var(--raised)}
+.job>header{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.job .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);flex:none}
+.job .ic svg{width:19px;height:19px}
+.job b{display:block;font-size:13.5px}
+.job small{color:var(--muted);font-size:12px}
+.job.open{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));background:var(--panel)}
+.job .jb{padding:0 14px 14px 64px;display:flex;flex-direction:column;gap:10px}
+.mini{display:flex;gap:8px}
+.mini .p{width:70px;aspect-ratio:210/297;background:#fff;border-radius:3px;position:relative;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.mini .p i{position:absolute;background:#c8ccd2;border-radius:1px}
+.ilist{display:flex;flex-direction:column;gap:6px;margin:0 18px}
+.irow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;background:var(--raised);border:1px solid var(--line)}
+.irow .b{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--warn);color:#111;font-size:11px;font-weight:700;flex:none}
+.irow.red .b{background:var(--accent);color:#fff}
+.irow.on{border-color:var(--warn)}
+.pop{position:absolute;padding:10px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:12px;width:230px}
+.pop b{display:block;font-size:13px;margin-bottom:2px}
+</style>
+</head>
+<body>
+<div class="switch">
+  <b>Option</b><div class="seg" id="opt"><button data-v="A">A · Print &amp; share page</button><button data-v="B">B · Output panel</button></div>
+  <b>State</b><div class="seg" id="state"></div>
+  <b>Theme</b><div class="seg" id="theme"><button data-v="dark">Dark</button><button data-v="light">Light</button></div>
+  <p id="blurb"></p>
+</div>
+<div class="opt" id="stage"></div>
+<svg width="0" height="0" style="position:absolute"><defs>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+ <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M3 16 16 3l5 5L8 21z"/><path d="m7 12 2 2m1-5 2 2m1-5 2 2"/></symbol>
+ <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 14h6M9 17h4"/></symbol>
+ <symbol id="i-cut" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></symbol>
+ <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 16V3M7 8l5-5 5 5M4 13v8h16v-8"/></symbol>
+ <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v12m-5-5 5 5 5-5M4 20h16"/></symbol>
+ <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></symbol>
+ <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></symbol>
+ <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+ <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+ <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/></symbol>
+ <symbol id="i-sheet" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5z M14 3v5h5"/></symbol>
+</defs></svg>
+<script>
+const I = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const F = "font-family:'SF Barlow Condensed',Bahnschrift,sans-serif;font-style:italic;font-weight:700";
+const ART = {
+  r27: [`<circle cx="50" cy="50" r="46" fill="#fff" stroke="#e11d2e" stroke-width="8"/><text x="50" y="68" text-anchor="middle" font-size="52" fill="#111" style="${F}">27</text>`, 100, 100],
+  forge: [`<text x="8" y="44" font-size="50" fill="#111" style="${F}">FORGE</text><path d="M4 52h180l-10 10H0z" fill="#e11d2e"/><text x="40" y="88" font-size="30" fill="#111" style="${F}">RACING</text>`, 190, 96],
+  dutch: [`<text x="4" y="40" font-size="44" fill="#111" style="${F}">DUTCH</text><path d="M118 18h70l-6 8h-70zM112 32h70l-6 8h-70z" fill="#ff6a13"/><text x="6" y="70" font-size="25" fill="#111" style="${F}">MOTORSPORT</text>`, 190, 78],
+  stripe: [`<rect x="0" y="0" width="300" height="9" fill="#e11d2e"/><rect x="0" y="14" width="300" height="9" fill="#1d4ed8"/>`, 300, 23],
+  name: [`<rect x="2" y="6" width="26" height="6" fill="#ae1c28"/><rect x="2" y="12" width="26" height="6" fill="#fff" stroke="#ddd" stroke-width=".5"/><rect x="2" y="18" width="26" height="6" fill="#21468b"/><text x="36" y="23" font-size="20" fill="#111" style="${F}">J. DE VRIES</text>`, 150, 30],
+  kestrel: [`<ellipse cx="80" cy="34" rx="78" ry="32" fill="#f5c400"/><ellipse cx="80" cy="34" rx="70" ry="25" fill="none" stroke="#111" stroke-width="3"/><text x="80" y="45" text-anchor="middle" font-size="30" fill="#111" style="${F}">KESTREL OIL</text>`, 160, 68],
+  photo: [`<defs><radialGradient id="g1"><stop offset="0" stop-color="#ffb84d"/><stop offset=".6" stop-color="#e5484d"/><stop offset="1" stop-color="#5b1a6b"/></radialGradient></defs><circle cx="50" cy="50" r="48" fill="url(#g1)"/><path d="M18 64q32-36 64 0" fill="none" stroke="#fff" stroke-width="5"/>`, 100, 100],
+  shield: [`<path d="M8 6h84v46c0 24-22 38-42 44C30 90 8 76 8 52z" fill="#1e2530"/><path d="M8 6h84v10H8z" fill="#e11d2e"/><text x="50" y="66" text-anchor="middle" font-size="42" fill="#fff" style="${F}">SF</text>`, 100, 100]
+};
+const svg = k => { const [b, w, h] = ART[k]; return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${b}</svg>`; };
+// sheet in mm: key, art, x, y, w, h; issue: 1 margin, 2 too close, 3 low-res photo
+const SHEET = [['a', 'r27', 12, 12, 18, 18], ['b', 'r27', 34, 12, 18, 18], ['c', 'forge', 58, 12, 36, 18.2], ['d', 'forge', 97, 12, 36, 18.2], ['e', 'dutch', 12, 36, 34, 14], ['f', 'dutch', 48.5, 36, 34, 14], ['g', 'stripe', 12, 58, 80, 6.1], ['h', 'stripe', 96, 58, 80, 6.1], ['i', 'name', 12, 72, 30, 6], ['j', 'name', 46, 72, 30, 6], ['k', 'kestrel', 12, 86, 28, 12], ['l', 'photo', 50, 84, 16, 16], ['m', 'shield', 183, 14, 12, 12]];
+const paper = (k, inner, opts = {}) => `<div class="paper" style="width:${210 * k}px;height:${297 * k}px"><div class="margin" style="inset:${8 * k}px"></div>${SHEET.map(d => `<div class="dc" style="left:${d[2] * k}px;top:${d[3] * k}px;width:${d[4] * k}px;height:${d[5] * k}px">${svg(d[1])}</div>${opts.cut ? `<div class="cutl" style="left:${(d[2] - 1) * k}px;top:${(d[3] - 1) * k}px;width:${(d[4] + 2) * k}px;height:${(d[5] + 2) * k}px"></div>` : ''}${opts.white && d[1] !== 'photo' ? `<div class="white" style="left:${d[2] * k}px;top:${d[3] * k}px;width:${d[4] * k}px;height:${d[5] * k}px"></div>` : ''}`).join('')}${opts.issues ? issueBoxes(k) : ''}${inner || ''}</div>`;
+const issueBoxes = k => [['m', 1, 'red'], ['f', 2, ''], ['l', 3, '']].map(([id, n, c]) => { const d = SHEET.find(x => x[0] === id); return `<div class="issue ${c}" style="left:${(d[2] - 1.5) * k}px;top:${(d[3] - 1.5) * k}px;width:${(d[4] + 3) * k}px;height:${(d[5] + 3) * k}px"><b>${n}</b></div>`; }).join('');
+const topbar = (nav, extra = '') => `<div class="top"><div class="logo">D</div><span class="brand">DECALS</span><span class="sheetname">Club racing · No. 27</span><div class="nav">${['Workshop', 'Editor', 'Car', 'Decal Library', nav === 'Print & share' ? 'Print & share' : 'Import & Export'].map(n => `<span class="${n === nav ? 'on' : ''}">${n.replace('&', '&amp;')}</span>`).join('')}</div><span class="grow"></span>${extra}</div>`;
+const ISSUES = [
+  [1, 'red', 'SF Shield runs past the margin', '2.0 mm outside the printable area on the right. Most printers cut it off.', 'Move inside the margin'],
+  [2, '', 'Two decals are too close to cut', 'Dutch Motorsport copies are 2.5 mm apart; the sheet’s cutting gap is 3 mm.', 'Space them 3 mm apart'],
+  [3, '', 'Halcyon logo is a low-resolution picture', '96 pixels per inch at its printed 16 mm. It will look soft; 300 or more is sharp.', 'Trace to vector…']
+];
+
+const STATES = {
+  A: [['check', '1 · Check'], ['proof', '2 · Proof'], ['print', '3 · Print'], ['cut', '4 · Cut'], ['share', 'Share & back up']],
+  B: [['panel', 'Output panel'], ['issues', 'Issues on the sheet'], ['cut', 'Cut card open'], ['share', 'Send & back up']]
+};
+const BLURB = {
+  A: 'Import & Export becomes Print & share: a page that walks from checks to a test print, the PDF and the cutter, with the page in view. Sharing and backups live there too.',
+  B: 'The Export button opens one output panel beside the sheet. A readiness ribbon on top, one card per job (print, proof, cut, send, back up), and issues drawn on the sheet itself.'
+};
+const q = new URLSearchParams(location.search);
+let opt = q.get('opt') || 'A', state = q.get('state'), theme = q.get('theme') || 'dark';
+
+/* ---------- A ---------- */
+function A(s) {
+  const stepsList = [['check', '1', 'Check the sheet', '3 things to look at', 'warn'], ['proof', '2', 'Test print', 'Plain paper, check sizes', ''], ['print', '3', 'Print on decal paper', 'The PDF for your printer', ''], ['cut', '4', 'Cut out', 'By hand or with a machine', '']];
+  const steps = `<nav class="steps">${stepsList.map(([k, n, t, sm, cls]) => `<button class="step ${s === k ? 'on' : cls}"><span class="n">${s !== k && cls === 'warn' ? '!' : n}</span><span><b>${t}</b><small>${sm}</small></span></button>`).join('')}<hr><button class="step ${s === 'share' ? 'on' : ''}"><span class="n">${I('share')}</span><span><b>Share &amp; back up</b><small>Sheets, decals, everything</small></span></button><span class="grow"></span><p class="faint" style="font-size:11.5px;padding:0 10px">A4 · portrait · 1:32 · 1 page<br>Gap 3 mm · margin 8 mm</p></nav>`;
+  let mid = '', side = '';
+  if (s === 'check') {
+    mid = `<div class="midbar"><h2>Check the sheet</h2><span class="grow"></span><div class="seg sm"><button class="on">${I('eye')} Issues</button><button>Cut lines</button><button>White ink</button></div></div><div class="stagep">${paper(2.6, '', { issues: true })}</div>`;
+    side = `<aside class="side"><section><h3>3 things to look at</h3>${ISSUES.map(([n, c, t, p, fix]) => `<div class="iss ${c}"><span class="b">${n}</span><div><b>${t}</b><p>${p}</p><div class="row"><button class="btn sm ${n === 1 ? 'primary' : ''}">${fix}</button><button class="btn sm ghost">Show</button></div></div></div>`).join('')}</section><section><div class="iss ok"><span class="b">✓</span><div><b>Everything else is fine</b><p>13 decals · all inside the page · sizes as set · fonts embedded.</p></div></div><div class="row"><span class="grow"></span><button class="btn">Skip to the test print ${I('chev')}</button></div></section></aside>`;
+  }
+  if (s === 'proof') {
+    mid = `<div class="midbar"><h2>Test print</h2><span class="grow"></span><span class="muted">Print it on plain paper at 100 % and measure the bars</span></div><div class="stagep">${paper(2.6, `<div class="ruler" style="left:${8 * 2.6}px;top:${270 * 2.6}px;width:${100 * 2.6}px;height:${4 * 2.6}px;background:repeating-linear-gradient(90deg,#333 0 1px,transparent 1px ${10 * 2.6}px)"></div><span style="position:absolute;left:${8 * 2.6}px;top:${276 * 2.6}px;font:500 10px var(--mono);color:#333">100 mm</span>`)}</div>`;
+    side = `<aside class="side"><section><h3>Before your decal paper</h3><ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;color:var(--ink2)"><li>Print the proof on <b>plain paper</b>, at <b>Actual size / 100 %</b>.</li><li>Measure the black bar: it must be exactly <b>100 mm</b>.</li><li>Cut a decal out and hold it on your car.</li></ol></section>
+      <section><h3>Did it measure 100 mm?</h3><div class="row"><button class="btn">Yes, sizes are right</button><button class="btn ghost">No…</button></div><p class="faint" style="margin:0;font-size:11.5px">“No” helps you find the printer setting that shrinks prints (Fit to page, borderless).</p></section>
+      <section><div class="row"><button class="btn">${I('printer')} Print the proof</button><span class="grow"></span><button class="btn primary">Next: decal paper ${I('chev')}</button></div></section></aside>`;
+  }
+  if (s === 'print') {
+    mid = `<div class="midbar"><h2>Print on decal paper</h2><span class="grow"></span><div class="seg sm"><button>Issues</button><button class="on">Cut lines</button><button class="on">White ink</button></div></div><div class="stagep">${paper(2.6, '', { cut: true, white: true })}</div>`;
+    side = `<aside class="side"><section><h3>Your decal paper</h3><div class="seg"><button class="on">Clear</button><button>White</button></div><p class="faint" style="margin:0;font-size:11.5px">On clear paper, light colours need white ink behind them.</p></section>
+      <section><h3>White ink</h3><span class="tog"><i class="on"></i>My printer prints white</span><div class="kv"><span>Spot colour name</span><b>White</b><span>Decals with white behind</span><b>12 of 13</b></div><p class="faint" style="margin:0;font-size:11.5px">Shown hatched on the page.</p></section>
+      <section><h3>In the PDF</h3><span class="tog"><i class="on"></i>Thin cut lines around each decal</span><span class="tog"><i></i>Crop marks</span><div class="kv"><span>Pages</span><b>1 of 1</b><span>Artwork</span><b>12 vector · 1 picture</b><span>Size</span><b>A4 · 100 %</b></div></section>
+      <section><button class="btn primary big">${I('pdf')} Save the PDF</button><p class="faint" style="margin:0;font-size:11.5px">Print it with “Actual size” or “100 %”, never “Fit to page”.</p></section></aside>`;
+  }
+  if (s === 'cut') {
+    mid = `<div class="midbar"><h2>Cut out</h2><span class="grow"></span><div class="seg sm"><button class="on">Cut lines</button><button>Print layer</button></div></div><div class="stagep">${paper(2.6, '', { cut: true })}</div>`;
+    side = `<aside class="side"><section><h3>How do you cut?</h3><div class="mach">${[['By hand', 'Thin lines printed in the PDF', true], ['Silhouette', 'PNGs + DXF cut lines'], ['Cricut', 'Print then Cut PNGs'], ['ScanNCut', 'SVG with print and cut layers']].map(([n, d, on]) => `<div class="mc ${on ? 'on' : ''}"><div class="pic">${I('cut')}</div><b>${n}</b><small>${d}</small></div>`).join('')}</div></section>
+      <section><h3>Cut lines</h3><div class="seg"><button class="on">Follow each decal</button><button>Rectangles</button></div><div class="row"><span class="muted" style="font-size:12px;width:100px">Offset</span><span class="inp" style="width:110px"><input value="1.0"><span>mm</span></span></div></section>
+      <section><button class="btn primary big">${I('pdf')} Save the PDF with cut lines</button><p class="faint" style="margin:0;font-size:11.5px">For machines: a folder with the files and INSTRUCTIONS.txt for that software.</p></section></aside>`;
+  }
+  if (s === 'share') {
+    const card = (icon, t, ext, p, btns) => `<div class="card"><div class="row">${I(icon)}<h3>${t}</h3><span class="grow"></span><span class="ext">${ext}</span></div><p>${p}</p><div class="row">${btns}</div></div>`;
+    mid = `<div class="midbar"><h2>Share &amp; back up</h2><span class="grow"></span><span class="muted">Drop any Decals file here to open it</span></div><div class="cards">
+      <div class="groupt"><h4>Send to another builder</h4><hr></div>
+      ${card('sheet', 'This sheet', '.sfsheet', 'Editable, with its fonts and artwork. Pick pages if you only want some.', '<button class="btn primary sm">Share this sheet…</button><button class="btn sm ghost">More sheets…</button>')}
+      ${card('box', 'Decals', '.sfdecal', 'Choose decals from your library. They arrive as editable copies.', '<button class="btn sm">Choose decals…</button>')}
+      ${card('pdf', 'A printable PDF', '.pdf', 'For someone who just wants to print. Not editable.', '<button class="btn sm">Save a PDF</button>')}
+      <div class="groupt"><h4>Bring in</h4><hr></div>
+      ${card('down', 'A shared sheet', '.sfsheet', 'Opens as a new sheet; your work stays as it is.', '<button class="btn sm">Open a sheet…</button>')}
+      ${card('down', 'Shared decals', '.sfdecal', 'Goes into your Decal Library.', '<button class="btn sm">Import decals…</button>')}
+      ${card('down', 'Artwork', 'PNG · SVG · PDF…', 'Opens the import bay for logos, numbers and pictures.', '<button class="btn sm">Import artwork…</button>')}
+      <div class="groupt"><h4>Keep it safe</h4><hr></div>
+      ${card('box', 'Complete backup', '.sfdbbackup', 'Every sheet with its history, the whole library and all fonts. Last backup: 12 days ago.', '<button class="btn primary sm">Back up now…</button><button class="btn sm ghost">Restore…</button>')}
+      </div>`;
+    side = '';
+  }
+  return `<div class="app">${topbar('Print & share')}<div class="body">${steps}<div class="mid">${mid}</div>${side}</div></div>`;
+}
+
+/* ---------- B ---------- */
+function B(s) {
+  const k = 2.5;
+  const job = (key, icon, t, sm, body = '') => `<div class="job ${s === key || (s === 'panel' && key === 'print') ? 'open' : ''}"><header><span class="ic">${I(icon)}</span><div class="grow"><b>${t}</b><small>${sm}</small></div>${s === key || (s === 'panel' && key === 'print') ? '' : I('chev')}</header>${s === key || (s === 'panel' && key === 'print') ? `<div class="jb">${body}</div>` : ''}</div>`;
+  const thumbs = list => list.map(d => `<i style="left:${d[2] * 0.333}px;top:${d[3] * 0.333}px;width:${d[4] * 0.333}px;height:${d[5] * 0.333}px"></i>`).join('');
+  const ribbon = s === 'issues'
+    ? `<div class="ribbon"><span class="big">3</span><div class="grow"><b>things to look at</b><small>Marked on the sheet · click one to go there</small></div><button class="btn sm ghost">${I('x')}</button></div><div class="ilist">${ISSUES.map(([n, c, t, , fix]) => `<div class="irow ${c} ${n === 2 ? 'on' : ''}"><span class="b">${n}</span><span class="grow">${t}</span><button class="btn sm">${fix}</button></div>`).join('')}</div>`
+    : `<div class="ribbon"><span class="big">3</span><div class="grow"><b>things to look at before printing</b><small>Margin · cutting gap · a soft picture</small></div><button class="btn sm">Show on the sheet</button></div>`;
+  const jobs = `<div class="jobs">
+    ${job('print', 'pdf', 'Print on decal paper', 'PDF at actual size · white ink on · cut lines on', `<div class="mini"><div class="p">${thumbs(SHEET)}</div><div class="grow" style="display:flex;flex-direction:column;gap:8px"><span class="tog"><i class="on"></i>White ink behind light colours</span><span class="tog"><i class="on"></i>Thin cut lines</span><span class="tog"><i></i>Crop marks</span></div></div><div class="row"><button class="btn primary">${I('pdf')} Save PDF</button><span class="faint" style="font-size:11.5px">Print at 100 %, never “Fit to page”.</span></div>`)}
+    ${job('proof', 'ruler', 'Test print on plain paper', 'With a 100 mm bar to measure')}
+    ${job('cut', 'cut', 'Cut with a machine', 'Silhouette · Cricut · ScanNCut · by hand', `<div class="seg"><button>By hand</button><button class="on">Silhouette</button><button>Cricut</button><button>ScanNCut</button></div><div class="mini"><div class="p" style="outline:1px dashed #d6249f">${thumbs(SHEET)}</div><div class="grow"><div class="kv"><span>Cut lines</span><b>follow each decal</b><span>Offset</span><b>1.0 mm</b><span>You get</span><b>13 PNGs + DXF</b></div></div></div><div class="row"><button class="btn primary">${I('cut')} Choose folder &amp; export</button></div>`)}
+    ${job('share', 'share', 'Send to another builder', 'This sheet, chosen pages, or decals', `<div class="seg"><button class="on">This sheet</button><button>Some pages</button><button>Decals</button></div><p class="faint" style="margin:0;font-size:12px">One editable .sfsheet with its fonts and artwork (2.4 MB).</p><div class="row"><button class="btn primary">${I('share')} Save .sfsheet</button><button class="btn ghost">Open a shared file…</button></div>`)}
+    ${job('backup', 'box', 'Back up everything', 'Last backup 12 days ago', s === 'share' ? '' : '')}
+    </div>`;
+  const panel = `<aside class="outp"><div class="ophead">${I('printer')}<h2>Output</h2><span class="muted">Club racing · 1 page</span><span class="grow"></span><button class="btn sm ghost">${I('x')}</button></div>${ribbon}${jobs}</aside>`;
+  let extra = '';
+  if (s === 'issues') extra = `<div class="pop" style="left:${(48.5 + 40) * k + 40}px;top:${(36 + 6) * k + 60}px"><b>Too close to cut</b>2.5 mm from the copy next to it; the cutting gap is 3 mm.<div class="row" style="margin-top:8px"><button class="btn sm primary">Space 3 mm apart</button></div></div>`;
+  return `<div class="app">${topbar('Editor', `<button class="btn primary">${I('printer')} Output</button>`)}<div class="body"><div class="rail"></div><div class="ed"><div class="cv"><div style="position:relative">${paper(k, extra, { issues: s === 'issues' || s === 'panel', cut: s === 'cut' })}</div></div></div>${panel}</div></div>`;
+}
+
+function draw() {
+  document.documentElement.dataset.theme = theme;
+  const st = STATES[opt];
+  if (!st.some(x => x[0] === state)) state = st[0][0];
+  document.getElementById('state').innerHTML = st.map(([v, l]) => `<button data-v="${v}">${l}</button>`).join('');
+  for (const [id, v] of [['opt', opt], ['state', state], ['theme', theme]])
+    for (const b of document.querySelectorAll(`#${id} button`)) b.classList.toggle('on', b.dataset.v === v);
+  document.getElementById('blurb').textContent = BLURB[opt];
+  document.getElementById('stage').innerHTML = opt === 'A' ? A(state) : B(state);
+}
+document.querySelector('.switch').addEventListener('click', e => {
+  const b = e.target.closest('button[data-v]');
+  if (!b) return;
+  const g = b.parentElement.id;
+  if (g === 'opt') { opt = b.dataset.v; state = null; }
+  if (g === 'state') state = b.dataset.v;
+  if (g === 'theme') theme = b.dataset.v;
+  draw();
+});
+draw();
+</script>
+</body>
+</html>

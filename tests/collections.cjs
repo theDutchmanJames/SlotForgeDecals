@@ -102,18 +102,19 @@ async function main() {
     await page.waitForFunction(() => !projectTask);
     assert.equal((await fs.readdir(path.join(run, 'exports')).catch(() => [])).length, 0);
     const original = await state();
+    // Print & share: the Share & back up step holds sharing, importing and the backup.
     await page.locator('nav [data-action="sharing"]').click();
+    await page.locator('.pp-step[data-pp-step="share"]').click();
     for (const theme of ['dark', 'light']) {
       await page.evaluate(t => setTheme(t), theme);
-      const styles = await page.locator('.transfer-button').evaluateAll(buttons =>
-        buttons.map(b => ({
-          x: b.getBoundingClientRect().x,
+      const styles = await page.locator('.pp-card').evaluateAll(cards =>
+        cards.map(b => ({
           bg: getComputedStyle(b).backgroundColor,
-          colour: getComputedStyle(b.querySelector('strong')).color,
-          exporting: b.classList.contains('transfer-export')
+          colour: getComputedStyle(b.querySelector('p')).color,
+          title: getComputedStyle(b.querySelector('h3')).color
         }))
       );
-      assert.equal(styles.length, 6);
+      assert.equal(styles.length, 7);
       // Cards follow the theme: titles use the normal ink colour (the accent is only for main actions).
       const tokens = await page.evaluate(() => {
         const probe = document.createElement('span');
@@ -125,12 +126,11 @@ async function main() {
       });
       for (const b of styles) {
         if (theme === 'dark') assert.notEqual(b.bg, 'rgb(255, 255, 255)', 'dark cards are not white');
-        assert.equal(b.colour, tokens.ink);
+        assert.equal(b.title, tokens.ink);
       }
-      assert(styles.filter(x => x.exporting).every(x => x.x > styles[0].x));
       await page.screenshot({ path: path.join(run, 'sharing-' + theme + '.png') });
     }
-    await close();
+    await page.locator('nav [data-action="editor"]').click();
     await browser();
     await page.locator('#ws-sort').selectOption('name');
     await sheetsLoaded(3);

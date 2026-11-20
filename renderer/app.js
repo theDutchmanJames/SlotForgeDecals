@@ -158,9 +158,6 @@ function showDialog(title, subtitle, body, buttons = '', large = false) {
   if (!d.open) d.showModal();
 }
 // Page Note: what a window is, a few words more, and where you use it.
-function pageNote(iconName, lead, more, use) {
-  return `<div class="sn"><span class="sn-tile">${icon(iconName)}</span><p class="sn-lead">${lead}</p>${more ? `<p class="sn-more">${more}</p>` : ''}${use ? `<p class="sn-use"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14 M13 6l6 6-6 6"/></svg><span>${use}</span></p>` : ''}</div>`;
-}
 function closeDialog() {
   $('#dialog').close();
 }
@@ -962,6 +959,7 @@ function renderCar() {
     : `The car is ${fmt(project.preview.length)} mm long`;
   bindCar($('#car-stage'));
   CarPage.render();
+  PrintPage.render();
 }
 function finishCarDrag(cancel = false) {
   if (!carDrag) return;
@@ -1372,37 +1370,12 @@ function scaleDialog(value) {
     }
   };
 }
-function showChecks() {
-  const warnings = DM.warnings(project);
-  showDialog(
-    'Print checks',
-    warnings.length
-      ? `${warnings.length} items need review.`
-      : 'Your artwork fits the current sheet settings.',
-    warnings.length
-      ? `<ul class="warning-list">${warnings.map(w => `<li>${E(w.text)}</li>`).join('')}</ul>`
-      : '<div class="notice">No margin, cutting-gap or low-resolution issues detected.</div>',
-    '<button data-action="proof">Sizing proof</button><button class="primary" data-action="close">Done</button>'
-  );
-}
 async function exportPDF(proof = false, confirmed = false) {
   CanvasTools.resolve();
   if (busy) return;
   if (!project.items.length) throw Error('Add artwork to your sheet first.');
-  const warnings = DM.warnings(project);
-  if (!proof && !confirmed) {
-    showDialog(
-      warnings.length ? 'Review before exporting' : 'Export PDF',
-      `${DM.pageFormat(project).label} · ${project.pages} ${project.pages === 1 ? 'page' : 'pages'} · Print at Actual size / 100%.`,
-      `${PdfReview.markup(project.items, project.whiteInk)}${warnings.length ? `<h3>Print checks</h3><ul class="warning-list">${warnings.map(w => `<li>${E(w.text)}</li>`).join('')}</ul><p class="hint">Artwork outside the page is clipped in the PDF. Export only when you have reviewed these checks.</p>` : ''}`,
-      '<button data-action="close">Back to editor</button><button id="export-anyway" class="primary">Save PDF</button>'
-    );
-    $('#export-anyway').onclick = () => {
-      closeDialog();
-      exportPDF(false, true).catch(fail);
-    };
-    return;
-  }
+  // Export PDF goes through the Print step of Print & share, where the PDF is saved.
+  if (!proof && !confirmed) return PrintPage.show('print');
   const snapshot = DM.clone(project);
   if (!proof && snapshot.items.some(DM.hasWhite) && !snapshot.whiteInk)
     throw Error('Enable white ink or change the decal ink treatment before exporting.');
@@ -1581,44 +1554,6 @@ function railShell(shell) {
   mark();
   return { mark };
 }
-function sharingDialog() {
-  const button = (action, title, description, exporting = false) =>
-    '<button data-action="' +
-    action +
-    '" class="transfer-button ' +
-    (exporting ? 'transfer-export' : '') +
-    '"><strong>' +
-    title +
-    '</strong><small>' +
-    description +
-    '</small></button>';
-  showDialog(
-    'Import & Export',
-    'Bring artwork in. Share editable sheets and decals, or export a PDF for printing.',
-    pageNote(
-      'share',
-      'Import &amp; Export moves artwork, decals and sheets in and out of Decals.',
-      'Sheet and decal files stay editable when they are opened in Decals again; a PDF is for printing.',
-      'Import your own logos and pictures, share sheets or decals with another Decals user, or export the PDF for your decal paper.'
-    ) +
-      '<div class="transfer-headings"><span>IMPORT</span><span>EXPORT</span></div><section class="transfer-section"><h3>SHEETS</h3><div class="transfer-grid">' +
-      button('open-sheet-file', 'Import a Sheet', 'Choose sheets and pages from an editable .sfsheet file.') +
-      button(
-        'export-sheet',
-        'Export a Sheet',
-        'Choose saved sheets and pages to share in one editable file.',
-        true
-      ) +
-      '</div></section><section class="transfer-section"><h3>IMAGES AND DECALS</h3><div class="transfer-grid">' +
-      button('import', 'Import an Image', 'PNG · JPG · WebP · SVG · EPS · PDF') +
-      button('export-pack', 'Export Decals', 'Choose saved decals to share with other builders.', true) +
-      button('import-pack', 'Import Decals', 'Choose decals from an .sfdecal file to add to your library.') +
-      button('pdf', 'Export PDF', 'Print your current sheet at its exact physical size.', true) +
-      '</div></section><p class="hint">Save to Sheets keeps your work in the Workshop. Editable sheet and decal files preserve editing; PDF is for printing. Workspace backups are in Settings → Backup & Recovery.</p>',
-    '<button data-action="close">Done</button>',
-    true
-  );
-}
 // Help is split into topics with a topic list and search, instead of one long page.
 const HELP_TOPICS = [
   [
@@ -1655,7 +1590,7 @@ const HELP_TOPICS = [
   ],
   [
     'Print & white ink',
-    '<p>Export a <strong>sizing proof</strong> first and print it on plain paper at <strong>Actual size / 100%</strong>, with Fit to page disabled. Measure the labelled 50/100 mm bars, then export the final PDF.</p><div class="notice"><strong>White ink:</strong> enable the printer option, set its required spot name, and choose Colour + white backing or White ink only on a decal. Export uses an alpha-thresholded 600 PPI white mask. Confirm ink order and spot recognition with your print shop; this has not been validated on physical printers. RGB artwork is preserved; PDF/X and colour-proof certification are not provided.</div>'
+    '<p><strong>Print &amp; share</strong> in the top bar goes step by step, with the printed page in view. <strong>Check the sheet</strong> numbers every problem on the page with a fix (Move inside the margin, Move to free space, Turn on white ink, Trace to vector); Ctrl+Z undoes a fix. <strong>Test print</strong> saves a plain-paper proof: print it at <strong>Actual size / 100%</strong> with Fit to page off and measure the bar. <strong>Print on decal paper</strong> sets clear or white paper, white ink and printed cut lines, then saves the PDF. <strong>Cut out</strong> saves the PDF with cut lines, or a package for Silhouette, Cricut or ScanNCut. <strong>Share &amp; back up</strong> sends sheets and decals, brings files in, and makes the complete backup.</p><div class="notice"><strong>White ink:</strong> enable the printer option, set its required spot name, and choose Colour + white backing or White ink only on a decal. Export uses an alpha-thresholded 600 PPI white mask. Confirm ink order and spot recognition with your print shop; this has not been validated on physical printers. RGB artwork is preserved; PDF/X and colour-proof certification are not provided.</div>'
   ],
   [
     'Print & cut',
@@ -2332,6 +2267,7 @@ const actions = {
     Workshop.hide();
     Shelf.hide();
     CarPage.hide();
+    PrintPage.hide();
   },
   close: closeDialog,
   rename: () => nameDialog('Name your sheet', project.name, n => mutate(() => (project.name = n))),
@@ -2359,7 +2295,7 @@ const actions = {
       false
     );
   },
-  'cutter-export': () => CutterExport.open(project),
+  'cutter-export': () => PrintPage.show('cut'),
   new: newProject,
   demo: () => {
     const open = () =>
@@ -2464,13 +2400,10 @@ const actions = {
     if (await desktop.exportWorkspace(assetsSnapshot())) toast('Workspace backup saved.');
   },
   pdf: () => exportPDF(false),
-  proof: () => {
-    closeDialog();
-    return exportPDF(true);
-  },
-  checks: showChecks,
+  proof: () => PrintPage.show('proof'),
+  checks: () => PrintPage.show('check'),
   settings: settingsDialog,
-  sharing: sharingDialog,
+  sharing: () => PrintPage.show('check'),
   help: helpDialog,
   folder: () => desktop.folder(),
   library: () => Shelf.show(),
@@ -2678,9 +2611,9 @@ const Finder = (() => {
     ['recolour', 'Recolour…', 'Selection', 'colour color swap'],
     ['save-decal', 'Save to Decal Library', 'Selection', 'library keep'],
     ['pdf', 'Export PDF', 'Print · Ctrl+P', 'print export'],
-    ['cutter-export', 'Export for cutter…', 'Print', 'scanncut cricut silhouette svg dxf'],
-    ['proof', 'Sizing proof', 'Print', 'test print ruler'],
-    ['checks', 'Print checks', 'Print', 'warnings problems'],
+    ['cutter-export', 'Cut out: cutter files', 'Print & share', 'scanncut cricut silhouette svg dxf export'],
+    ['proof', 'Test print (sizing proof)', 'Print & share', 'test print ruler proof'],
+    ['checks', 'Check the sheet', 'Print & share', 'warnings problems print checks'],
     ['save-sheet', 'Save to Sheets', 'Sheet · Ctrl+S', 'save keep'],
     ['export-sheet', 'Share this sheet…', 'Sheet', 'sfsheet send'],
     ['new', 'New sheet', 'Sheet', 'start blank'],
@@ -2698,7 +2631,7 @@ const Finder = (() => {
     ['car-settings', 'Your car: body, scale, measurements', 'Car page', 'car model length photo reference'],
     ['car-page', 'Car page: the whole livery', 'Page', 'car preview livery fit'],
     ['library', 'Decal Library', 'Window', 'decals collection'],
-    ['sharing', 'Import & Export', 'Window', 'backup share'],
+    ['sharing', 'Print & share', 'Page', 'backup share import export'],
     ['settings', 'App settings', 'Window', 'preferences theme updates storage'],
     ['help', 'Help', 'Window', 'guide how'],
     ['import-pack', 'Import decals', 'Library', 'sfdecal'],
@@ -2970,7 +2903,8 @@ document.addEventListener('keydown', e => {
     !document.querySelector('dialog[open]') &&
     !Workshop.isOpen() &&
     !Shelf.isOpen() &&
-    !CarPage.isOpen()
+    !CarPage.isOpen() &&
+    !PrintPage.isOpen()
   ) {
     e.preventDefault();
     Finder.open();
@@ -2994,7 +2928,8 @@ document.addEventListener('keydown', e => {
     closeMenus();
     return;
   }
-  if (!$('#finder').hidden || Workshop.isOpen() || Shelf.isOpen() || CarPage.isOpen()) return;
+  if (!$('#finder').hidden || Workshop.isOpen() || Shelf.isOpen() || CarPage.isOpen() || PrintPage.isOpen())
+    return;
   if (e.target.matches('input,textarea,select') || document.querySelector('dialog[open]')) return; // also the update window
   const ctrl = e.ctrlKey || e.metaKey;
   let action;
@@ -3087,7 +3022,7 @@ window.Studio = {
   exportWithCutLines() {
     if (!DM.cutSettings(project.cut).pdfLines)
       mutate(() => (project.cut = { ...DM.cutSettings(project.cut), pdfLines: true }));
-    return exportPDF(false).catch(fail);
+    return exportPDF(false, true).catch(fail);
   }
 };
 window.addEventListener('resize', () => placeContextBar());
