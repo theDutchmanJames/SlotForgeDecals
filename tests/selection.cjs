@@ -99,7 +99,7 @@ async function main() {
     await click(150, 160);
     assert.deepEqual(await selected(), []);
     assert.ok(await page.locator('#redo').isEnabled());
-    await page.locator('summary:has-text("Sheet layers")').click();
+    await page.locator('[data-left-tab="layers"]').click();
     await page.locator('[data-layer="a"]').click();
     await page.locator('[data-layer="b"]').click({ modifiers: ['Control'] });
     assert.deepEqual(await selected(), ['a', 'b']);
@@ -190,7 +190,9 @@ async function main() {
     await page.locator('[data-action="expand-car"]').click();
     assert.ok(await page.locator('#preview-w').isEnabled());
     await done();
-    // Start selection outside the paper, and test zoomed coordinates.
+    // Start selection outside the paper, and test zoomed coordinates. Nothing is selected first, so
+    // the bar above a selection does not cover the starting point.
+    await page.evaluate(() => Studio.select([]));
     await box(-4, 15, 85, 50);
     assert.deepEqual(await selected(), ['a', 'b']);
     await page.locator('[data-action="zoom-in"]').click();

@@ -19,16 +19,16 @@ const CanvasTools = {
     this.buttons();
   },
   buttons() {
-    for (const b of document.querySelectorAll('.creation-launchers [data-action]'))
+    for (const b of document.querySelectorAll('.tool-rail [data-tool]'))
       b.setAttribute(
         'aria-pressed',
         String(
-          (b.dataset.action === 'draw-path' && this.active?.kind === 'path') ||
+          (b.dataset.tool === 'select' && !this.active) ||
+            (b.dataset.action === 'draw-path' && this.active?.kind === 'path') ||
             (b.dataset.action === 'combine-shapes' && this.active?.kind === 'combine')
         )
       );
     document.querySelector('#paper')?.classList.toggle('path-tool-active', this.active?.kind === 'path');
-    document.querySelector('.toolbar [data-action="select"]')?.classList.toggle('active', !this.active);
   },
   pointer(type, e) {
     const tool = this.active;
@@ -521,7 +521,7 @@ function startPathTool(source = null) {
   CanvasTools.active = controller;
   selected = source ? new Set([source.id]) : new Set();
   render();
-  $('.right-sidebar').scrollTop = 0;
+  $('[data-right-pane="decal"]').scrollTop = 0;
 }
 
 function startCombineTool() {
@@ -632,7 +632,7 @@ function startCombineTool() {
   };
   CanvasTools.active = controller;
   render();
-  $('.right-sidebar').scrollTop = 0;
+  $('[data-right-pane="decal"]').scrollTop = 0;
 }
 // Switching away finishes a valid path; shape-operation previews require explicit Apply.
 document.addEventListener(
@@ -640,16 +640,24 @@ document.addEventListener(
   e => {
     if (
       !CanvasTools.active ||
-      e.target.closest('#inspector,#sheet-scroll,#dialog,.theme-switch,[data-path-mode]')
+      e.target.closest('#inspector,#sheet-scroll,#dialog,#theme-toggle,[data-menu],.wb-tabs,[data-path-mode]')
     )
       return;
     const action = e.target.closest('[data-action]')?.dataset.action;
     if (action === 'draw-path' && CanvasTools.active.kind === 'path' && CanvasTools.active.sourceId === null)
       return;
     if (
-      ['zoom-in', 'zoom-out', 'fit', 'theme-light', 'theme-dark', 'sidebar-grid', 'sidebar-list'].includes(
-        action
-      ) ||
+      [
+        'zoom-in',
+        'zoom-out',
+        'fit',
+        'zoom-actual',
+        'fitcheck-toggle',
+        'theme-light',
+        'theme-dark',
+        'sidebar-grid',
+        'sidebar-list'
+      ].includes(action) ||
       e.target.closest('summary') ||
       e.target.closest('#snap')
     )

@@ -30,7 +30,9 @@ async function main() {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
     await page.waitForFunction(() => window.Studio?.ready);
     await page.locator('#dialog [data-action="close"]').first().click();
-    const picker = page.getByLabel('Sheet size', { exact: true });
+    // The paper size lives in the Sheet & paper tab of the right panel.
+    await page.locator('[data-right-tab="sheet"]').click();
+    const picker = page.getByLabel('Paper size', { exact: true });
     assert.equal(await picker.inputValue(), 'a4');
     await page.evaluate(() => {
       const p = Studio.project;
@@ -52,7 +54,7 @@ async function main() {
       Studio.project.items.pop();
       Studio.select([]);
     });
-    await page.locator('#paper-folder > summary').click();
+    await page.locator('[data-right-tab="sheet"]').click();
     for (const [size, w, h] of [
       ['a4', 210, 297],
       ['a5', 148, 210],
@@ -154,7 +156,8 @@ async function main() {
       '/RDG_WHITE'
     );
     assert(Math.abs(white.getPage(0).getWidth() - 432) < 0.001);
-    await page.locator('.projectbar [data-action="export-sheet"]').click();
+    await page.locator('#print-menu-button').click();
+    await page.locator('#print-menu [data-action="export-sheet"]').click();
     await page.locator('#collection-confirm').click();
     await page.waitForFunction(() =>
       document.querySelector('#toast').textContent.startsWith('Editable sheet exported')
@@ -183,20 +186,23 @@ async function main() {
         ({ BrowserWindow }, [w, h]) => BrowserWindow.getAllWindows()[0].setSize(w, h),
         [width, height]
       );
-      await page.locator(`[data-action="theme-${theme}"]`).click();
+      // The theme button offers the other theme, so it is only there when the theme changes.
+      const themeButton = page.locator(`[data-action="theme-${theme}"]`);
+      if (await themeButton.count()) await themeButton.click();
       await page.evaluate(
         () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
       );
       const layout = await page.evaluate(() => {
         const selectors = [
           '#project-name',
-          '#sheet-size-select',
-          '#scale-badge',
+          '#sheet-menu-button',
+          '.wb-nav',
+          '#finder-open',
           '#undo',
           '#redo',
-          '.projectbar [data-action="new"]',
-          '.projectbar [data-action="save-sheet"]',
-          '.projectbar [data-action="pdf"]'
+          '#theme-toggle',
+          '#export-pdf',
+          '#print-menu-button'
         ];
         return {
           w: innerWidth,

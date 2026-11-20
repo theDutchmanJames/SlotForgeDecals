@@ -29,6 +29,8 @@ const icons = {
   topic: 'M5 4h14v16H5z M9 9h6 M9 13h6 M9 17h3'
 };
 function icon(name) {
+  if (!icons[name] && document.getElementById('ic-' + name))
+    return `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-${name}"/></svg>`;
   return `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${icons[name] || icons.sheet}"/></svg>`;
 }
 for (const b of $$('[data-icon]')) b.insertAdjacentHTML('afterbegin', icon(b.dataset.icon));
@@ -331,8 +333,13 @@ async function loadCars(body = 'gt') {
 function applyTheme() {
   const theme = settings.theme === 'light' ? 'light' : 'dark';
   document.documentElement.dataset.theme = theme;
-  for (const button of $$('[data-theme-choice]'))
-    button.setAttribute('aria-pressed', String(button.dataset.themeChoice === theme));
+  const toggle = $('#theme-toggle'),
+    other = theme === 'dark' ? 'light' : 'dark';
+  if (toggle) {
+    toggle.dataset.action = 'theme-' + other;
+    toggle.title = other === 'light' ? 'Light theme' : 'Dark theme';
+    toggle.setAttribute('aria-label', 'Switch to the ' + other + ' theme');
+  }
   const picker = $('#theme-setting');
   if (picker) picker.value = theme;
 }
@@ -351,14 +358,19 @@ function render() {
   $('#sheet-size-select option[value="custom"]').textContent =
     project.pageSize === 'custom' ? DM.pageFormat(project).label : 'Custom size…';
   $('#sheet-size-select option[value="custom-edit"]').hidden = project.pageSize !== 'custom';
-  $('#page-badge').textContent = (project.orientation === 'portrait' ? 'Portrait' : 'Landscape') + ' ↔';
-  $('#page-badge').setAttribute('aria-label', 'Orientation: ' + project.orientation + '. Click to switch.');
   $('#paper').setAttribute('aria-label', DM.pageFormat(project).label + ' decal sheet');
-  $('#scale-badge').textContent = 'Scale Conversion · 1:' + project.scale;
+  $('#scale-badge').textContent = '1:' + project.scale;
+  $('#sheet-facts').textContent = [
+    DM.pageFormat(project).label.split(' · ')[0],
+    project.orientation,
+    '1:' + project.scale,
+    project.pages + (project.pages === 1 ? ' page' : ' pages')
+  ].join(' · ');
   $('#undo').disabled = !history.length;
   $('#redo').disabled = !future.length;
   page = Math.min(page, project.pages - 1);
   selected = new Set([...selected].filter(id => project.items.some(i => i.id === id && i.page === page)));
+  renderTabs();
   renderLibrary();
   renderPaper();
   renderInspector();
@@ -376,27 +388,77 @@ function render() {
   $('#cut-offset').value = cut.offset;
   $('#cut-preview').checked = cut.preview;
   $('#cut-pdf').checked = cut.pdfLines;
-  const warnings = DM.warnings(project);
-  $('#checks').classList.toggle('warn', !!warnings.length);
-  $('#checks').innerHTML =
-    `<span class="dot"></span>${warnings.length ? `${warnings.length} print ${warnings.length === 1 ? 'check' : 'checks'} to review` : 'Print checks passed'}`;
+  renderChecks();
   selectionStatus();
+  renderPages();
+}
+// Print notes: the status bar says how many, the Export menu lists them.
+function renderChecks() {
+  const warnings = DM.warnings(project),
+    n = warnings.length;
+  $('#checks').classList.toggle('warn', !!n);
+  $('#checks').innerHTML =
+    `<span class="dot"></span>${n ? `${n} print ${n === 1 ? 'note' : 'notes'}` : 'Ready to print'}`;
+  $('#print-ready').classList.toggle('warn', !!n);
+  $('#print-ready').innerHTML = n
+    ? `<b>${icon('warn')}${n} print ${n === 1 ? 'note' : 'notes'} to look at</b><ul>${warnings
+        .slice(0, 4)
+        .map(w => `<li>${E(w.text)}</li>`)
+        .join('')}${n > 4 ? `<li>…and ${n - 4} more</li>` : ''}</ul>`
+    : `<b>${icon('check')}Ready to print</b><p>No margin, gap or sharpness problems on ${project.pages === 1 ? 'this page' : `these ${project.pages} pages`}.</p>`;
+}
+// Pages: numbered thumbnails under the sheet and cards in the Pages tab.
+function renderPages() {
+  const s = DM.size(project),
+    ratio = s.h / s.w;
   $('#pages').innerHTML = Array.from(
     { length: project.pages },
     (_, n) =>
-      `<button data-page="${n}" class="${n === page ? 'active' : ''}" title="Page ${n + 1}">${n + 1}</button>`
+      `<button data-page="${n}" class="${n === page ? 'active' : ''}" style="--ratio:${ratio}" title="Page ${n + 1}" aria-label="Page ${n + 1}"><span>${n + 1}</span></button>`
   ).join('');
-  $('#pages')
-    .querySelectorAll('button')
-    .forEach(
-      b =>
-        (b.onclick = () => {
-          page = +b.dataset.page;
-          selected.clear();
-          render();
-        })
-    );
+  $('#pages-count').textContent = project.pages;
+  if (!$('[data-left-pane="pages"]').hidden)
+    $('#page-cards').innerHTML = Array.from({ length: project.pages }, (_, n) => {
+      const list = project.items.filter(i => i.page === n);
+      return `<button class="page-card ${n === page ? 'active' : ''}" data-page-card="${n}"><svg class="page-thumb" viewBox="0 0 ${s.w} ${s.h}" style="--ratio:${ratio}"><rect width="${s.w}" height="${s.h}" fill="white"/>${list.map((i, k) => `<g transform="${itemTransform(i)}" opacity="${i.opacity}">${Art.body(i, 'page' + n + '-' + k)}</g>`).join('')}</svg><span><b>Page ${n + 1}</b><small>${list.length ? list.length + (list.length === 1 ? ' decal' : ' decals') : 'Empty'}</small></span></button>`;
+    }).join('');
+  for (const b of $$('[data-page],[data-page-card]'))
+    b.onclick = () => {
+      page = +(b.dataset.page ?? b.dataset.pageCard);
+      selected.clear();
+      render();
+    };
 }
+// Side panels: Library, Layers and Pages on the left; Decal and Sheet & paper on the right.
+function renderTabs() {
+  const left = ['library', 'layers', 'pages'].includes(settings.leftTab) ? settings.leftTab : 'library',
+    right = settings.rightTab === 'sheet' ? 'sheet' : 'decal';
+  for (const b of $$('[data-left-tab]')) b.setAttribute('aria-selected', String(b.dataset.leftTab === left));
+  for (const p of $$('[data-left-pane]')) p.hidden = p.dataset.leftPane !== left;
+  for (const b of $$('[data-right-tab]'))
+    b.setAttribute('aria-selected', String(b.dataset.rightTab === right));
+  for (const p of $$('[data-right-pane]')) p.hidden = p.dataset.rightPane !== right;
+  $('#car-folder').classList.toggle('closed', settings.fitCheckOpen === false);
+  for (const b of $$('[data-action="fitcheck-toggle"]'))
+    b.setAttribute('aria-expanded', String(settings.fitCheckOpen !== false));
+}
+function showTab(side, tab, remember = true) {
+  const key = side === 'left' ? 'leftTab' : 'rightTab';
+  if (settings[key] === tab) return;
+  settings[key] = tab;
+  if (remember) {
+    revision++;
+    scheduleSave();
+  }
+  renderTabs();
+  if (side === 'left') {
+    if (tab === 'library') renderLibrary();
+    if (tab === 'pages') renderPages();
+    if (tab === 'layers') renderLayers();
+  }
+}
+for (const b of $$('[data-left-tab]')) b.onclick = () => showTab('left', b.dataset.leftTab);
+for (const b of $$('[data-right-tab]')) b.onclick = () => showTab('right', b.dataset.rightTab);
 function renderLibrary() {
   Library.renderSidebar();
 }
@@ -406,27 +468,70 @@ const SELECTION_TOOLS = {
   group: ['Select two or more decals to group them.', list => list.length > 1],
   ungroup: ['Select a grouped decal to ungroup it.', list => list.length === 1 && list[0].kind === 'group'],
   duplicate: ['Select a decal to duplicate it.', list => list.length > 0],
-  delete: ['Select a decal to delete it.', list => list.length > 0]
+  delete: ['Select a decal to delete it.', list => list.length > 0],
+  'mirror-pair': ['Select a decal to add a mirrored copy.', list => list.length > 0],
+  'grid-copies': ['Select a decal to repeat it.', list => list.length > 0]
 };
 function selectionStatus() {
   const list = items();
   for (const [action, [hint, ready]] of Object.entries(SELECTION_TOOLS)) {
-    const button = $(`.toolbar [data-action="${action}"]`);
+    const button = $(`.ctx-bar :is([data-action="${action}"], [data-alias="${action}"])`);
     if (!button) continue;
     button.dataset.tip ??= button.title || '';
     button.disabled = !ready(list);
     button.title = button.disabled ? hint : button.dataset.tip;
   }
+  $('.ctx-bar [data-action="group"]').hidden = list.length < 2;
+  $('.ctx-bar [data-action="ungroup"]').hidden = !(list.length === 1 && list[0].kind === 'group');
+  const one = list.length === 1 ? list[0] : null,
+    box = list.length ? DM.union(list) : null;
+  $('#ctx-size').textContent = one
+    ? `${fmt(one.w)} × ${fmt(one.h)} mm${one.rotation ? ` · ${fmt(one.rotation)}°` : ''}`
+    : box
+      ? `${list.length} decals · ${fmt(box.w)} × ${fmt(box.h)} mm`
+      : '';
+  placeContextBar();
   $('#selection-status').textContent = selected.size
-    ? `${selected.size} selected · Drag to move together · Ctrl/Shift-click to toggle`
-    : `${project.items.length} decals · Drag empty canvas to select · Ctrl/Shift-click to add`;
+    ? `${selected.size} selected · Drag to move together · Shift-click to add or remove · Arrow keys nudge 1 mm`
+    : `${project.items.filter(i => i.page === page).length} decals on page ${page + 1} · Drag on empty paper to select several · Ctrl+K finds anything`;
 }
+const fmt = n => String(Number(n.toFixed(1)));
+// The bar with the selection tools floats just above the selected decals (below them near the top).
+function placeContextBar() {
+  const bar = $('#ctx-bar'),
+    nodes = [...selected].map(id => $(`#paper .sheet-item[data-id="${CSS.escape(id)}"]`)).filter(Boolean);
+  bar.hidden = !nodes.length || !!CanvasTools.active || drag?.kind === 'select';
+  if (bar.hidden) return;
+  const panel = $('.editor-panel').getBoundingClientRect(),
+    view = $('#sheet-scroll').getBoundingClientRect(),
+    r = nodes
+      .map(n => n.getBoundingClientRect())
+      .reduce((a, b) => ({
+        left: Math.min(a.left, b.left),
+        top: Math.min(a.top, b.top),
+        right: Math.max(a.right, b.right),
+        bottom: Math.max(a.bottom, b.bottom)
+      }));
+  const w = bar.offsetWidth,
+    h = bar.offsetHeight;
+  let top = r.top - h - 12;
+  if (top < view.top + 6) top = r.bottom + 12;
+  top = Math.max(view.top + 6, Math.min(top, view.bottom - h - 6));
+  const left = Math.max(view.left + 6, Math.min((r.left + r.right) / 2 - w / 2, view.right - w - 6));
+  bar.style.left = left - panel.left + 'px';
+  bar.style.top = top - panel.top + 'px';
+}
+$('#sheet-scroll').addEventListener('scroll', () => placeContextBar(), { passive: true });
 function renderSelection() {
   renderPaper();
   renderInspector();
   renderCar();
   renderLayers();
   selectionStatus();
+}
+// Picking a decal on the sheet or in Layers, or adding one, brings the Decal tab forward.
+function revealDecal() {
+  if (settings.rightTab === 'sheet') showTab('right', 'decal');
 }
 function commitGesture(before) {
   try {
@@ -454,6 +559,8 @@ function marqueeMarkup() {
   const b = selectionBox(drag.start, drag.end);
   return `<rect class="selection-marquee" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}"/>`;
 }
+// Screen pixels per millimetre at 100%.
+const MM_PX = 96 / 25.4;
 function fitScale() {
   const area = $('#sheet-scroll'),
     s = DM.size(project);
@@ -475,6 +582,7 @@ function zoomSheet(factor, clientX, clientY) {
   zoom = next;
   sizePaper();
   CanvasTools.draw();
+  placeContextBar();
   const after = paper.getBoundingClientRect();
   area.scrollLeft += after.left + x * next - clientX;
   area.scrollTop += after.top + y * next - clientY;
@@ -542,7 +650,7 @@ function sizePaper() {
   $('#paper').style.height = s.h * scale + 'px';
   $('#paper').setAttribute('viewBox', `0 0 ${s.w} ${s.h}`);
   $('#sheet-size').textContent = `${s.w} × ${s.h} mm`;
-  $('#zoom').textContent = zoom ? Math.round((scale / 3.7795) * 100) + '%' : 'Fit page';
+  $('#zoom').textContent = Math.round((scale / MM_PX) * 100) + '%';
   $('#ruler-x').innerHTML = Array.from(
     { length: Math.floor(s.w / 5) + 1 },
     (_, n) =>
@@ -565,6 +673,7 @@ function renderPaper() {
     `<rect width="${s.w}" height="${s.h}" fill="white"/><rect x="${project.margin}" y="${project.margin}" width="${s.w - 2 * project.margin}" height="${s.h - 2 * project.margin}" fill="none" stroke="#b7c1cf" stroke-width=".15" stroke-dasharray="1.5 1" pointer-events="none"/>${art}${marqueeMarkup()}`;
   CanvasTools.draw();
   drawCutPreview();
+  placeContextBar();
 }
 // Dashed cut lines drawn over the sheet. Contours are traced asynchronously and cached,
 // so a newer render simply replaces an older, unfinished one.
@@ -590,8 +699,15 @@ async function drawCutPreview() {
 function prop(label, key, value, min = -10000, max = 10000, step = 0.1) {
   return `<div class="field"><label for="prop-${key}">${label}</label><input id="prop-${key}" data-prop="${key}" type="number" min="${min}" max="${max}" step="${step}" value="${Number(value.toFixed(2))}"></div>`;
 }
+// Decal tab: one decal's size, colour, print settings and tools; the selection's tools for several.
+const tile = (action, iconName, label, extra = '') =>
+  `<button class="ins-tile" data-action="${action}" ${extra}>${icon(iconName)}<span>${label}</span></button>`;
+// Shortcut tiles for actions that already have a button elsewhere (the tool rail).
+const alias = (action, iconName, label) =>
+  `<button class="ins-tile" data-alias="${action}">${icon(iconName)}<span>${label}</span></button>`;
 function renderInspector() {
   if (CanvasTools.active) {
+    showTab('right', 'decal', false);
     CanvasTools.mount();
     return;
   }
@@ -599,8 +715,8 @@ function renderInspector() {
     list = items();
   if (!i) {
     $('#inspector').innerHTML = list.length
-      ? `<h2 class="inspector-title">${list.length} decals selected</h2><div class="folder blue"><h2>Selection</h2><div class="folder-body"><button class="wide" data-action="combine-shapes">Merge / Cut Shapes</button><div class="row"><button data-action="group">Group decals</button><button data-action="save-decal">Save to library</button></div><button class="wide" data-action="mirror-pair" title="Mirrored copy for directional graphics such as arrows, stripes and slanted shapes. Editable text stays readable; lettering inside imported logos is mirrored too.">Add mirrored copy (other side)</button><button class="wide" data-action="recolour">Recolour…</button><div class="row"><button data-action="duplicate">Duplicate</button><button data-action="delete" class="danger">Delete</button></div></div></div>`
-      : '<div class="no-selection"><strong>Your decal workshop</strong>Import artwork, add a shape, or drag a saved decal onto the sheet.</div>';
+      ? `<div class="ins-head"><div class="ins-thumb many">${list.length}</div><div><b class="ins-title">${list.length} decals selected</b><small class="hint">Drag any of them to move them together</small></div></div><section class="ins-sec"><h3>Selection</h3><div class="ins-tiles">${tile('group', 'group', 'Group')}${tile('combine-shapes', 'merge', 'Merge / Cut Shapes')}${tile('arrange-selection', 'arrange', 'Align & arrange…')}${tile('mirror-pair', 'mirror', 'Add mirrored copy (other side)', 'title="Mirrored copy for directional graphics such as arrows, stripes and slanted shapes. Editable text stays readable; lettering inside imported logos is mirrored too."')}${tile('recolour', 'brush', 'Recolour…')}${tile('save-decal', 'star', 'Save to library')}${alias('grid-copies', 'grid', 'Repeat…')}${alias('move-page', 'move', 'Move to page…')}</div></section><div class="ins-foot"><button data-action="duplicate">${icon('copy')}Duplicate</button><span class="spacer"></span><button data-action="delete" class="danger">${icon('trash')}Delete</button></div>`
+      : `<div class="no-selection"><strong>No decal selected</strong><p>Click a decal on the sheet to change it here, or drag on empty paper to select several.</p><div class="ins-tiles">${alias('import', 'image', 'Import an image')}${alias('text', 'text', 'Add text')}${alias('number-template', 'hash', 'Racing numbers')}${alias('shapes', 'shape', 'Shapes & patterns')}</div><p class="hint">Sheet-wide settings such as paper, white ink and cut lines are under Sheet &amp; paper.</p></div>`;
     return;
   }
   const canPaint = !['svg', 'image', 'group', 'slice'].includes(i.kind),
@@ -613,10 +729,61 @@ function renderInspector() {
       ? 'Contains embedded raster images'
       : i.traceSource
         ? 'Traced from an image'
-        : 'Scalable artwork';
+        : 'Sharp at any size';
+  const b = DM.bounds(i),
+    pad = Math.max(b.w, b.h) * 0.08,
+    thumb = `<svg viewBox="${b.x - pad} ${b.y - pad} ${b.w + 2 * pad} ${b.h + 2 * pad}"><g transform="${itemTransform(i)}" opacity="${i.opacity}">${Art.body(i, 'inspector')}</g></svg>`;
+  const off = i.locked ? 'disabled' : '';
+  const tools = [
+    i.kind === 'svg' && tile('edit-vector', 'path', 'Edit Vector Artwork', off),
+    i.kind === 'path' && tile('edit-path', 'path', 'Edit Points & Curves', off),
+    (i.kind === 'stripe' || (i.shapeOptions && Object.hasOwn(ShapeTools.presets, i.shapeOptions.type))) &&
+      tile(
+        'edit-shape',
+        'shape',
+        i.kind === 'stripe' ? 'Stripe Count & Spacing' : 'Adjust Shape / Pattern',
+        off
+      ),
+    i.kind === 'group' && !i.artOutline && tile('edit-group', 'group', 'Edit group', off),
+    i.kind === 'image' &&
+      tile(
+        'prepare-image',
+        'slice',
+        i.imageSource ? 'Adjust crop & background' : 'Crop & remove background',
+        off
+      ),
+    i.kind === 'image' && i.imageSource && tile('restore-prepared', 'undo', 'Restore original image', off),
+    (i.kind === 'image' || i.traceSource) &&
+      tile('trace', 'trace', i.traceSource ? 'Refine traced vector' : 'Trace image to vector', off),
+    i.traceSource && tile('restore-image', 'undo', 'Restore image', off),
+    i.traceSource && tile('export-svg', 'share', 'Export SVG'),
+    (i.kind === 'svg' || i.kind === 'image' || i.artOutline) &&
+      tile('artwork-outline', 'outline', i.artOutline ? 'Adjust outline' : 'Add silhouette outline', off),
+    i.artOutline && tile('remove-outline', 'x', 'Remove outline', off),
+    tile('recolour', 'brush', 'Recolour…', off),
+    tile(
+      'mirror-pair',
+      'mirror',
+      'Add mirrored copy (other side)',
+      'title="Mirrored copy for directional graphics such as arrows, stripes and slanted shapes. Editable text stays readable; lettering inside imported logos is mirrored too."'
+    ),
+    tile('save-decal', 'star', 'Save decal to library')
+  ].filter(Boolean);
+  const fonts = ['Arial', 'Georgia', 'Verdana', 'Courier New', ...activeFonts().map(f => f.family)];
   $('#inspector').innerHTML =
-    `<h2 class="inspector-title">Selected decal <span class="artwork-badge" data-artwork-type="${E(artworkType)}">${E(artworkType)}</span><small class="hint">${E(quality)}${i.flipX || i.flipY ? ' · Mirrored' : ''}</small></h2><input class="inspector-name" id="decal-name" value="${E(i.name)}" aria-label="Decal name"><details class="folder blue" open><summary>Size & position</summary><div class="folder-body"><div class="fields2">${prop('Width (mm)', 'w', i.w, 0.1, 1000)}${prop('Height (mm)', 'h', i.h, 0.1, 1000)}</div><label class="check"><input id="aspect-lock" type="checkbox" ${settings.aspectLock !== false ? 'checked' : ''}>Keep proportions</label><div class="fields2" style="margin-top:10px">${prop('X (mm)', 'x', i.x)}${prop('Y (mm)', 'y', i.y)}</div><div class="fields2">${prop('Rotation (°)', 'rotation', i.rotation, -3600, 3600, 1)}<div class="field"><label>Copies to add</label><div class="unit-input"><input id="copies" type="number" value="1" min="1" max="100"><button data-action="copies" title="Add copies">+</button></div></div></div><button class="wide" data-action="save-decal">Save decal to library</button><button class="wide" data-action="mirror-pair" title="Mirrored copy for directional graphics such as arrows, stripes and slanted shapes. Editable text stays readable; lettering inside imported logos is mirrored too.">Add mirrored copy (other side)</button><button class="wide" data-action="recolour">Recolour…</button><div class="layer-actions"><button data-action="backward">Backward</button><button data-action="forward">Forward</button><button data-action="lock">${i.locked ? 'Unlock' : 'Lock'}</button></div></div></details>
- ${i.kind === 'svg' ? `<section class="folder blue"><h2>Vector artwork</h2><div class="folder-body"><button class="wide" data-action="edit-vector" ${i.locked ? 'disabled' : ''}>Edit Vector Artwork</button><p class="hint">Select and remove background shapes. Preview, undo or restore the original.</p></div></section>` : ''}${i.kind === 'path' ? `<section class="folder blue"><h2>Path editing</h2><div class="folder-body"><button class="wide" data-action="edit-path" ${i.locked ? 'disabled' : ''}>Edit Points & Curves</button></div></section>` : ''}${i.kind === 'stripe' || (i.shapeOptions && Object.hasOwn(ShapeTools.presets, i.shapeOptions.type)) ? `<section class="folder blue"><h2>Shape & pattern</h2><div class="folder-body"><button class="wide" data-action="edit-shape" ${i.locked ? 'disabled' : ''}>${i.kind === 'stripe' ? 'Stripe Count & Spacing' : 'Adjust Shape / Pattern'}</button></div></section>` : ''}${i.kind === 'svg' || i.kind === 'image' || i.artOutline ? `<section class="folder blue"><h2>Artwork outline</h2><div class="folder-body"><button class="wide" data-action="artwork-outline" ${i.locked ? 'disabled' : ''}>${i.artOutline ? 'Adjust outline' : 'Add silhouette outline'}</button>${i.artOutline ? `<button class="wide" data-action="remove-outline" ${i.locked ? 'disabled' : ''}>Remove outline</button>` : ''}</div></section>` : ''}${i.kind === 'group' && !i.artOutline ? `<section class="folder purple"><h2>Group contents</h2><div class="folder-body"><button class="wide primary" data-action="edit-group" ${i.locked ? 'disabled' : ''}>Edit group</button><p class="hint">Edit individual text and shapes while keeping this decal together.</p></div></section>` : ''}${i.kind === 'image' ? `<section class="folder blue"><h2>Image preparation</h2><div class="folder-body"><button class="wide" data-action="prepare-image" ${i.locked ? 'disabled' : ''}>${i.imageSource ? 'Adjust crop & background' : 'Crop & remove background'}</button><p class="hint">${i.imageSource ? 'Original retained. Cropping keeps the printed artwork scale.' : 'Crop empty borders and remove plain backgrounds before tracing.'}</p>${i.imageSource ? `<button class="wide" data-action="restore-prepared" ${i.locked ? 'disabled' : ''}>Restore original image</button>` : ''}</div></section>` : ''}${i.kind === 'image' || i.traceSource ? `<section class="folder teal"><h2>Image tracing</h2><div class="folder-body"><button class="wide primary" data-action="trace" ${i.locked ? 'disabled' : ''}>${i.traceSource ? 'Refine traced vector' : 'Trace image to vector'}</button><p class="hint">${i.traceSource ? 'Replace colours, remove shapes and compare details. Original retained.' : 'Turn logos and flat-colour images into scalable SVG paths. Review before applying.'}</p>${i.traceSource ? '<div class="row"><button data-action="restore-image">Restore image</button><button data-action="export-svg">Export SVG</button></div>' : ''}</div></section>` : ''}<details class="folder purple" ${i.kind === 'text' ? 'open' : ''}><summary>Text & appearance</summary><div class="folder-body">${i.kind === 'text' ? `<div class="field"><label>Text / number</label><input id="text-value" value="${E(i.text)}" maxlength="500"></div><div class="field"><label>Typeface</label><select id="font-select">${['Arial', 'Georgia', 'Verdana', 'Courier New', ...activeFonts().map(f => f.family)].map(f => `<option value="${E(f)}" ${f === i.font ? 'selected' : ''}>${E(activeFonts().find(x => x.family === f)?.name || f)}</option>`).join('')}</select><button class="wide installed-fonts-button" data-action="installed-fonts">Choose installed font…</button></div><div class="text-toolbar"><button data-action="bold" class="${i.bold ? 'active' : ''}"><b>B</b></button><button data-action="italic" class="${i.italic ? 'active' : ''}"><i>I</i></button><button data-action="font">Import font</button></div>${prop('Letter spacing', 'spacing', i.spacing || 0, -10, 50, 0.5)}${prop('Text bend (°)', 'curve', i.curve || 0, -300, 300, 5)}<p class="hint">Positive: arch up · Negative: curve down · 0: straight. Bending keeps letter size and centre; the overall dimensions change.</p>` : ''}${canPaint ? `<div class="fields2" style="margin-top:10px"><div class="field"><label>Fill colour</label><input type="color" id="fill" value="${i.fill === 'none' ? '#ffffff' : i.fill}"></div>${canOutline ? `<div class="field"><label>Outline colour</label><input type="color" id="stroke" value="${i.stroke}"></div>` : ''}</div><label class="check"><input id="no-fill" type="checkbox" ${i.fill === 'none' ? 'checked' : ''}>Transparent fill</label>${canOutline ? prop('Outline thickness (mm)', 'strokeWidth', i.strokeWidth, 0, 50) : prop(i.kind === 'stripe' ? 'Overall stripe thickness (mm)' : 'Line thickness (mm)', 'thickness', i.h, 0.1, 1000)}${i.kind === 'stripe' ? '<p class="hint">Total height of both stripes and their gap. Length stays unchanged.</p>' : ''}${i.kind === 'rect' ? prop('Corner radius (mm)', 'radius', i.radius || 0, 0, 500) : ''}${i.kind === 'stripe' ? `<div class="field"><label>Second stripe colour</label><input id="fill2" type="color" value="${i.fill2 || '#245cc3'}"></div>` : ''}` : '<p class="hint">Original artwork is preserved. Resize, rotate or group it with new text and shapes.</p>'}<div class="field"><label for="prop-opacity">Opacity</label><div class="opacity-control"><input id="opacity-range" type="range" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}" aria-label="Opacity slider"><div class="unit-input"><input id="prop-opacity" type="number" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}"><span>%</span></div></div></div><div class="field"><label>Ink treatment</label><select id="ink"><option value="colour">Colour artwork</option><option value="colour-white">Colour + white backing</option><option value="white-only">White ink only</option></select></div><div class="field"><label for="cut-override">Cut line</label><select id="cut-override"><option value="">Sheet setting (${E({ shape: 'follow shape', rect: 'rectangle', none: 'no cut line' }[DM.cutSettings(project.cut).mode])})</option><option value="shape">Follow the decal shape</option><option value="rect">Rectangle</option><option value="none">No cut line</option></select></div><button class="wide danger" data-action="delete">Delete from sheet</button></div></details>`;
+    `<div class="ins-head"><div class="ins-thumb">${thumb}</div><div class="grow"><input class="inspector-name" id="decal-name" value="${E(i.name)}" aria-label="Decal name"><div class="ins-badges"><span class="artwork-badge" data-artwork-type="${E(artworkType)}">${E(artworkType)}</span><small class="hint">${E(quality)}${i.flipX || i.flipY ? ' · Mirrored' : ''}${i.locked ? ' · Locked' : ''}</small></div></div></div>` +
+    `<section class="ins-sec"><h3>Size &amp; place <small>mm</small></h3><div class="ins-wh">${prop('Width', 'w', i.w, 0.1, 1000)}<label class="ins-link" title="Keep proportions"><input id="aspect-lock" type="checkbox" ${settings.aspectLock !== false ? 'checked' : ''} aria-label="Keep proportions">${icon('link')}</label>${prop('Height', 'h', i.h, 0.1, 1000)}</div><div class="fields3">${prop('X', 'x', i.x)}${prop('Y', 'y', i.y)}${prop('Rotate (°)', 'rotation', i.rotation, -3600, 3600, 1)}</div></section>` +
+    (i.kind === 'text'
+      ? `<section class="ins-sec"><h3>Text</h3><div class="field"><label for="text-value">Text / number</label><input id="text-value" value="${E(i.text)}" maxlength="500"></div><div class="field"><label for="font-select">Typeface</label><select id="font-select">${fonts.map(f => `<option value="${E(f)}" ${f === i.font ? 'selected' : ''}>${E(activeFonts().find(x => x.family === f)?.name || f)}</option>`).join('')}</select></div><div class="text-toolbar"><button data-action="bold" class="${i.bold ? 'active' : ''}" title="Bold"><b>B</b></button><button data-action="italic" class="${i.italic ? 'active' : ''}" title="Italic"><i>I</i></button><button class="installed-fonts-button" data-action="installed-fonts">Installed font…</button><button data-action="font">Import font</button></div><div class="fields2">${prop('Letter spacing', 'spacing', i.spacing || 0, -10, 50, 0.5)}${prop('Text bend (°)', 'curve', i.curve || 0, -300, 300, 5)}</div><p class="hint">Bend: positive arches up, negative curves down. Letter size and centre stay; the overall size changes.</p></section>`
+      : '') +
+    `<section class="ins-sec"><h3>Colour</h3>${
+      canPaint
+        ? `<div class="fields2"><div class="field"><label for="fill">Fill colour</label><input type="color" id="fill" value="${i.fill === 'none' ? '#ffffff' : i.fill}"></div>${canOutline ? `<div class="field"><label for="stroke">Outline colour</label><input type="color" id="stroke" value="${i.stroke}"></div>` : ''}</div><label class="check"><input id="no-fill" type="checkbox" ${i.fill === 'none' ? 'checked' : ''}>Transparent fill</label><div class="fields2">${canOutline ? prop('Outline (mm)', 'strokeWidth', i.strokeWidth, 0, 50) : prop(i.kind === 'stripe' ? 'Overall stripe thickness (mm)' : 'Line thickness (mm)', 'thickness', i.h, 0.1, 1000)}${i.kind === 'rect' ? prop('Corner radius (mm)', 'radius', i.radius || 0, 0, 500) : ''}</div>${i.kind === 'stripe' ? `<p class="hint">Total height of both stripes and their gap. Length stays unchanged.</p><div class="field"><label for="fill2">Second stripe colour</label><input id="fill2" type="color" value="${i.fill2 || '#245cc3'}"></div>` : ''}`
+        : '<p class="hint">The original artwork keeps its colours. Use Recolour to swap them.</p>'
+    }<div class="field"><label for="prop-opacity">Opacity</label><div class="opacity-control"><input id="opacity-range" type="range" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}" aria-label="Opacity slider"><div class="unit-input"><input id="prop-opacity" type="number" min="0" max="100" step="1" value="${Math.round(i.opacity * 100)}"><span>%</span></div></div></div></section>` +
+    `<section class="ins-sec"><h3>On the paper</h3><div class="field"><label for="ink">Ink</label><select id="ink"><option value="colour">Colour artwork</option><option value="colour-white">Colour + white backing</option><option value="white-only">White ink only</option></select></div><div class="field"><label for="cut-override">Cut line</label><select id="cut-override"><option value="">Sheet setting (${E({ shape: 'follow shape', rect: 'rectangle', none: 'no cut line' }[DM.cutSettings(project.cut).mode])})</option><option value="shape">Follow the decal shape</option><option value="rect">Rectangle</option><option value="none">No cut line</option></select></div></section>` +
+    `<section class="ins-sec"><h3>Tools</h3><div class="ins-tiles">${tools.join('')}</div></section>` +
+    `<div class="ins-foot"><button data-action="backward" title="Send backward">${icon('dn')}Back</button><button data-action="forward" title="Bring forward">${icon('up')}Forward</button><button data-action="lock">${icon(i.locked ? 'unlock' : 'lock')}${i.locked ? 'Unlock' : 'Lock'}</button><span class="spacer"></span><button class="danger icon-only" data-action="delete" title="Delete from sheet" aria-label="Delete from sheet">${icon('trash')}</button></div>`;
   const change = fn => {
     try {
       mutate(() => {
@@ -717,23 +884,31 @@ function remeasureText(i) {
   i.w = (i.h * b.w) / b.h;
 }
 function renderLayers() {
-  $('#layers-count').textContent = project.items.filter(i => i.page === page).length;
+  const onPage = project.items.filter(i => i.page === page);
+  $('#layers-count').textContent = onPage.length;
+  if ($('[data-left-pane="layers"]').hidden) return;
+  $('#layers-page').textContent = `Page ${page + 1} · top to bottom`;
   $('#layers').innerHTML =
-    project.items
-      .filter(i => i.page === page)
-      .slice()
+    onPage
+      .map((i, n) => {
+        const b = DM.bounds(i),
+          pad = Math.max(b.w, b.h) * 0.06;
+        return `<div class="layer-row ${selected.has(i.id) ? 'active' : ''} ${i.locked ? 'locked' : ''}"><button class="layer-main" data-layer="${E(i.id)}" title="${E(i.name)} · Shift-click to add to the selection"><span class="layer-thumb"><svg viewBox="${b.x - pad} ${b.y - pad} ${b.w + 2 * pad} ${b.h + 2 * pad}"><g transform="${itemTransform(i)}" opacity="${i.opacity}">${Art.body(i, 'layer' + n)}</g></svg></span><span class="layer-name">${E(i.name)}<small>${E(DM.artworkType(i))} · ${fmt(i.w)} × ${fmt(i.h)} mm</small></span></button><button class="ghost icon-only layer-lock" data-layer-lock="${E(i.id)}" title="${i.locked ? 'Unlock' : 'Lock'}" aria-label="${i.locked ? 'Unlock' : 'Lock'} ${E(i.name)}" aria-pressed="${i.locked}">${icon(i.locked ? 'lock' : 'unlock')}</button></div>`;
+      })
       .reverse()
-      .map(
-        i =>
-          `<button class="${selected.has(i.id) ? 'active' : ''}" data-layer="${E(i.id)}">${i.locked ? '▣' : '◇'} ${E(i.name)}</button>`
-      )
-      .join('') || '<span class="hint">Your artwork layers appear here.</span>';
-  for (const b of $$('#layers button'))
+      .join('') || '<p class="hint">Decals on this page appear here, the top one first.</p>';
+  for (const b of $$('#layers [data-layer]'))
     b.onclick = e => {
       if (e.shiftKey || e.ctrlKey || e.metaKey) {
         selected.has(b.dataset.layer) ? selected.delete(b.dataset.layer) : selected.add(b.dataset.layer);
       } else selected = new Set([b.dataset.layer]);
+      revealDecal();
       render();
+    };
+  for (const b of $$('#layers [data-layer-lock]'))
+    b.onclick = () => {
+      const i = project.items.find(x => x.id === b.dataset.layerLock);
+      if (i) mutate(() => (i.locked = !i.locked));
     };
 }
 function carPosition(i, view, list = items()) {
@@ -770,7 +945,13 @@ function renderCar() {
   $('#car-top').classList.toggle('active', project.preview.view === 'top');
   $('#car-stage').innerHTML = carMarkup();
   $('#car-body').value = carBody();
-  $('#car-dimension').textContent = `Model length: ${Number(project.preview.length.toFixed(1))} mm`;
+  const one = current();
+  $('#car-dimension').textContent = one
+    ? `${fmt(one.w)} / ${fmt(project.preview.length)} mm`
+    : `${fmt(project.preview.length)} mm`;
+  $('#car-dimension').title = one
+    ? `${one.name} is ${fmt(one.w)} mm wide; the car is ${fmt(project.preview.length)} mm long`
+    : `The car is ${fmt(project.preview.length)} mm long`;
   bindCar($('#car-stage'));
   const expanded = $('#expanded-car');
   if (expanded) {
@@ -964,6 +1145,7 @@ sheetSurface.onpointerdown = e => {
       return;
     }
     if (!selected.has(id)) selected = new Set([id]);
+    revealDecal();
     if (i.locked) {
       renderSelection();
       return;
@@ -1079,6 +1261,7 @@ function place(i, point) {
   Object.assign(i, DM.fitPlacement(i, project));
   project.items.push(i);
   selected = new Set([i.id]);
+  revealDecal();
 }
 function setSidebarView(view) {
   settings.sidebarLibraryView = view;
@@ -1617,7 +1800,11 @@ function sharingDialog() {
 const HELP_TOPICS = [
   [
     'Getting started',
-    '<p>The usual workflow: <strong>import or create</strong> artwork, set its <strong>printed size</strong> in millimetres, check it on the <strong>car preview</strong>, <strong>arrange</strong> the sheet, <strong>save</strong> it, print a plain-paper <strong>sizing proof</strong>, then export the final PDF for your decal paper.</p><p>Everything is saved locally and automatically. Save sheet (Ctrl+S) also keeps a copy in Sheet Library.</p>'
+    '<p>The usual workflow: <strong>import or create</strong> artwork, set its <strong>printed size</strong> in millimetres, check it in the <strong>Fit check</strong>, <strong>arrange</strong> the sheet, print a plain-paper <strong>sizing proof</strong>, then <strong>Export PDF</strong> for your decal paper.</p><p>Everything is saved locally and automatically. <strong>Save to Sheets</strong> (Ctrl+S) also keeps a copy in your Sheet Library.</p>'
+  ],
+  [
+    'The editor',
+    '<p>The <strong>top bar</strong> shows the sheet’s name with its saved state and paper; the arrow next to it renames, saves, starts a new sheet or opens a saved one. <strong>Export PDF</strong> is on the right; its arrow lists the cutter file, the sizing proof, sharing the sheet and the print notes.</p><p>The <strong>tools</strong> are down the left edge: Select, Image, Text, Number, Shape, Path, Merge, Slice and Arrange. Snap at the bottom rounds moves to whole millimetres.</p><p>The <strong>left panel</strong> has three tabs: your decal <strong>Library</strong>, the <strong>Layers</strong> of this page (top first, with a lock for each) and the <strong>Pages</strong>. The <strong>right panel</strong> has <strong>Decal</strong> for the selection and <strong>Sheet &amp; paper</strong> for paper size, scale, margins, white ink and cut lines.</p><p>Select decals and a small bar appears above them: size, Duplicate, Other side, Repeat, Arrange…, Group and Delete. The <strong>Fit check</strong> in the corner shows the selection on the car; hide it with its arrow.</p><p><strong>Ctrl+K</strong> finds any tool, decal on the sheet or setting by name.</p>'
   ],
   [
     'Import & prepare artwork',
@@ -1629,19 +1816,19 @@ const HELP_TOPICS = [
   ],
   [
     'Size & car preview',
-    '<p>Width and height are the <strong>printed dimensions</strong> in millimetres. Keep proportions resizes both together. Scale Conversion changes the model scale for the sheet or selected artwork.</p><p>The <strong>Car preview</strong> at the top of the right panel shows every selected decal at its printed size. Drag a decal over the car to test placement without moving it on the sheet, or enlarge the preview to adjust its size. Pick a <strong>Car</strong> — modern GT, classic endurance GT, touring saloon, rally hatchback or Group C prototype — and the model is sized from the real car’s length at your scale. Use Reference size to enter your model’s measurements or import your own side and top pictures. The car is illustrative, not a wrap calculation: confirm the fit with a paper proof.</p>'
+    '<p>Width and height are the <strong>printed dimensions</strong> in millimetres. The link between them keeps proportions. <strong>Model scale</strong> under Sheet &amp; paper changes the scale for the sheet or selected artwork.</p><p>The <strong>Fit check</strong> in the corner of the sheet shows every selected decal on the car at its printed size. Drag a decal over the car to test placement without moving it on the sheet, or enlarge the preview to adjust its size. Pick a <strong>Car</strong> — modern GT, classic endurance GT, touring saloon, rally hatchback or Group C prototype — and the model is sized from the real car’s length at your scale. Use the gear in the Fit check to enter your model’s measurements or import your own side and top pictures. The car is illustrative, not a wrap calculation: confirm the fit with a paper proof.</p>'
   ],
   [
     'Arrange the sheet',
-    '<p>Use the <strong>Sheet size</strong> picker for A4, A5, US Letter, Photo 4×6 in or a <strong>custom size</strong> (50–600 mm) for odd decal paper, and Portrait ↔ for orientation. All pages share that size; changing paper never rescales decals.</p><p>Drag across empty canvas to select decals; Ctrl/Shift-click toggles individual decals. Drag the selection to move it together. <strong>Arrange…</strong> creates grids of copies, equal gaps, alignment, mirroring and moves to another page. <strong>Auto-arrange</strong> makes room while preserving sizes. Group a finished design and Lock its placement.</p><p><strong>Add mirrored copy (other side)</strong> makes a horizontally mirrored copy for directional graphics such as arrows, stripes and slanted shapes; editable text stays readable, but lettering inside imported logos is mirrored too. <strong>Recolour…</strong> lists every colour in the selected decals, including inside SVG artwork, and replaces the ones you change — handy for team variants.</p><p>Margins, cutting gap, decal material and white ink are under <strong>Paper &amp; white ink</strong>. Print checks flag artwork outside the margins, too little cutting space and low-resolution images.</p>'
+    '<p>Under <strong>Sheet &amp; paper</strong>, choose A4, A5, US Letter, Photo 4×6 in or a <strong>custom size</strong> (50–600 mm) for odd decal paper, and the orientation. All pages share that size; changing paper never rescales decals.</p><p>Drag across empty canvas to select decals; Ctrl/Shift-click toggles individual decals. Drag the selection to move it together. In the bar above the selection, <strong>Repeat</strong> makes rows and columns of copies and <strong>Arrange…</strong> aligns, spaces, mirrors and moves to another page. <strong>Arrange</strong> in the tools packs the whole sheet while keeping sizes. Group a finished design and Lock its placement.</p><p><strong>Add mirrored copy (other side)</strong> makes a horizontally mirrored copy for directional graphics such as arrows, stripes and slanted shapes; editable text stays readable, but lettering inside imported logos is mirrored too. <strong>Recolour…</strong> lists every colour in the selected decals, including inside SVG artwork, and replaces the ones you change — handy for team variants.</p><p>Margins, cutting gap, decal paper and white ink are under <strong>Sheet &amp; paper</strong>. The print notes (status bar and Export menu) flag artwork outside the margins, too little cutting space and low-resolution images.</p>'
   ],
   [
     'Slice area',
-    '<p>Use <strong>Slice area…</strong> above the sheet to draw a rectangle or enter its position and size in millimetres. Clip at its boundary or expand to include whole decals.</p><p>Save a transparent slice to your library, print only that area on the original paper size, or export a cropped PDF. The original sheet stays unchanged. Saved slices move and resize as one decal; edit the original artwork before making a new slice.</p>'
+    '<p>Use <strong>Slice</strong> in the tools to draw a rectangle or enter its position and size in millimetres. Clip at its boundary or expand to include whole decals.</p><p>Save a transparent slice to your library, print only that area on the original paper size, or export a cropped PDF. The original sheet stays unchanged. Saved slices move and resize as one decal; edit the original artwork before making a new slice.</p>'
   ],
   [
     'Libraries & sharing',
-    '<p><strong>Save decal to library</strong> keeps a reusable design with a name and tags. Copies on sheets stay independent. Share saved decals as an .sfdecal pack with Export Decals.</p><p><strong>Sheet Library</strong> holds complete saved sheets. Add Sheet saves the outgoing work and starts another. Export selected sheets as one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent copies while your current work stays open. Versions and Recover a sheet open earlier work as separate copies.</p><p>Back up everything with <strong>App Settings → Export Complete Backup</strong>.</p>'
+    '<p><strong>Save decal to library</strong> keeps a reusable design with a name and tags. Copies on sheets stay independent. Share saved decals as an .sfdecal pack with Export Decals.</p><p><strong>Sheet Library</strong> holds complete saved sheets. New sheet (the arrow next to the sheet name) saves the outgoing work and starts another. Export selected sheets as one editable .sfsheet; Choose pages… includes only the pages you want. Import Sheet(s) adds independent copies while your current work stays open. Versions and Recover a sheet open earlier work as separate copies.</p><p>Back up everything with <strong>App Settings → Export Complete Backup</strong>.</p>'
   ],
   [
     'Print & white ink',
@@ -1649,7 +1836,7 @@ const HELP_TOPICS = [
   ],
   [
     'Print & cut',
-    '<p>Under <strong>Print &amp; cut</strong> in the right panel, choose whether cut lines <strong>follow the decal shape</strong> or form a <strong>rectangle</strong>, and how far they sit around the artwork (offset, default 1 mm). Nearby parts such as letters share one cut line; holes are not cut. Dashed lines on the sheet show the result. Override a single decal with <strong>Cut line</strong> in its Text &amp; appearance settings.</p><p><strong>Export for cutter…</strong> saves a folder for Silhouette Studio (including the free Basic edition), Cricut Design Space or Brother ScanNCut, with an INSTRUCTIONS.txt. Each decal becomes a 300 DPI PNG with a white border along its cut line: inkjets print white as no ink, while the cutter software traces the border. Sheet files keep the exact layout: a page PNG with DXF cut lines for Silhouette, or an SVG with print and cut layers. The cutter software adds its own registration marks.</p><p>For cutting <strong>by hand</strong> or scanning with a ScanNCut, enable <strong>Print cut lines in the PDF</strong>. Always test on plain paper first.</p>'
+    '<p>Under <strong>Sheet &amp; paper → Cut lines</strong>, choose whether cut lines <strong>follow the decal shape</strong> or form a <strong>rectangle</strong>, and how far they sit around the artwork (offset, default 1 mm). Nearby parts such as letters share one cut line; holes are not cut. Dashed lines on the sheet show the result. Override a single decal with <strong>Cut line</strong> under On the paper in its Decal tab.</p><p><strong>Export for cutter…</strong> saves a folder for Silhouette Studio (including the free Basic edition), Cricut Design Space or Brother ScanNCut, with an INSTRUCTIONS.txt. Each decal becomes a 300 DPI PNG with a white border along its cut line: inkjets print white as no ink, while the cutter software traces the border. Sheet files keep the exact layout: a page PNG with DXF cut lines for Silhouette, or an SVG with print and cut layers. The cutter software adds its own registration marks.</p><p>For cutting <strong>by hand</strong> or scanning with a ScanNCut, enable <strong>Print cut lines in the PDF</strong>. Always test on plain paper first.</p>'
   ],
   [
     'Updates',
@@ -1657,7 +1844,7 @@ const HELP_TOPICS = [
   ],
   [
     'Keyboard shortcuts',
-    '<dl class="help-keys"><dt>Ctrl+C / Ctrl+X / Ctrl+V</dt><dd>Copy, cut and paste decals (also between sheets); paste images, screenshots or SVG code</dd><dt>Ctrl+D</dt><dd>Duplicate</dd><dt>Ctrl+G</dt><dd>Group</dd><dt>Ctrl+A</dt><dd>Select everything on the page</dd><dt>Delete</dt><dd>Remove the selection</dd><dt>Arrow keys</dt><dd>Move 1 mm · with Shift 0.1 mm</dd><dt>Ctrl+Z / Ctrl+Y</dt><dd>Undo and redo, up to 200 steps (Ctrl+Shift+Z also redoes)</dd><dt>Ctrl+S</dt><dd>Save sheet to Sheet Library</dd><dt>Ctrl+mousewheel</dt><dd>Zoom the sheet</dd><dt>Alt-drag</dt><dd>Move without snapping</dd><dt>Escape</dt><dd>Clear the selection or cancel a drag</dd></dl><p class="hint">On a Mac, use Cmd instead of Ctrl.</p>'
+    '<dl class="help-keys"><dt>Ctrl+C / Ctrl+X / Ctrl+V</dt><dd>Copy, cut and paste decals (also between sheets); paste images, screenshots or SVG code</dd><dt>Ctrl+D</dt><dd>Duplicate</dd><dt>Ctrl+G</dt><dd>Group</dd><dt>Ctrl+A</dt><dd>Select everything on the page</dd><dt>Delete</dt><dd>Remove the selection</dd><dt>Arrow keys</dt><dd>Move 1 mm · with Shift 0.1 mm</dd><dt>Ctrl+Z / Ctrl+Y</dt><dd>Undo and redo, up to 200 steps (Ctrl+Shift+Z also redoes)</dd><dt>Ctrl+S</dt><dd>Save the sheet to Sheets</dd><dt>Ctrl+K</dt><dd>Find a tool, decal or setting</dd><dt>Ctrl+P</dt><dd>Export PDF</dd><dt>V · I · T · N · S · P · M</dt><dd>Select, Image, Text, Number, Shape, Path, Merge</dd><dt>Ctrl+mousewheel</dt><dd>Zoom the sheet</dd><dt>Alt-drag</dt><dd>Move without snapping</dd><dt>Escape</dt><dd>Clear the selection or cancel a drag</dd></dl><p class="hint">On a Mac, use Cmd instead of Ctrl.</p>'
   ]
 ];
 function helpDialog() {
@@ -2309,7 +2496,7 @@ const actions = {
     if (project.items.length) {
       confirmDialog(
         'Open example sheet?',
-        'Your current sheet is saved in Sheet Library first. Your library is kept and starter decals are added.',
+        'Your current sheet is saved in Sheets first. Your library is kept and starter decals are added.',
         open,
         'Open example'
       );
@@ -2535,9 +2722,47 @@ const actions = {
     renderCar();
   },
   'car-settings': carSettings,
-  'expand-car': openCarPreview
+  'expand-car': openCarPreview,
+  'fitcheck-toggle': () => {
+    // In a narrow canvas the fit check is only its title: it opens the large car preview instead.
+    if ($('.editor-panel').clientWidth <= 720) return openCarPreview();
+    settings.fitCheckOpen = settings.fitCheckOpen === false;
+    revision++;
+    scheduleSave();
+    renderTabs();
+    if (settings.fitCheckOpen) renderCar();
+  },
+  'zoom-actual': () => {
+    zoom = MM_PX;
+    renderPaper();
+  },
+  'select-page': () => {
+    selected = new Set(project.items.filter(i => i.page === page).map(i => i.id));
+    render();
+  },
+  finder: () => Finder.open()
 };
+function closeMenus(except) {
+  for (const m of $$('.wb-menu'))
+    if (m !== except && !m.hidden) {
+      m.hidden = true;
+      $(`[data-menu="${m.id}"]`)?.setAttribute('aria-expanded', 'false');
+    }
+}
 document.addEventListener('click', e => {
+  const opener = e.target.closest('[data-menu]');
+  if (opener) {
+    const menu = $('#' + opener.dataset.menu);
+    closeMenus(menu);
+    menu.hidden = !menu.hidden;
+    opener.setAttribute('aria-expanded', String(!menu.hidden));
+    if (!menu.hidden) {
+      if (menu.id === 'print-menu') renderChecks();
+      menu.querySelector('button')?.focus();
+    }
+    return;
+  }
+  if (!e.target.closest('.wb-menu') || e.target.closest('.wb-menu [data-action]')) closeMenus();
   if (projectTask) return;
   const b = e.target.closest('[data-action]');
   if (b && !b.disabled) {
@@ -2546,6 +2771,13 @@ document.addEventListener('click', e => {
       .then(() => actions[b.dataset.action]?.())
       .catch(fail);
   }
+  const shortcut = e.target.closest('[data-alias]');
+  if (shortcut)
+    Promise.resolve()
+      .then(() =>
+        shortcut.dataset.alias === 'text' ? addShape('text') : actions[shortcut.dataset.alias]?.()
+      )
+      .catch(fail);
   const create = e.target.closest('[data-create]');
   if (create)
     try {
@@ -2555,6 +2787,129 @@ document.addEventListener('click', e => {
     }
 });
 $('#library-search').oninput = () => renderLibrary();
+// Find (Ctrl+K): every tool, every decal on this sheet and the main settings in one list.
+const Finder = (() => {
+  const box = $('#finder'),
+    input = $('#finder-input'),
+    out = $('#finder-results');
+  let hits = [],
+    active = 0;
+  const TOOLS = [
+    ['import', 'Import an image', 'Tool · PNG, JPG, SVG, EPS or PDF', 'image picture logo photo'],
+    ['text', 'Add text', 'Tool · T', 'letters word name'],
+    ['number-template', 'Racing numbers', 'Tool · N', 'number plate roundel digits'],
+    ['shapes', 'Shapes & patterns', 'Tool · S', 'rectangle circle stripe checkerboard pattern'],
+    ['draw-path', 'Path tool', 'Tool · P', 'pen draw bezier curve freehand'],
+    ['combine-shapes', 'Merge & cut shapes', 'Tool · M', 'combine boolean subtract union'],
+    ['slice', 'Slice area', 'Tool · save or print a part of the page', 'crop region'],
+    ['arrange', 'Auto-arrange the sheet', 'Tool · pack every decal', 'layout pack tidy'],
+    ['arrange-selection', 'Align & arrange selection…', 'Selection', 'align distribute mirror'],
+    ['grid-copies', 'Repeat in rows & columns…', 'Selection', 'copies grid duplicate'],
+    ['mirror-pair', 'Mirrored copy for the other side', 'Selection', 'flip mirror'],
+    ['recolour', 'Recolour…', 'Selection', 'colour color swap'],
+    ['save-decal', 'Save to Decal Library', 'Selection', 'library keep'],
+    ['pdf', 'Export PDF', 'Print · Ctrl+P', 'print export'],
+    ['cutter-export', 'Export for cutter…', 'Print', 'scanncut cricut silhouette svg dxf'],
+    ['proof', 'Sizing proof', 'Print', 'test print ruler'],
+    ['checks', 'Print checks', 'Print', 'warnings problems'],
+    ['save-sheet', 'Save to Sheets', 'Sheet · Ctrl+S', 'save keep'],
+    ['export-sheet', 'Share this sheet…', 'Sheet', 'sfsheet send'],
+    ['new', 'New sheet', 'Sheet', 'start blank'],
+    ['projects', 'Open a saved sheet…', 'Sheet', 'sheets library'],
+    ['rename', 'Rename sheet…', 'Sheet', 'name title'],
+    ['add-page', 'Add page', 'Sheet', 'page'],
+    ['scale', 'Change model scale…', 'Sheet', '1:32 1:24 1:43 scale conversion'],
+    ['orientation', 'Switch portrait / landscape', 'Sheet', 'orientation rotate page'],
+    [
+      'sheet-tab',
+      'Paper, white ink & cut lines',
+      'Sheet & paper tab',
+      'margins gap paper size white ink spot cut line'
+    ],
+    ['car-settings', 'Car reference size…', 'Fit check', 'car model length photo'],
+    ['expand-car', 'Enlarge car preview', 'Fit check', 'car preview'],
+    ['library', 'Decal Library', 'Window', 'decals collection'],
+    ['sharing', 'Import & Export', 'Window', 'backup share'],
+    ['settings', 'App settings', 'Window', 'preferences theme updates storage'],
+    ['help', 'Help', 'Window', 'guide how'],
+    ['import-pack', 'Import decals', 'Library', 'sfdecal'],
+    ['export-pack', 'Export decals', 'Library', 'sfdecal']
+  ];
+  function run(hit) {
+    close();
+    if (hit.id) {
+      page = project.items.find(i => i.id === hit.id)?.page ?? page;
+      selected = new Set([hit.id]);
+      render();
+      return;
+    }
+    if (hit.action === 'text') return addShape('text');
+    if (hit.action === 'sheet-tab') return showTab('right', 'sheet');
+    Promise.resolve()
+      .then(() => actions[hit.action]())
+      .catch(fail);
+  }
+  function list() {
+    const q = input.value.trim().toLowerCase(),
+      words = q.split(/\s+/).filter(Boolean),
+      match = text => words.every(w => text.toLowerCase().includes(w));
+    const decals = project.items
+      .filter(i => words.length && match(i.name + ' ' + i.kind))
+      .slice(0, 6)
+      .map(i => ({ id: i.id, label: i.name, note: `On the sheet · page ${i.page + 1}` }));
+    const tools = TOOLS.filter(([action, label, note, more]) =>
+      match(`${label} ${note} ${more} ${action}`)
+    ).map(([action, label, note]) => ({ action, label, note }));
+    hits = [...decals, ...tools].slice(0, 12);
+    active = Math.min(active, Math.max(0, hits.length - 1));
+    out.innerHTML =
+      hits
+        .map(
+          (h, n) =>
+            `<button role="option" data-hit="${n}" aria-selected="${n === active}">${icon(h.id ? 'layers' : h.note.startsWith('Tool') ? 'pointer' : h.note.startsWith('Print') ? 'pdf' : h.note.startsWith('Sheet') ? 'page' : h.note.startsWith('Window') ? 'expand' : 'star')}<span>${E(h.label)}</span><small>${E(h.note)}</small></button>`
+        )
+        .join('') || '<p class="hint">Nothing found. Try another word.</p>';
+    for (const b of out.querySelectorAll('[data-hit]')) b.onclick = () => run(hits[+b.dataset.hit]);
+  }
+  function open() {
+    try {
+      CanvasTools.resolve();
+    } catch (e) {
+      fail(e);
+      return;
+    }
+    closeMenus();
+    box.hidden = false;
+    input.value = '';
+    active = 0;
+    list();
+    input.focus();
+  }
+  function close() {
+    box.hidden = true;
+  }
+  input.oninput = () => {
+    active = 0;
+    list();
+  };
+  input.onkeydown = e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      active = (active + (e.key === 'ArrowDown' ? 1 : -1) + hits.length) % Math.max(1, hits.length);
+      list();
+      out.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+    }
+    if (e.key === 'Enter' && hits[active]) run(hits[active]);
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      close();
+    }
+  };
+  box.onpointerdown = e => {
+    if (e.target === box) close();
+  };
+  return { open, close };
+})();
 for (const b of $$('[data-filter]'))
   b.onclick = () => {
     filter = b.dataset.filter;
@@ -2581,7 +2936,7 @@ $('#car-body').onchange = async e => {
     );
     if (project.preview.side || project.preview.top)
       toast(
-        'Your own reference pictures are still shown. Choose Reference size → Use included car to see this car.'
+        'Your own reference pictures are still shown. Choose the gear in the Fit check → Use included car to see this car.'
       );
   } catch (err) {
     fail(err);
@@ -2594,7 +2949,7 @@ function customPaperDialog() {
   const current = project.customPage || { w: 210, h: 297 };
   showDialog(
     'Custom paper size',
-    'Enter the portrait width and height of your decal paper. Portrait ↔ switches orientation.',
+    'Enter the portrait width and height of your decal paper. Orientation is set separately.',
     `<div class="fields2"><div class="field"><label for="custom-w">Width (mm)</label><input id="custom-w" type="number" min="${DM.CUSTOM_PAGE.min}" max="${DM.CUSTOM_PAGE.max}" step="0.1" value="${current.w}"></div><div class="field"><label for="custom-h">Height (mm)</label><input id="custom-h" type="number" min="${DM.CUSTOM_PAGE.min}" max="${DM.CUSTOM_PAGE.max}" step="0.1" value="${current.h}"></div></div><p class="hint">Between ${DM.CUSTOM_PAGE.min} and ${DM.CUSTOM_PAGE.max} mm. Check that your printer supports this paper size and feeds it correctly.</p>`,
     '<button data-action="close">Cancel</button><button class="primary" id="custom-apply">Use this size</button>'
   );
@@ -2653,7 +3008,7 @@ for (const [id, key] of [
       render();
     }
   };
-// Print & cut panel: every change is one undoable sheet edit.
+// Cut lines (Sheet & paper tab): every change is one undoable sheet edit.
 for (const [id, key] of [
   ['cut-mode', 'mode'],
   ['cut-offset', 'offset'],
@@ -2742,6 +3097,11 @@ $('#car-file').onchange = async e => {
   }
 };
 document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.querySelector('dialog[open]')) {
+    e.preventDefault();
+    Finder.open();
+    return;
+  }
   if (CanvasTools.key(e)) return;
   if (projectTask) {
     e.preventDefault();
@@ -2756,9 +3116,32 @@ document.addEventListener('keydown', e => {
     }
     return;
   }
+  if (e.key === 'Escape' && $$('.wb-menu').some(m => !m.hidden)) {
+    closeMenus();
+    return;
+  }
+  if (!$('#finder').hidden) return;
   if (e.target.matches('input,textarea,select') || document.querySelector('dialog[open]')) return; // also the update window
   const ctrl = e.ctrlKey || e.metaKey;
   let action;
+  if (ctrl && e.key.toLowerCase() === 'k') action = 'finder';
+  if (ctrl && e.key.toLowerCase() === 'p') action = 'pdf';
+  const tool =
+    !ctrl && !e.altKey && !e.shiftKey && !CanvasTools.active && e.key.length === 1 ? e.key.toLowerCase() : '';
+  const TOOL_KEYS = {
+    v: 'select',
+    i: 'import',
+    n: 'number-template',
+    s: 'shapes',
+    p: 'draw-path',
+    m: 'combine-shapes'
+  };
+  if (TOOL_KEYS[tool]) action = TOOL_KEYS[tool];
+  if (tool === 't') {
+    e.preventDefault();
+    addShape('text');
+    return;
+  }
   if (ctrl && e.key.toLowerCase() === 'z') action = e.shiftKey ? 'redo' : 'undo';
   if (ctrl && e.key.toLowerCase() === 'y') action = 'redo';
   if (ctrl && e.key.toLowerCase() === 's') action = 'save-sheet';
@@ -2833,10 +3216,5 @@ window.Studio = {
     return exportPDF(false).catch(fail);
   }
 };
-$('#sidebar-library summary').addEventListener('click', () => {
-  settings.sidebarLibraryOpen = !$('#sidebar-library').open;
-  revision++;
-  scheduleSave();
-  setTimeout(() => renderLibrary(), 0);
-});
+window.addEventListener('resize', () => placeContextBar());
 start();

@@ -64,13 +64,14 @@ async function main() {
       2
     );
     assert.equal(await page.evaluate(() => JSON.stringify(Studio.project.items)), before);
-    await page.locator('#page-badge').click();
+    await page.locator('[data-right-tab="sheet"]').click();
+    await page.locator('#orientation').selectOption('landscape');
     assert.equal(await page.evaluate(() => Studio.project.orientation), 'landscape');
     assert.equal(await page.locator('#orientation').inputValue(), 'landscape');
     assert.equal(await page.evaluate(() => JSON.stringify(Studio.project.items)), before);
     await page.locator('#undo').click();
     assert.equal(await page.evaluate(() => Studio.project.orientation), 'portrait');
-    assert.match(await page.locator('#scale-badge').textContent(), /Scale Conversion · 1:32/);
+    assert.equal(await page.locator('#scale-badge').textContent(), '1:32');
     await page.locator('#scale-badge').click();
     await page.waitForSelector('#new-scale');
     await close();
@@ -102,9 +103,10 @@ async function main() {
       await page.evaluate(() => Studio.select([]));
       assert.equal(await page.locator('#library-grid').evaluate(e => e.scrollTop), 150);
     }
-    await page.locator('#sidebar-library summary').click();
+    // The left panel's tabs: Layers hides the library, Library shows it again.
+    await page.locator('[data-left-tab="layers"]').click();
     assert(!(await page.locator('#library-grid').isVisible()));
-    await page.locator('#sidebar-library summary').click();
+    await page.locator('[data-left-tab="library"]').click();
     assert(await page.locator('#library-grid').isVisible());
     for (const action of ['library', 'projects']) {
       await page.locator('nav [data-action="' + action + '"]').click();
@@ -315,14 +317,13 @@ async function main() {
       for (const width of [1100, 1400, 1600]) {
         await page.evaluate(t => setTheme(t), theme);
         await app.evaluate(({ BrowserWindow }, w) => BrowserWindow.getAllWindows()[0].setSize(w, 800), width);
-        const boxes = await page
-          .locator('.project-meta button,.project-meta select,.project-actions button')
-          .evaluateAll(els =>
-            els.map(e => {
-              const r = e.getBoundingClientRect();
-              return { x: r.x, y: r.y, right: r.right, bottom: r.bottom };
-            })
-          );
+        // Workbench top bar: its parts fit the window on one line and never overlap.
+        const boxes = await page.locator('.wb-top > :not(.spacer)').evaluateAll(els =>
+          els.map(e => {
+            const r = e.getBoundingClientRect();
+            return { x: r.x, y: r.y, right: r.right, bottom: r.bottom };
+          })
+        );
         for (const b of boxes) assert(b.x >= 0 && b.right <= width);
         for (let i = 0; i < boxes.length; i++)
           for (let j = i + 1; j < boxes.length; j++) {
@@ -332,24 +333,19 @@ async function main() {
               a.right <= b.x + 0.1 || b.right <= a.x + 0.1 || a.bottom <= b.y + 0.1 || b.bottom <= a.y + 0.1
             );
           }
-        // Pit Board: the small labels share a line above their controls, and the controls share a baseline.
+        for (const b of boxes)
+          assert(b.y >= 0 && b.bottom <= 56.5, 'Inside the top bar: ' + JSON.stringify(b));
+        // The sheet's name sits above its saved state and paper facts.
         const rect = s =>
           page.locator(s).evaluate(e => {
             const r = e.getBoundingClientRect();
             return { top: r.top, bottom: r.bottom };
           });
-        const nameLabel = await rect('.sheet-name-control>span'),
-          sizeLabel = await rect('.sheet-size-picker>span');
-        assert(Math.abs(nameLabel.top - sizeLabel.top) < 1, 'Sheet labels share a line');
-        const bottoms = [];
-        for (const s of ['#project-name', '#sheet-size-select', '#page-badge', '#scale-badge'])
-          bottoms.push((await rect(s)).bottom);
-        for (const bottom of bottoms)
-          assert(Math.abs(bottom - bottoms[0]) < 1.5, 'Sheet controls share a baseline: ' + bottoms);
-        assert(nameLabel.bottom <= (await rect('#project-name')).top + 0.5, 'Label above the sheet name');
+        assert((await rect('#project-name')).bottom <= (await rect('.wb-sheet-meta')).top + 0.5);
         await page.screenshot({ path: path.join(run, 'editor-' + theme + '-' + width + '.png') });
       }
-    await page.locator('.projectbar [data-action="export-sheet"]').click();
+    await page.locator('#print-menu-button').click();
+    await page.locator('#print-menu [data-action="export-sheet"]').click();
     await page.waitForSelector('#collection-confirm');
     await page.waitForFunction(
       () => document.querySelector('#collection-items')?.dataset.loading === 'false'
@@ -364,20 +360,21 @@ async function main() {
     );
     assert.equal(await page.locator('[data-select]:checked').count(), 1);
     await close();
-    await page.locator('.projectbar [data-action="new"]').click();
+    await page.locator('#sheet-menu-button').click();
+    await page.locator('#sheet-menu [data-action="new"]').click();
     await page.waitForFunction(() => !projectTask);
     assert.equal(await page.evaluate(() => Studio.project.name), 'Untitled sheet');
     assert(
       (await page.evaluate(() => desktop.listProjects())).entries.some(e => e.name === 'Club Racing Decals')
     );
-    await page.locator('#sidebar-library summary').click();
+    await page.locator('[data-left-tab="layers"]').click();
     await page.evaluate(() => Studio.flush());
     await app.close();
     app = await launch();
     page = await app.firstWindow();
     await attach();
-    assert(!(await page.locator('#library-grid').isVisible()));
-    await page.locator('#sidebar-library summary').click();
+    assert(!(await page.locator('#library-grid').isVisible()), 'the chosen tab is remembered');
+    await page.locator('[data-left-tab="library"]').click();
     assert.equal(await page.locator('#library-grid').getAttribute('data-library-view'), 'list');
     assert.deepEqual(errors, []);
     console.log(

@@ -60,7 +60,7 @@ async function main() {
     const decals = (await P()).items.length;
 
     // Preview: dashed cut lines appear for the page (shape mode, 1 mm by default).
-    await page.locator('#cut-folder summary').click();
+    await page.locator('[data-right-tab="sheet"]').click();
     assert.equal(await page.locator('#cut-mode').inputValue(), 'shape');
     assert.equal(await page.locator('#cut-offset').inputValue(), '1');
     await page.waitForSelector('#cut-preview-layer', { timeout: 20000 });
@@ -81,13 +81,14 @@ async function main() {
     assert.equal((await P()).cut.mode, 'shape');
     const first = (await P()).items[0].id;
     await page.evaluate(id => Studio.select([id]), first);
-    await page.locator('#inspector summary', { hasText: 'Text & appearance' }).click();
+    await page.locator('[data-right-tab="decal"]').click();
     await page.locator('#cut-override').selectOption('none');
     assert.equal((await P()).items.find(i => i.id === first).cutMode, 'none');
 
     // Cutter packages for each machine.
     const packages = {};
     for (const machine of ['silhouette', 'cricut', 'scanncut']) {
+      await page.locator('[data-right-tab="sheet"]').click();
       await page.locator('#cut-folder [data-action="cutter-export"]').click();
       await page.locator(`[name="cutter"][value="${machine}"]`).check();
       if (machine === 'silhouette') await shot('cutter-dialog');
@@ -131,6 +132,7 @@ async function main() {
     await fs.copyFile(silhouetteFiles[0], path.join(run, 'decal-sample.png'));
 
     // By hand: PDF with printed cut lines (setting switched on via the dialog).
+    await page.locator('[data-right-tab="sheet"]').click();
     await page.locator('#cut-folder [data-action="cutter-export"]').click();
     await page.locator('[name="cutter"][value="hand"]').check();
     await page.locator('#cutter-go').click();

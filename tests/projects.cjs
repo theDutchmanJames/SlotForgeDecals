@@ -170,7 +170,8 @@ async function main() {
     const beforeFailure = await state(),
       currentEntry = (await entries()).entries.find(e => e.id === beforeFailure.id),
       corrupt = require('./sqlite-fixture.cjs').corruptSheet(path.join(run, 'workspace'), currentEntry.file);
-    await page.locator('.projectbar [data-action="new"]').click();
+    await page.locator('#sheet-menu-button').click();
+    await page.locator('#sheet-menu [data-action="new"]').click();
     await page.waitForFunction(
       () => !projectTask && document.querySelector('#toast').classList.contains('error')
     );

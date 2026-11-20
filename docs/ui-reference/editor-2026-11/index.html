@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sheet editor redesign</title>
+<!-- Preview only: the example sheet from Decals, nothing is wired up. Two concepts for the main sheet editor. -->
+<style>
+@font-face{font-family:'SF Barlow Condensed';src:url('../../../renderer/fonts/barlowcondensed/BarlowCondensed-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic}
+@font-face{font-family:'SF Barlow Condensed';src:url('../../../renderer/fonts/barlowcondensed/BarlowCondensed-Bold.ttf') format('truetype');font-weight:700;font-style:normal}
+@font-face{font-family:'SF Roboto Mono';src:url('../../../renderer/fonts/robotomono/RobotoMono[wght].ttf') format('truetype');font-weight:100 700}
+:root{--bg:#14181e;--canvas:#101318;--panel:#1d232b;--raised:#252c36;--ink:#e8e6e1;--ink2:#c4c8ce;--muted:#98a0ab;--faint:#6b7380;--line:#323946;--line2:#272d37;--accent:#e5484d;--ok:#3ecf8e;--amber:#edbd6a;--blue:#79b5ed;--violet:#a88cda;--teal:#5cc8c0;
+  --cond:'SF Barlow Condensed','Bahnschrift',sans-serif;--mono:'SF Roboto Mono',Consolas,monospace;--ui:'Segoe UI',system-ui,sans-serif;color-scheme:dark}
+[data-theme=light]{--bg:#f1efea;--canvas:#e4e1da;--panel:#fff;--raised:#f3f1ec;--ink:#1d2229;--ink2:#3a414c;--muted:#656c76;--faint:#8a929d;--line:#d9d6cf;--line2:#e6e3dd;--accent:#c92424;--ok:#1f9a62;--amber:#a7741c;--blue:#236db4;--violet:#7950a6;--teal:#17807a;color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--ui);overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mono{font-family:var(--mono);font-weight:500}
+h1,h2,h3,h4{font-family:var(--cond);font-style:italic;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0}
+.eye{font:600 10px var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}.faint{color:var(--faint)}.grow{flex:1}
+.row{display:flex;align-items:center;gap:8px}
+/* preview switch */
+.switch{position:relative;z-index:50;display:flex;align-items:center;gap:14px;height:46px;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--line2)}
+.switch b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.switch p{margin:0 0 0 auto;font-size:12px;color:var(--faint)}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+.seg button{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:26px;padding:0 11px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.seg button.on{background:color-mix(in srgb,var(--ink) 12%,var(--panel));color:var(--ink);font-weight:600}
+.seg.sm button{height:22px;padding:0 8px;font-size:12px}
+.opt{position:absolute;inset:46px 0 0;display:flex;flex-direction:column}
+.opt[hidden]{display:none}
+/* shared bits */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 13px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+.btn.ghost:hover{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.btn.icon{width:32px;padding:0}
+.btn.sm{height:27px;padding:0 9px;font-size:12px}
+.btn.sm.icon{width:27px}
+.btn.danger{color:var(--accent)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo i{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;font:700 italic 17px var(--cond)}
+.logo b{font:700 italic 22px/1 var(--cond);letter-spacing:.01em}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.lbl{font-size:11px;color:var(--muted)}
+.inp{display:flex;align-items:center;height:30px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:color-mix(in srgb,var(--bg) 70%,var(--panel));min-width:0}
+.inp input,.inp select{flex:1;min-width:0;border:0;background:none;outline:0;font-family:var(--mono);font-size:12.5px}
+.inp select{font-family:var(--ui);font-size:12.5px}
+.inp span{font-size:11px;color:var(--faint);margin-left:4px}
+.inp.ui input{font-family:var(--ui)}
+.sw{position:relative;width:30px;height:17px;border-radius:9px;background:var(--line);flex:none}
+.sw::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--ink2)}
+.sw.on{background:var(--ok)}.sw.on::after{left:15px;background:#fff}
+.swatch{width:22px;height:22px;border-radius:6px;border:1px solid var(--line);flex:none}
+.pill{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:10px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.pill.blue{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue)}
+.pill.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.pill.amber{background:color-mix(in srgb,var(--amber) 16%,transparent);color:var(--amber)}
+.pill.red{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+kbd{font:500 10px var(--mono);padding:1px 5px;border:1px solid var(--line);border-radius:4px;color:var(--faint);background:var(--bg)}
+.thumb{display:grid;place-items:center;background:#fff;border-radius:6px;overflow:hidden}
+.thumb svg{width:82%;height:82%}
+/* sheet */
+.paper{background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+[data-theme=light] .paper{box-shadow:0 6px 26px rgba(40,30,10,.16)}
+.sel-box{fill:none;stroke:#2f8cff;stroke-width:.35}
+.sel-h{fill:#fff;stroke:#2f8cff;stroke-width:.3}
+.cutl{fill:none;stroke:#e5484d;stroke-width:.25;stroke-dasharray:1 .8}
+.marg{fill:none;stroke:#9aa3ad;stroke-width:.2;stroke-dasharray:2 1.5}
+
+/* ===================== OPTION A · WORKBENCH ===================== */
+#A{background:var(--bg)}
+.a-top{display:flex;align-items:center;gap:14px;height:54px;padding:0 14px 0 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.a-sheet{display:flex;align-items:center;gap:10px;padding-left:14px;border-left:1px solid var(--line)}
+.a-sheet h1{font-size:20px;line-height:1}
+.a-sheet .meta{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+.a-nav{display:flex;gap:2px;margin-left:10px;padding:3px;border-radius:9px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.a-nav button{height:28px;padding:0 12px;border:0;border-radius:7px;background:none;color:var(--muted);font-size:12.5px}
+.a-nav button.on{background:var(--raised);color:var(--ink);font-weight:600;box-shadow:0 1px 0 var(--line)}
+.a-find{display:flex;align-items:center;gap:8px;width:270px;white-space:nowrap;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:8px;color:var(--faint);font-size:12.5px;background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+.a-find kbd{margin-left:auto}
+.a-body{flex:1;display:flex;min-height:0}
+.a-rail{width:58px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0;background:var(--panel);border-right:1px solid var(--line)}
+.a-rail button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:46px;height:46px;border:0;border-radius:9px;background:none;color:var(--muted);font-size:9.5px}
+.a-rail button svg{width:19px;height:19px}
+.a-rail button:hover{background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--ink)}
+.a-rail button.on{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.a-rail hr{width:30px;border:0;border-top:1px solid var(--line);margin:4px 0}
+.a-rail .snap.on{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.a-left{width:282px;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line);min-height:0}
+.tabs{display:flex;gap:0;padding:0 12px;border-bottom:1px solid var(--line)}
+.tabs button{display:flex;align-items:center;gap:6px;height:42px;padding:0 10px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font-size:12.5px;font-weight:600}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button .n{font:500 10.5px var(--mono);color:var(--faint)}
+.pane{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:12px}
+.pane[hidden]{display:none}
+.lib-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lib-card{display:flex;flex-direction:column;gap:5px;cursor:grab}
+.lib-card .thumb{aspect-ratio:1.35;border:1px solid var(--line)}
+.lib-card b{font-size:12px;font-weight:600}
+.lib-card small{font-size:10.5px;color:var(--faint);margin-top:-4px}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{height:24px;padding:0 9px;border:1px solid var(--line);border-radius:12px;background:none;color:var(--muted);font-size:11.5px}
+.chip.on{background:var(--ink);color:var(--panel);border-color:var(--ink);font-weight:600}
+.drop-hint{display:flex;align-items:center;gap:10px;padding:10px;border:1px dashed var(--line);border-radius:9px;color:var(--muted);font-size:11.5px}
+.layer{display:flex;align-items:center;gap:8px;height:38px;padding:0 6px;border-radius:7px;font-size:12.5px}
+.layer:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.layer.on{background:color-mix(in srgb,#2f8cff 16%,transparent)}
+.layer .thumb{width:34px;height:26px;border:1px solid var(--line)}
+.layer .k{font-size:10.5px;color:var(--faint)}
+.layer .acts{margin-left:auto;display:flex;gap:2px;color:var(--faint)}
+.layer .acts svg{width:14px;height:14px}
+.layer.grp{font-weight:600}
+.layer.child{padding-left:22px}
+.page-card{display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:9px}
+.page-card.on{border-color:var(--accent)}
+.page-card .pg{width:46px;height:64px;background:#fff;border:1px solid var(--line);border-radius:3px;flex:none}
+.a-stage{flex:1;position:relative;display:flex;flex-direction:column;min-width:0;background:var(--canvas)}
+.a-canvas{flex:1;position:relative;overflow:hidden}
+.a-paperwrap{position:absolute;left:50%;top:34px;transform:translateX(-50%)}
+.ctx{position:absolute;display:flex;align-items:center;gap:2px;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:12px;white-space:nowrap;z-index:5}
+.ctx .sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.ctx .v{font-family:var(--mono);font-size:11.5px;color:var(--ink2);padding:0 6px}
+.ruler-x,.ruler-y{position:absolute;background:color-mix(in srgb,var(--panel) 85%,transparent);color:var(--faint);font:9.5px var(--mono)}
+.a-foot{display:flex;align-items:center;gap:10px;height:62px;padding:0 14px;border-top:1px solid var(--line);background:var(--panel)}
+.pages-strip{display:flex;gap:8px;align-items:center}
+.pages-strip .p{position:relative;width:32px;height:44px;border-radius:3px;background:#fff;border:2px solid var(--line);opacity:.85}
+.pages-strip .p.on{border-color:var(--accent);opacity:1}
+.pages-strip .p span{position:absolute;bottom:-1px;right:2px;font:600 9px var(--mono);color:#555}
+.pages-strip .add{width:32px;height:44px;border:1px dashed var(--line);border-radius:4px;display:grid;place-items:center;color:var(--faint);background:none}
+.zoom{display:flex;align-items:center;gap:2px;padding:3px;border:1px solid var(--line);border-radius:9px}
+.zoom .v{width:52px;text-align:center;font:500 12px var(--mono)}
+.fitcheck{position:absolute;right:16px;bottom:16px;width:300px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 12px 34px rgba(0,0,0,.35);overflow:hidden;z-index:4}
+.fitcheck header{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-bottom:1px solid var(--line2)}
+.fitcheck h3{font-size:14px;white-space:nowrap}
+.fitcheck .car{height:120px;padding:4px 8px;background:linear-gradient(color-mix(in srgb,var(--ink) 3%,transparent),color-mix(in srgb,var(--ink) 7%,transparent))}
+.fitcheck footer{display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:11px;color:var(--muted);border-top:1px solid var(--line2)}
+.a-right{width:322px;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--line);min-height:0}
+.insp-head{display:flex;gap:11px;align-items:center;padding:14px 14px 10px}
+.insp-head .thumb{width:48px;height:48px;border:1px solid var(--line)}
+.insp-head .nm{font-weight:600;font-size:14px;border:0;background:none;outline:0;padding:0;width:100%}
+.sec{padding:12px 14px;border-top:1px solid var(--line2)}
+.sec h4{display:flex;align-items:center;gap:8px;font-size:13.5px;margin-bottom:10px}
+.sec h4 .x{margin-left:auto;font:400 11px var(--ui);text-transform:none;letter-spacing:0;color:var(--faint)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.wh{display:grid;grid-template-columns:1fr 22px 1fr;gap:6px;align-items:end}
+.wh .lk{height:30px;display:grid;place-items:center;color:var(--ok)}
+.aligns{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;margin-top:8px;justify-content:space-between}
+.aligns button{width:32px;height:26px;border:0;border-radius:6px;background:none;color:var(--muted);display:grid;place-items:center}
+.aligns button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink)}
+.aligns .sep{width:1px;background:var(--line);margin:3px 2px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tile{display:flex;align-items:center;gap:8px;height:38px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-size:12px;text-align:left}
+.tile svg{color:var(--muted)}
+.range{position:relative;flex:1;height:4px;border-radius:2px;background:var(--line)}
+.range i{position:absolute;inset:0 0 0 0;width:100%;border-radius:2px;background:var(--accent)}
+.range b{position:absolute;right:-6px;top:-5px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.insp-foot{margin-top:auto;display:flex;gap:6px;padding:10px 14px;border-top:1px solid var(--line)}
+.a-status{display:flex;align-items:center;gap:16px;height:28px;padding:0 14px;border-top:1px solid var(--line);background:var(--bg);font-size:11.5px;color:var(--muted)}
+.a-status .chk{display:flex;align-items:center;gap:6px;color:var(--amber)}
+.menu{position:absolute;right:14px;top:50px;width:340px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 18px 50px rgba(0,0,0,.45);z-index:30;overflow:hidden}
+.menu[hidden]{display:none}
+.menu .ready{padding:12px 14px;background:color-mix(in srgb,var(--amber) 8%,transparent);border-bottom:1px solid var(--line2)}
+.menu .ready ul{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:12px}
+.menu .ready li{display:flex;gap:7px;align-items:center}
+.menu .mi{display:flex;align-items:center;gap:11px;padding:9px 14px;font-size:12.5px}
+.menu .mi:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.menu .mi small{display:block;font-size:11px;color:var(--faint)}
+.menu .mi svg{width:18px;height:18px;color:var(--muted)}
+.menu .mi.main svg{color:var(--accent)}
+.menu hr{border:0;border-top:1px solid var(--line2);margin:4px 0}
+
+/* ===================== OPTION B · PRODUCTION LINE ===================== */
+#B{background:var(--bg)}
+.b-top{display:flex;align-items:center;gap:18px;height:64px;padding:0 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.b-title{display:flex;flex-direction:column;gap:2px;min-width:210px}
+.b-title h1{font-size:21px;line-height:1}
+.b-title span{font-size:11px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.stages{flex:1;display:flex;justify-content:center;gap:0}
+.stage{position:relative;display:flex;align-items:center;gap:10px;height:48px;padding:0 22px 0 16px;border:0;background:none;text-align:left;color:var(--muted)}
+.stage + .stage::before{content:'';position:absolute;left:-6px;top:50%;width:12px;height:1px;background:var(--line)}
+.stage .n{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);font:700 12px var(--mono);color:var(--muted)}
+.stage .t{display:flex;flex-direction:column;line-height:1.15}
+.stage .t b{font:700 italic 16px var(--cond);text-transform:uppercase;letter-spacing:.03em;color:var(--ink2)}
+.stage .t small{font-size:11px;color:var(--faint)}
+.stage.done .n{border-color:var(--ok);color:var(--ok)}
+.stage.warn .n{border-color:var(--amber);color:var(--amber)}
+.stage.on{background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:10px}
+.stage.on .n{background:var(--accent);border-color:var(--accent);color:#fff}
+.stage.on .t b{color:var(--ink)}
+.b-view{flex:1;display:flex;min-height:0;position:relative}
+.b-view[hidden]{display:none}
+/* design stage */
+.b-canvas{flex:1;position:relative;background:var(--canvas);overflow:hidden}
+.b-add{position:absolute;left:14px;top:14px;display:flex;flex-direction:column;gap:3px;padding:6px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:4}
+.b-add button{display:flex;flex-direction:column;align-items:center;gap:3px;width:62px;padding:8px 0 6px;border:0;border-radius:9px;background:none;color:var(--ink2);font-size:10.5px}
+.b-add button svg{width:20px;height:20px}
+.b-add button:hover{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.b-add button.on{background:color-mix(in srgb,var(--violet) 18%,transparent);color:var(--violet)}
+.b-add .lbl{text-align:center;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:2px 0 4px}
+.b-add hr{border:0;border-top:1px solid var(--line);margin:3px 6px}
+.drawer{position:absolute;left:92px;top:14px;bottom:110px;width:300px;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 14px 40px rgba(0,0,0,.35);z-index:4;overflow:hidden}
+.drawer header{display:flex;align-items:center;gap:8px;padding:12px 12px 10px 14px}
+.drawer h3{font-size:16px}
+.drawer .body{flex:1;overflow:auto;padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+.b-paper{position:absolute;left:calc(50% + 150px);top:22px;transform:translateX(-50%)}
+.stack{position:absolute;right:14px;top:14px;bottom:110px;width:66px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;border:1px solid var(--line);border-radius:14px;background:var(--panel);z-index:4}
+.stack .eye{font-size:9px;letter-spacing:.12em}
+.stack .s{width:48px;height:34px;border-radius:6px;background:#fff;border:2px solid var(--line2);display:grid;place-items:center}
+.stack .s.on{border-color:#2f8cff}
+.stack .s svg{width:80%;height:80%}
+.stack .s.grp{outline:1px dashed var(--faint);outline-offset:2px}
+.zoomf{position:absolute;right:92px;bottom:118px;display:flex;align-items:center;gap:2px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--panel);z-index:4}
+.zoomf .v{width:50px;text-align:center;font:500 12px var(--mono)}
+.pagesf{position:absolute;left:50%;bottom:118px;transform:translateX(calc(-50% + 150px));display:flex;gap:4px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--panel);z-index:4}
+.pagesf button{height:26px;min-width:26px;padding:0 8px;border:0;border-radius:7px;background:none;color:var(--muted);font:500 12px var(--mono)}
+.pagesf button.on{background:var(--ink);color:var(--panel)}
+.props{position:absolute;left:14px;right:14px;bottom:14px;height:92px;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 -6px 30px rgba(0,0,0,.25);z-index:5;overflow:hidden}
+.props .cell{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 14px;border-right:1px solid var(--line2)}
+.props .cell:last-child{border-right:0}
+.props .cell .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+.props .who{flex-direction:row;align-items:center;gap:11px;min-width:220px}
+.props .who .thumb{width:54px;height:54px;border:1px solid var(--line)}
+.props .who b{display:block;font-size:14px}
+.props .inp{height:28px}
+.props .mini{width:74px}
+/* fit stage */
+.fit{flex:1;display:grid;grid-template-columns:380px 1fr 300px;min-height:0}
+.fit .sheetcol{display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px;background:var(--canvas);border-right:1px solid var(--line)}
+.fit .carcol{display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 60%,color-mix(in srgb,var(--ink) 8%,var(--canvas)),var(--canvas) 70%)}
+.fit .carbar{display:flex;align-items:center;gap:10px;padding:14px 18px}
+.fit .carstage{flex:1;display:grid;place-items:center;padding:0 30px;position:relative}
+.fit .ground{position:absolute;left:8%;right:8%;bottom:30%;height:1px;background:var(--line)}
+.measure{position:absolute;left:9%;right:9%;bottom:24%;display:flex;align-items:center;gap:8px;color:var(--faint);font:11px var(--mono)}
+.measure i{flex:1;height:1px;background:var(--faint)}
+.bodies{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--line2);overflow:hidden}
+.body-card{width:126px;flex:none;padding:6px;border:1px solid var(--line);border-radius:9px;font-size:11.5px;background:var(--panel)}
+.body-card.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.body-card img{width:100%;height:44px;object-fit:contain;display:block}
+.fitlist{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.fitlist .hd{padding:14px 16px 10px}
+.fitrow{display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);font-size:12.5px}
+.fitrow .thumb{width:40px;height:30px;border:1px solid var(--line)}
+.fitrow small{display:block;color:var(--faint);font-size:11px}
+.fitrow.on{background:color-mix(in srgb,#2f8cff 12%,transparent)}
+/* paper stage */
+.paperst{flex:1;display:grid;grid-template-columns:1fr 380px;min-height:0}
+.paperst .view{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px;background:var(--canvas)}
+.layers-t{display:flex;gap:6px}
+.layers-t button{display:flex;align-items:center;gap:7px;height:30px;padding:0 12px;border:1px solid var(--line);border-radius:15px;background:var(--panel);color:var(--muted);font-size:12px}
+.layers-t button.on{color:var(--ink);border-color:var(--ink2)}
+.layers-t i{width:10px;height:10px;border-radius:3px}
+.settings{background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:4px 0}
+.choice{display:grid;gap:8px}
+.choice.c2{grid-template-columns:1fr 1fr}.choice.c5{grid-template-columns:repeat(5,1fr)}
+.ch{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 6px;border:1px solid var(--line);border-radius:10px;background:var(--raised);font-size:11.5px;text-align:center}
+.ch.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.ch .pg{background:#fff;border-radius:2px;border:1px solid #ccc}
+.ch small{color:var(--faint);font-size:10.5px}
+.ch.left{align-items:flex-start;text-align:left;padding:11px 12px}
+.ch.left b{font-size:12.5px}
+/* print stage */
+.printst{flex:1;display:grid;grid-template-columns:360px 1fr 380px;min-height:0}
+.checks{background:var(--panel);border-right:1px solid var(--line);overflow:auto}
+.ck{display:flex;gap:10px;padding:11px 16px;border-top:1px solid var(--line2);font-size:12.5px}
+.ck .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex:none}
+.ck .ic.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.ck .ic.am{background:color-mix(in srgb,var(--amber) 18%,transparent);color:var(--amber)}
+.ck .ic svg{width:13px;height:13px;stroke-width:2.4}
+.ck small{display:block;color:var(--faint);font-size:11.5px;margin-top:1px}
+.ck a{color:var(--blue);font-size:11.5px;text-decoration:none;cursor:pointer}
+.pdfview{display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px;background:var(--canvas)}
+.outs{background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.out{display:flex;gap:12px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--raised)}
+.out.main{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));background:color-mix(in srgb,var(--accent) 7%,var(--raised))}
+.out .ico{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--ink2);flex:none}
+.out.main .ico{background:var(--accent);color:#fff}
+.out b{display:block;font-size:13.5px}
+.out p{margin:2px 0 8px;font-size:11.5px;color:var(--muted)}
+.b-status{display:flex;align-items:center;gap:16px;height:28px;padding:0 16px;border-top:1px solid var(--line);background:var(--bg);font-size:11.5px;color:var(--muted)}
+.b-next{display:flex;align-items:center;gap:10px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <symbol id="d-roundel" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#fff" stroke="#d92b2b" stroke-width="8"/><text x="50" y="72" text-anchor="middle" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="64" fill="#111">27</text></symbol>
+  <symbol id="d-forge" viewBox="0 0 170 70"><text x="85" y="40" text-anchor="middle" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="50" fill="#111" letter-spacing="1">FORGE</text><path d="M14 44h150l-6 7H8z" fill="#d92b2b"/><text x="88" y="66" text-anchor="middle" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="18" fill="#111" letter-spacing="2">RACING</text></symbol>
+  <symbol id="d-dutch" viewBox="0 0 170 60"><text x="6" y="34" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="42" fill="#111">DUTCH</text><path d="M108 14h58l-3 7h-58zM104 24h58l-3 7h-58z" fill="#f2711c"/><path d="M100 34h58l-3 6h-58z" fill="#2546b8"/><text x="6" y="55" font-family="Segoe UI" font-weight="700" font-size="15" fill="#111" letter-spacing="1">MOTORSPORT</text></symbol>
+  <symbol id="d-driver" viewBox="0 0 125 20"><rect x="2" y="4" width="18" height="4" fill="#ae1c28"/><rect x="2" y="8" width="18" height="4" fill="#fff" stroke="#ddd" stroke-width=".4"/><rect x="2" y="12" width="18" height="4" fill="#21468b"/><text x="26" y="15" font-family="Segoe UI" font-weight="700" font-size="12" fill="#111" letter-spacing=".5">J. DE VRIES</text></symbol>
+  <symbol id="d-stripe" viewBox="0 0 330 25" preserveAspectRatio="none"><rect width="330" height="9" fill="#e5484d"/><rect y="15" width="330" height="10" fill="#2546b8"/></symbol>
+  <symbol id="d-stripe-t" viewBox="0 -60 330 145"><rect width="330" height="9" fill="#e5484d"/><rect y="15" width="330" height="10" fill="#2546b8"/></symbol>
+  <symbol id="d-shield" viewBox="0 0 60 66"><path d="M30 3l26 8v20c0 17-12 27-26 32C16 58 4 48 4 31V11z" fill="#19253f" stroke="#d92b2b" stroke-width="4"/><text x="30" y="42" text-anchor="middle" font-family="SF Barlow Condensed" font-style="italic" font-weight="700" font-size="26" fill="#fff">SF</text></symbol>
+ </defs>
+</svg>
+
+<div class="switch">
+ <b>Design</b>
+ <div class="seg" id="opt-switch"><button class="on" data-opt="A">A · Workbench</button><button data-opt="B">B · Production line</button></div>
+ <b>Theme</b>
+ <div class="seg" id="theme-switch"><button class="on" data-theme="dark">Dark</button><button data-theme="light">Light</button></div>
+ <span id="b-hint" class="faint" style="font-size:12px" hidden>Click the four stages at the top</span>
+ <p>Preview only · the example sheet from Decals · nothing is wired up</p>
+</div>
+
+<!-- ===================== A · WORKBENCH ===================== -->
+<section class="opt" id="A">
+ <header class="a-top">
+  <div class="logo"><i>D</i><b>DECALS</b></div>
+  <div class="a-sheet">
+   <div>
+    <h1>Club Racing · No. 27</h1>
+    <div class="meta"><span class="dot"></span>Saved · A4 portrait · 1:32 · 3 pages</div>
+   </div>
+   <button class="btn sm icon ghost" title="Switch sheet"><svg class="i"><use href="#i-chev"/></svg></button>
+  </div>
+  <nav class="a-nav"><button class="on">Editor</button><button>Decal Library</button><button>Sheets</button><button>Import &amp; Export</button></nav>
+  <div class="grow"></div>
+  <div class="a-find"><svg class="i"><use href="#i-search"/></svg>Find a tool, decal or setting<kbd>Ctrl K</kbd></div>
+  <button class="btn icon ghost" title="Undo (Ctrl+Z)"><svg class="i"><use href="#i-undo"/></svg></button>
+  <button class="btn icon ghost" title="Redo"><svg class="i"><use href="#i-redo"/></svg></button>
+  <button class="btn icon ghost" title="Settings"><svg class="i"><use href="#i-gear"/></svg></button>
+  <button class="btn icon ghost" title="Help"><svg class="i"><use href="#i-help"/></svg></button>
+  <button class="btn primary" id="a-out"><svg class="i"><use href="#i-print"/></svg>Print &amp; export<svg class="i"><use href="#i-chev"/></svg></button>
+  <div class="menu" id="a-menu" hidden>
+   <div class="ready">
+    <div class="row"><svg class="i" style="color:var(--amber)"><use href="#i-warn"/></svg><b style="font-size:12.5px">Ready to print, with 2 notes</b></div>
+    <ul>
+     <li><svg class="i" style="color:var(--ok);width:14px"><use href="#i-check"/></svg>All 26 decals are vector or 300+ PPI</li>
+     <li><svg class="i" style="color:var(--ok);width:14px"><use href="#i-check"/></svg>Nothing overlaps or leaves the margins</li>
+     <li><svg class="i" style="color:var(--amber);width:14px"><use href="#i-warn"/></svg>Driver names are 0.9 mm tall: hard to cut</li>
+     <li><svg class="i" style="color:var(--amber);width:14px"><use href="#i-warn"/></svg>White ink is off; clear paper prints no white</li>
+    </ul>
+   </div>
+   <div class="mi main"><svg class="i"><use href="#i-pdf"/></svg><div><b>Export PDF</b><small>Print-ready, colour + cut lines</small></div><kbd style="margin-left:auto">Ctrl P</kbd></div>
+   <div class="mi"><svg class="i"><use href="#i-cut"/></svg><div>Export for cutter…<small>SVG or DXF for ScanNCut, Cricut, Silhouette</small></div></div>
+   <div class="mi"><svg class="i"><use href="#i-ruler"/></svg><div>Sizing proof<small>Plain-paper test print to check sizes</small></div></div>
+   <hr>
+   <div class="mi"><svg class="i"><use href="#i-save"/></svg><div>Save a copy to Sheets</div><kbd style="margin-left:auto">Ctrl S</kbd></div>
+   <div class="mi"><svg class="i"><use href="#i-share"/></svg><div>Share this sheet…<small>An editable .sfsheet file</small></div></div>
+  </div>
+ </header>
+ <div class="a-body">
+  <nav class="a-rail" aria-label="Tools">
+   <button class="on" title="Select (V)"><svg class="i"><use href="#i-pointer"/></svg>Select</button>
+   <button title="Image (I)"><svg class="i"><use href="#i-image"/></svg>Image</button>
+   <button title="Text (T)"><svg class="i"><use href="#i-text"/></svg>Text</button>
+   <button title="Racing number (N)"><svg class="i"><use href="#i-hash"/></svg>Number</button>
+   <button title="Shapes &amp; patterns (S)"><svg class="i"><use href="#i-shape"/></svg>Shape</button>
+   <button title="Path tool (P)"><svg class="i"><use href="#i-path"/></svg>Path</button>
+   <button title="Merge &amp; cut (M)"><svg class="i"><use href="#i-merge"/></svg>Merge</button>
+   <hr>
+   <button title="Slice area"><svg class="i"><use href="#i-slice"/></svg>Slice</button>
+   <button title="Auto-arrange"><svg class="i"><use href="#i-grid"/></svg>Arrange</button>
+   <div class="grow"></div>
+   <button class="snap on" title="Snap to guides"><svg class="i"><use href="#i-magnet"/></svg>Snap</button>
+  </nav>
+  <aside class="a-left">
+   <div class="tabs" id="a-tabs"><button class="on" data-pane="lib">Library <span class="n">6</span></button><button data-pane="lay">Layers <span class="n">26</span></button><button data-pane="pg">Pages <span class="n">3</span></button></div>
+   <div class="pane" data-pane="lib">
+    <div class="inp ui"><svg class="i" style="color:var(--faint);margin-right:6px"><use href="#i-search"/></svg><input placeholder="Find a decal…"></div>
+    <div class="chips"><button class="chip on">All</button><button class="chip">Numbers</button><button class="chip">Logos</button><button class="chip">Stripes</button><button class="chip">Names</button><button class="chip">★ Favourites</button></div>
+    <div class="eye">Used on this sheet</div>
+    <div class="lib-grid" id="a-lib"></div>
+    <div class="drop-hint"><svg class="i"><use href="#i-image"/></svg>Drop a PNG, SVG, EPS or PDF anywhere to add it</div>
+   </div>
+   <div class="pane" data-pane="lay" hidden>
+    <div class="row"><span class="eye">Page 1 · top to bottom</span><span class="grow"></span><button class="btn sm ghost">Select all</button></div>
+    <div id="a-layers"></div>
+   </div>
+   <div class="pane" data-pane="pg" hidden>
+    <div class="page-card on"><div class="pg"></div><div><b>Page 1</b><div class="faint" style="font-size:11.5px">26 decals · A4 portrait</div></div></div>
+    <div class="page-card"><div class="pg"></div><div><b>Page 2</b><div class="faint" style="font-size:11.5px">8 decals · A4 portrait</div></div></div>
+    <div class="page-card"><div class="pg"></div><div><b>Page 3</b><div class="faint" style="font-size:11.5px">Empty</div></div></div>
+    <button class="btn"><svg class="i"><use href="#i-plus"/></svg>Add page</button>
+   </div>
+  </aside>
+  <main class="a-stage">
+   <div class="a-canvas" id="a-canvas">
+    <div class="ruler-x" style="left:0;right:0;top:0;height:20px;border-bottom:1px solid var(--line2)"></div>
+    <div class="ruler-y" style="left:0;top:0;bottom:0;width:20px;border-right:1px solid var(--line2)"></div>
+    <div class="a-paperwrap" id="a-paper"></div>
+    <div class="ctx" id="a-ctx">
+     <span class="v">18 × 18 mm</span><span class="v">⟲ 0°</span><span class="sep"></span>
+     <button class="btn sm ghost icon" title="Duplicate"><svg class="i"><use href="#i-copy"/></svg></button>
+     <button class="btn sm ghost" title="Mirrored copy for the other side of the car"><svg class="i"><use href="#i-mirror"/></svg>Other side</button>
+     <button class="btn sm ghost" title="Repeat in rows &amp; columns"><svg class="i"><use href="#i-grid"/></svg>Repeat</button>
+     <span class="sep"></span>
+     <button class="btn sm ghost icon" title="More"><svg class="i"><use href="#i-dots"/></svg></button>
+    </div>
+    <div class="fitcheck">
+     <header><svg class="i" style="color:var(--teal)"><use href="#i-car"/></svg><h3>Fit check</h3><span class="grow"></span><div class="seg sm"><button class="on">Side</button><button>Top</button></div><button class="btn sm ghost icon" title="Enlarge"><svg class="i"><use href="#i-expand"/></svg></button></header>
+     <div class="car" id="a-car"></div>
+     <footer><span>Modern GT · 1:32 · roundel 18 mm</span><span class="grow"></span><span class="pill ok">Fits door</span></footer>
+    </div>
+   </div>
+   <div class="a-foot">
+    <div class="pages-strip"><div class="p on"><span>1</span></div><div class="p"><span>2</span></div><div class="p"><span>3</span></div><button class="add" title="Add page"><svg class="i"><use href="#i-plus"/></svg></button></div>
+    <div class="grow"></div>
+    <span class="faint mono" style="font-size:11.5px">A4 · 210 × 297 mm</span>
+    <div class="zoom"><button class="btn sm ghost icon"><svg class="i"><use href="#i-minus"/></svg></button><span class="v">96%</span><button class="btn sm ghost icon"><svg class="i"><use href="#i-plus"/></svg></button><button class="btn sm ghost">Fit</button><button class="btn sm ghost">100%</button></div>
+   </div>
+  </main>
+  <aside class="a-right">
+   <div class="tabs" id="a-rtabs"><button class="on" data-pane="dec">Decal</button><button data-pane="sht">Sheet &amp; paper</button></div>
+   <div class="pane" data-pane="dec" style="padding:0;gap:0">
+    <div class="insp-head"><div class="thumb"><svg><use href="#d-roundel"/></svg></div><div class="grow"><input class="nm" value="Roundel 27"><div class="row" style="gap:6px;margin-top:3px"><span class="pill blue">Vector</span><span class="faint" style="font-size:11px">Sharp at any size</span></div></div></div>
+    <div class="sec">
+     <h4>Size &amp; place<span class="x">mm</span></h4>
+     <div class="wh"><div class="field"><label>Width</label><div class="inp"><input value="18.0"></div></div><div class="lk" title="Proportions locked"><svg class="i"><use href="#i-link"/></svg></div><div class="field"><label>Height</label><div class="inp"><input value="18.0"></div></div></div>
+     <div class="g3" style="margin-top:8px"><div class="field"><label>X</label><div class="inp"><input value="109"></div></div><div class="field"><label>Y</label><div class="inp"><input value="18"></div></div><div class="field"><label>Rotate</label><div class="inp"><input value="0"><span>°</span></div></div></div>
+     <div class="aligns"><button title="Align left"><svg class="i"><use href="#i-al"/></svg></button><button title="Centre"><svg class="i"><use href="#i-ac"/></svg></button><button title="Align right"><svg class="i"><use href="#i-ar"/></svg></button><span class="sep"></span><button title="Top"><svg class="i"><use href="#i-at"/></svg></button><button title="Middle"><svg class="i"><use href="#i-am"/></svg></button><button title="Bottom"><svg class="i"><use href="#i-ab"/></svg></button><span class="sep"></span><button title="Flip"><svg class="i"><use href="#i-mirror"/></svg></button></div>
+    </div>
+    <div class="sec">
+     <h4>Colour</h4>
+     <div class="row" style="gap:6px"><span class="lbl" style="width:56px">Sheet</span><span class="swatch" style="background:#d92b2b"></span><span class="swatch" style="background:#111"></span><span class="swatch" style="background:#fff"></span><span class="swatch" style="background:#2546b8"></span><span class="swatch" style="background:#f2711c"></span><span class="swatch" style="background:#19253f"></span><button class="btn sm ghost" style="margin-left:auto">Recolour…</button></div>
+     <div class="row" style="margin-top:10px"><span class="lbl" style="width:56px">Opacity</span><div class="range"><i></i><b></b></div><span class="mono" style="width:40px;text-align:right;font-size:12px">100%</span></div>
+    </div>
+    <div class="sec">
+     <h4>On the paper</h4>
+     <div class="field"><label>Ink</label><div class="seg" style="display:flex"><button class="on" style="flex:1">Colour</button><button style="flex:1">+ White under</button><button style="flex:1">White only</button></div></div>
+     <div class="field" style="margin-top:8px"><label>Cut line</label><div class="inp"><select><option>Sheet setting (follow shape)</option></select></div></div>
+    </div>
+    <div class="sec">
+     <h4>Artwork tools</h4>
+     <div class="tiles">
+      <button class="tile"><svg class="i"><use href="#i-path"/></svg>Edit vector</button>
+      <button class="tile"><svg class="i"><use href="#i-shape"/></svg>Add outline</button>
+      <button class="tile"><svg class="i"><use href="#i-star"/></svg>Save to library</button>
+      <button class="tile"><svg class="i"><use href="#i-group"/></svg>Group</button>
+     </div>
+    </div>
+    <div class="insp-foot"><button class="btn sm" title="Send backward">Backward</button><button class="btn sm">Forward</button><button class="btn sm"><svg class="i"><use href="#i-lock"/></svg>Lock</button><span class="grow"></span><button class="btn sm icon danger" title="Delete"><svg class="i"><use href="#i-trash"/></svg></button></div>
+   </div>
+   <div class="pane" data-pane="sht" hidden>
+    <div class="field"><label>Paper size</label><div class="inp"><select><option>A4 · 210 × 297 mm</option></select></div></div>
+    <div class="g2"><div class="field"><label>Orientation</label><div class="seg" style="display:flex"><button class="on" style="flex:1">Portrait</button><button style="flex:1">Landscape</button></div></div><div class="field"><label>Model scale</label><div class="inp"><select><option>1:32</option></select></div></div></div>
+    <div class="g2"><div class="field"><label>Margins</label><div class="inp"><input value="8"><span>mm</span></div></div><div class="field"><label>Gap between decals</label><div class="inp"><input value="3"><span>mm</span></div></div></div>
+    <div class="eye" style="margin-top:6px">Decal paper</div>
+    <div class="seg" style="display:flex"><button class="on" style="flex:1">Clear</button><button style="flex:1">White</button></div>
+    <div class="row"><span class="sw"></span>My printer has white ink</div>
+    <div class="field"><label>White spot name</label><div class="inp"><input value="RDG_WHITE"></div></div>
+    <div class="eye" style="margin-top:6px">Cut lines</div>
+    <div class="field"><label>Default cut line</label><div class="inp"><select><option>Follow the decal shape</option></select></div></div>
+    <div class="field"><label>Offset around artwork</label><div class="inp"><input value="0.5"><span>mm</span></div></div>
+    <div class="row"><span class="sw on"></span>Show cut lines on the sheet</div>
+    <div class="row"><span class="sw"></span>Print cut lines in the PDF</div>
+   </div>
+  </aside>
+ </div>
+ <footer class="a-status"><span>1 selected · Shift-click to add more · drag to move</span><span class="grow"></span><span class="chk"><svg class="i" style="width:13px"><use href="#i-warn"/></svg>2 print notes</span><span>Storage: Documents/SlotForge Decals</span></footer>
+</section>
+
+<!-- ===================== B · PRODUCTION LINE ===================== -->
+<section class="opt" id="B" hidden>
+ <header class="b-top">
+  <div class="logo"><i>D</i></div>
+  <div class="b-title"><h1>Club Racing · No. 27</h1><span><span class="dot"></span>Saved · 3 pages · 26 decals</span></div>
+  <nav class="stages" id="b-stages">
+   <button class="stage on" data-stage="design"><span class="n">1</span><span class="t"><b>Design</b><small>26 decals on 3 pages</small></span></button>
+   <button class="stage done" data-stage="fit"><span class="n">2</span><span class="t"><b>Fit on car</b><small>Modern GT · 1:32</small></span></button>
+   <button class="stage done" data-stage="paper"><span class="n">3</span><span class="t"><b>Paper &amp; ink</b><small>A4 · clear · no white</small></span></button>
+   <button class="stage warn" data-stage="print"><span class="n">4</span><span class="t"><b>Print &amp; cut</b><small>2 notes to check</small></span></button>
+  </nav>
+  <button class="btn icon ghost" title="Undo"><svg class="i"><use href="#i-undo"/></svg></button>
+  <button class="btn icon ghost" title="Redo"><svg class="i"><use href="#i-redo"/></svg></button>
+  <button class="btn"><svg class="i"><use href="#i-menu"/></svg>Workshop</button>
+ </header>
+
+ <!-- 1 design -->
+ <div class="b-view" data-stage="design">
+  <div class="b-canvas">
+   <div class="b-add">
+    <div class="lbl faint">Add</div>
+    <button><svg class="i"><use href="#i-image"/></svg>Image</button>
+    <button><svg class="i"><use href="#i-text"/></svg>Text</button>
+    <button><svg class="i"><use href="#i-hash"/></svg>Number</button>
+    <button><svg class="i"><use href="#i-shape"/></svg>Shape</button>
+    <button><svg class="i"><use href="#i-path"/></svg>Path</button>
+    <hr>
+    <button class="on"><svg class="i"><use href="#i-lib"/></svg>Library</button>
+    <hr>
+    <button><svg class="i"><use href="#i-merge"/></svg>Merge</button>
+    <button><svg class="i"><use href="#i-slice"/></svg>Slice</button>
+   </div>
+   <div class="drawer">
+    <header><h3>Decal library</h3><span class="faint mono" style="font-size:11px">6</span><span class="grow"></span><button class="btn sm ghost">Open library</button><button class="btn sm ghost icon"><svg class="i"><use href="#i-x"/></svg></button></header>
+    <div class="body">
+     <div class="inp ui"><svg class="i" style="color:var(--faint);margin-right:6px"><use href="#i-search"/></svg><input placeholder="Find a decal…"></div>
+     <div class="chips"><button class="chip on">All</button><button class="chip">Numbers</button><button class="chip">Logos</button><button class="chip">Stripes</button><button class="chip">★</button></div>
+     <div class="lib-grid" id="b-lib"></div>
+     <p class="faint" style="font-size:11.5px;margin:0">Drag a decal onto the sheet, or double-click to place it in the next free spot.</p>
+    </div>
+   </div>
+   <div class="b-paper" id="b-paper"></div>
+   <div class="stack" id="b-stack"><span class="eye">Layers</span></div>
+   <div class="pagesf"><button class="on">1</button><button>2</button><button>3</button><button>+</button></div>
+   <div class="zoomf"><button class="btn sm ghost icon"><svg class="i"><use href="#i-minus"/></svg></button><span class="v">88%</span><button class="btn sm ghost icon"><svg class="i"><use href="#i-plus"/></svg></button><button class="btn sm ghost">Fit</button></div>
+   <div class="props">
+    <div class="cell who"><div class="thumb"><svg><use href="#d-roundel"/></svg></div><div><b>Roundel 27</b><div class="row" style="gap:6px;margin-top:4px"><span class="pill blue">Vector</span><span class="faint" style="font-size:11px">Page 1</span></div></div></div>
+    <div class="cell"><span class="lbl">Size · mm</span><div class="row" style="gap:5px"><div class="inp mini"><input value="18.0"></div><svg class="i" style="color:var(--ok);width:14px"><use href="#i-link"/></svg><div class="inp mini"><input value="18.0"></div></div></div>
+    <div class="cell"><span class="lbl">Place · mm</span><div class="row" style="gap:5px"><div class="inp mini"><span style="margin:0 5px 0 0">X</span><input value="109"></div><div class="inp mini"><span style="margin:0 5px 0 0">Y</span><input value="18"></div></div></div>
+    <div class="cell"><span class="lbl">Turn</span><div class="row" style="gap:5px"><div class="inp" style="width:62px"><input value="0"><span>°</span></div><button class="btn sm icon ghost" title="Flip"><svg class="i"><use href="#i-mirror"/></svg></button></div></div>
+    <div class="cell"><span class="lbl">Colours</span><div class="row" style="gap:5px"><span class="swatch" style="background:#d92b2b"></span><span class="swatch" style="background:#111"></span><span class="swatch" style="background:#fff"></span><button class="btn sm ghost">Recolour</button></div></div>
+    <div class="cell"><span class="lbl">Ink</span><div class="seg sm"><button class="on">Colour</button><button>+ White</button><button>White</button></div></div>
+    <div class="cell"><span class="lbl">Cut</span><div class="seg sm"><button class="on">Shape</button><button>Box</button><button>None</button></div></div>
+    <div class="cell grow" style="flex-direction:row;align-items:center;justify-content:flex-end;gap:4px">
+     <button class="btn sm ghost"><svg class="i"><use href="#i-mirror"/></svg>Other side</button>
+     <button class="btn sm ghost"><svg class="i"><use href="#i-grid"/></svg>Repeat</button>
+     <button class="btn sm ghost"><svg class="i"><use href="#i-path"/></svg>Edit vector</button>
+     <button class="btn sm ghost icon" title="More"><svg class="i"><use href="#i-dots"/></svg></button>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <!-- 2 fit on car -->
+ <div class="b-view" data-stage="fit" hidden>
+  <div class="fit">
+   <div class="sheetcol"><div class="row" style="width:100%"><span class="eye">Page 1</span><span class="grow"></span><span class="faint" style="font-size:11.5px">Click a decal to place it</span></div><div id="b-fitsheet"></div></div>
+   <div class="carcol">
+    <div class="carbar"><h3 style="font-size:20px">Modern GT</h3><span class="faint mono" style="font-size:12px">140 mm long at 1:32</span><span class="grow"></span><div class="seg"><button class="on">Side</button><button>Top</button></div><div class="seg"><button>1:24</button><button class="on">1:32</button><button>1:43</button><button>Other</button></div><button class="btn sm">Reference size…</button></div>
+    <div class="carstage"><div id="b-car" style="width:100%"></div><div class="measure"><i></i>140 mm<i></i></div></div>
+    <div class="bodies" id="b-bodies"></div>
+   </div>
+   <aside class="fitlist">
+    <div class="hd"><h3 style="font-size:16px">On the car</h3><div class="faint" style="font-size:11.5px;margin-top:2px">Drag on the car to check placement. Sizes change the sheet too.</div></div>
+    <div class="fitrow on"><div class="thumb"><svg><use href="#d-roundel"/></svg></div><div class="grow">Roundel 27<small>18 × 18 mm · door</small></div><span class="pill ok">Fits</span></div>
+    <div class="fitrow"><div class="thumb"><svg><use href="#d-forge"/></svg></div><div class="grow">Forge Racing<small>34 × 14 mm · rear wing</small></div><span class="pill ok">Fits</span></div>
+    <div class="fitrow"><div class="thumb"><svg><use href="#d-dutch"/></svg></div><div class="grow">Dutch Motorsport<small>34 × 12 mm · not placed</small></div><button class="btn sm">Place</button></div>
+    <div class="fitrow"><div class="thumb"><svg><use href="#d-stripe-t"/></svg></div><div class="grow">Racing stripe<small>66 × 5 mm · sill</small></div><span class="pill amber">Wider than sill</span></div>
+    <div class="fitrow"><div class="thumb"><svg><use href="#d-driver"/></svg></div><div class="grow">Driver name<small>25 × 4 mm · window</small></div><span class="pill ok">Fits</span></div>
+    <div class="fitrow"><div class="thumb"><svg><use href="#d-shield"/></svg></div><div class="grow">SF Shield<small>12 × 13 mm · not placed</small></div><button class="btn sm">Place</button></div>
+    <div style="margin-top:auto;padding:12px 16px;border-top:1px solid var(--line2);display:flex;gap:8px"><button class="btn sm"><svg class="i"><use href="#i-image"/></svg>Use my own car photo</button></div>
+   </aside>
+  </div>
+ </div>
+
+ <!-- 3 paper & ink -->
+ <div class="b-view" data-stage="paper" hidden>
+  <div class="paperst">
+   <div class="view">
+    <div class="layers-t"><button class="on"><i style="background:linear-gradient(135deg,#e5484d,#2546b8)"></i>Colour</button><button><i style="background:#ccc"></i>White ink</button><button class="on"><i style="border:1.5px dashed #e5484d"></i>Cut lines</button><button class="on"><i style="border:1.5px dashed #9aa3ad"></i>Margins</button></div>
+    <div id="b-papersheet"></div>
+    <span class="faint" style="font-size:11.5px">What the printer gets, page 1 of 3. Toggle the layers to see each one alone.</span>
+   </div>
+   <aside class="settings">
+    <div class="sec" style="border-top:0"><h4>Paper size</h4>
+     <div class="choice c5">
+      <div class="ch on"><div class="pg" style="width:21px;height:30px"></div>A4</div>
+      <div class="ch"><div class="pg" style="width:15px;height:21px"></div>A5</div>
+      <div class="ch"><div class="pg" style="width:20px;height:30px"></div>4×6 in</div>
+      <div class="ch"><div class="pg" style="width:22px;height:28px"></div>Letter</div>
+      <div class="ch"><div class="pg" style="width:20px;height:26px;border-style:dashed"></div>Custom</div>
+     </div>
+     <div class="g2" style="margin-top:10px"><div class="seg" style="display:flex"><button class="on" style="flex:1">Portrait</button><button style="flex:1">Landscape</button></div><span></span></div>
+     <div class="g2" style="margin-top:10px"><div class="field"><label>Margins</label><div class="inp"><input value="8"><span>mm</span></div></div><div class="field"><label>Gap between decals</label><div class="inp"><input value="3"><span>mm</span></div></div></div>
+    </div>
+    <div class="sec"><h4>Decal paper</h4>
+     <div class="choice c2">
+      <div class="ch left on"><b>Clear</b><small>Car colour shows through light parts. Best on white cars.</small></div>
+      <div class="ch left"><b>White</b><small>Solid colours on any car. Cut close to the artwork.</small></div>
+     </div>
+    </div>
+    <div class="sec"><h4>White ink <span class="x">Optional</span></h4>
+     <div class="row"><span class="sw"></span>My printer or print shop has white ink</div>
+     <div class="field" style="margin-top:8px;opacity:.55"><label>White spot name</label><div class="inp"><input value="RDG_WHITE"></div></div>
+     <p class="faint" style="font-size:11.5px;margin:8px 0 0">Per decal you choose colour, colour on white, or white only in Design.</p>
+    </div>
+    <div class="sec"><h4>Cut lines</h4>
+     <div class="seg" style="display:flex"><button class="on" style="flex:1">Follow shape</button><button style="flex:1">Rectangle</button><button style="flex:1">None</button></div>
+     <div class="g2" style="margin-top:10px"><div class="field"><label>Offset around artwork</label><div class="inp"><input value="0.5"><span>mm</span></div></div><span></span></div>
+     <div class="row" style="margin-top:10px"><span class="sw"></span>Print the cut lines too (for cutting by hand)</div>
+    </div>
+   </aside>
+  </div>
+ </div>
+
+ <!-- 4 print & cut -->
+ <div class="b-view" data-stage="print" hidden>
+  <div class="printst">
+   <aside class="checks">
+    <div style="padding:16px"><h3 style="font-size:18px">Before you print</h3><div class="faint" style="font-size:12px;margin-top:3px">6 checks passed, 2 worth a look</div></div>
+    <div class="ck"><span class="ic am"><svg class="i"><use href="#i-warn"/></svg></span><div>Driver names are small<small>0.9 mm letters can tear when cutting. Make them 1.2 mm or more.</small><a>Show on sheet</a></div></div>
+    <div class="ck"><span class="ic am"><svg class="i"><use href="#i-warn"/></svg></span><div>No white ink on clear paper<small>White parts of the roundels print as see-through.</small><a>Paper &amp; ink</a></div></div>
+    <div class="ck"><span class="ic ok"><svg class="i"><use href="#i-check"/></svg></span><div>Sharp enough<small>All decals are vector or 300+ PPI</small></div></div>
+    <div class="ck"><span class="ic ok"><svg class="i"><use href="#i-check"/></svg></span><div>Inside the margins<small>Nothing within 8 mm of the edge</small></div></div>
+    <div class="ck"><span class="ic ok"><svg class="i"><use href="#i-check"/></svg></span><div>Nothing overlaps<small>Every decal has its 3 mm gap</small></div></div>
+    <div class="ck"><span class="ic ok"><svg class="i"><use href="#i-check"/></svg></span><div>Fonts are embedded<small>2 fonts, both included in the PDF</small></div></div>
+    <div class="ck"><span class="ic ok"><svg class="i"><use href="#i-check"/></svg></span><div>Fits the car<small>Every placed decal fits at 1:32</small></div></div>
+    <div class="ck"><span class="ic ok"><svg class="i"><use href="#i-check"/></svg></span><div>Cut lines closed<small>Every shape can be cut in one pass</small></div></div>
+   </aside>
+   <div class="pdfview"><div class="row" style="width:100%"><span class="eye">PDF preview · page 1 of 3</span><span class="grow"></span><div class="seg sm"><button class="on">1</button><button>2</button><button>3</button></div></div><div id="b-pdf"></div></div>
+   <aside class="outs">
+    <div class="out main"><div class="ico"><svg class="i" style="width:20px;height:20px"><use href="#i-pdf"/></svg></div><div class="grow"><b>Print-ready PDF</b><p>All 3 pages in colour, at 100% size. Print without scaling.</p><button class="btn primary sm">Export PDF</button></div></div>
+    <div class="out"><div class="ico"><svg class="i" style="width:20px;height:20px"><use href="#i-cut"/></svg></div><div class="grow"><b>File for a cutting machine</b><p>SVG or DXF cut paths with registration marks for ScanNCut, Cricut or Silhouette.</p><button class="btn sm">Export for cutter…</button></div></div>
+    <div class="out"><div class="ico"><svg class="i" style="width:20px;height:20px"><use href="#i-ruler"/></svg></div><div class="grow"><b>Sizing proof</b><p>A cheap plain-paper print with a 50 mm ruler, to hold against your car first.</p><button class="btn sm">Print sizing proof</button></div></div>
+    <div class="out"><div class="ico"><svg class="i" style="width:20px;height:20px"><use href="#i-share"/></svg></div><div class="grow"><b>Editable sheet</b><p>Send the sheet to a friend or a print shop as an .sfsheet file.</p><div class="row"><button class="btn sm">Save to Sheets</button><button class="btn sm">Share…</button></div></div></div>
+   </aside>
+  </div>
+ </div>
+ <footer class="b-status"><span id="b-status">Design · 1 selected · Shift-click to add more</span><span class="grow"></span><div class="b-next"><span>Storage: Documents/SlotForge Decals</span><button class="btn sm" id="b-next">Next: Fit on car →</button></div></footer>
+</section>
+
+<!-- icons -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <symbol id="i-pointer" viewBox="0 0 24 24"><path d="M5 3l14 8-6.5 1.6L9 19z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 9h.01"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 7V4h14v3M12 4v16M9 20h6"/></symbol>
+  <symbol id="i-hash" viewBox="0 0 24 24"><path d="M10 4L8 20M16 4l-2 16M5 9h15M4 15h15"/></symbol>
+  <symbol id="i-shape" viewBox="0 0 24 24"><path d="M4 4h8v8H4zM16.5 12a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z"/></symbol>
+  <symbol id="i-path" viewBox="0 0 24 24"><path d="M4 18C8 6 15 18 20 6"/><rect x="2.5" y="16.5" width="3" height="3"/><rect x="18.5" y="4.5" width="3" height="3"/></symbol>
+  <symbol id="i-merge" viewBox="0 0 24 24"><path d="M9 5a6 6 0 1 0 0 12A6 6 0 0 0 9 5zM15 7a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></symbol>
+  <symbol id="i-slice" viewBox="0 0 24 24"><path d="M6 2v16h16M2 6h16v16"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></symbol>
+  <symbol id="i-lib" viewBox="0 0 24 24"><path d="M4 4h5v16H4zM10 4h5v16h-5zM16 5l4 1-3 14-4-1"/></symbol>
+  <symbol id="i-magnet" viewBox="0 0 24 24"><path d="M6 3v8a6 6 0 0 0 12 0V3h-4v8a2 2 0 0 1-4 0V3zM6 7h4M14 7h4"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M4 9h11a5 5 0 0 1 0 10H9M4 9l4-4M4 9l4 4"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M20 9H9a5 5 0 0 0 0 10h6M20 9l-4-4M20 9l-4 4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 1-1 1.7M12 17h.01"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M7 14h10v7H7z"/></symbol>
+  <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M6 2h9l4 4v16H6zM14 2v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-cut" viewBox="0 0 24 24"><path d="M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM8.5 7.5L20 18M8.5 16.5L20 6"/></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M3 15L15 3l6 6L9 21zM7 11l2 2M10 8l2 2M13 5l2 2"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5zM8 3v5h8M8 21v-7h8v7"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M5 14v7h14v-7"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 8h12v12H8zM4 16V4h12"/></symbol>
+  <symbol id="i-mirror" viewBox="0 0 24 24"><path d="M12 3v18M9 7L4 17h5zM15 7l5 10h-5z"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 15l2-5c.5-1 1.5-2 3-2h7c1.5 0 2.5.6 3.5 1.8L21 13v3H3zM7.5 18.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM16.5 18.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.5 0l3-3a4 4 0 0 0-5.5-5.5l-1 1M14 10a4 4 0 0 0-5.5 0l-3 3a4 4 0 0 0 5.5 5.5l1-1"/></symbol>
+  <symbol id="i-al" viewBox="0 0 24 24"><path d="M4 3v18M8 7h11v4H8zM8 14h6v4H8z"/></symbol>
+  <symbol id="i-ac" viewBox="0 0 24 24"><path d="M12 3v18M6 7h12v4H6zM8 14h8v4H8z"/></symbol>
+  <symbol id="i-ar" viewBox="0 0 24 24"><path d="M20 3v18M5 7h11v4H5zM10 14h6v4h-6z"/></symbol>
+  <symbol id="i-at" viewBox="0 0 24 24"><path d="M3 4h18M7 8h4v11H7zM14 8h4v6h-4z"/></symbol>
+  <symbol id="i-am" viewBox="0 0 24 24"><path d="M3 12h18M7 6h4v12H7zM14 8h4v8h-4z"/></symbol>
+  <symbol id="i-ab" viewBox="0 0 24 24"><path d="M3 20h18M7 5h4v11H7zM14 10h4v6h-4z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+  <symbol id="i-group" viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 13h8v8h-8zM11 7h4v4M7 11v4h4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+ </defs>
+</svg>
+
+<script>
+// The example sheet: page 1 of "Club Racing · No. 27", in millimetres on A4.
+const ITEMS = [];
+[12, 54, 96, 138].forEach((x, n) => ITEMS.push({ s: 'roundel', name: 'Roundel 27', x, y: 16, w: 18, h: 18, sel: n === 2 }));
+[12, 54, 96, 138].forEach(x => ITEMS.push({ s: 'forge', name: 'Forge Racing', x, y: 46, w: 34, h: 14 }));
+[12, 54, 96, 138].forEach(x => ITEMS.push({ s: 'dutch', name: 'Dutch Motorsport', x, y: 74, w: 34, h: 12 }));
+[12, 54, 96, 138].forEach(x => ITEMS.push({ s: 'driver', name: 'Driver name', x, y: 100, w: 25, h: 4 }));
+[12, 96].forEach(x => ITEMS.push({ s: 'stripe', name: 'Racing stripe', x, y: 140, w: 66, h: 5 }));
+[12, 36, 60, 84].forEach(x => ITEMS.push({ s: 'shield', name: 'SF Shield', x, y: 166, w: 12, h: 13 }));
+[12, 54, 96, 138].forEach(x => ITEMS.push({ s: 'roundel', name: 'Roundel 27 · bonnet', x: x + 4, y: 200, w: 26, h: 26 }));
+
+function sheet(width, { cut = true, sel = true, margins = true, white = false, faint = false } = {}) {
+  const W = 210, H = 297, h = (width * H) / W;
+  const body = ITEMS.map(i => {
+    const art = white
+      ? `<use href="#d-${i.s}" x="${i.x}" y="${i.y}" width="${i.w}" height="${i.h}" style="filter:grayscale(1) brightness(.85)"/>`
+      : `<use href="#d-${i.s}" x="${i.x}" y="${i.y}" width="${i.w}" height="${i.h}"/>`;
+    const c = !cut ? '' : i.s === 'roundel'
+      ? `<circle class="cutl" cx="${i.x + i.w / 2}" cy="${i.y + i.h / 2}" r="${i.w / 2 + .6}"/>`
+      : `<rect class="cutl" x="${i.x - .6}" y="${i.y - .6}" width="${i.w + 1.2}" height="${i.h + 1.2}" rx="1.2"/>`;
+    const s = sel && i.sel ? `<rect class="sel-box" x="${i.x - 1}" y="${i.y - 1}" width="${i.w + 2}" height="${i.h + 2}"/>${[[0,0],[1,0],[0,1],[1,1]].map(([a,b]) => `<rect class="sel-h" x="${i.x - 1 + a * (i.w + 2) - .9}" y="${i.y - 1 + b * (i.h + 2) - .9}" width="1.8" height="1.8"/>`).join('')}` : '';
+    return art + c + s;
+  }).join('');
+  return `<svg class="paper" width="${width}" height="${h}" viewBox="0 0 ${W} ${H}" style="display:block;${faint ? 'opacity:.9' : ''}">${margins ? `<rect class="marg" x="8" y="8" width="${W - 16}" height="${H - 16}"/>` : ''}${body}</svg>`;
+}
+function car(placed = true, sel = true) {
+  // car-side.png is 1981 × 793 px for a 140 mm car.
+  const k = 1981 / 140;
+  const d = (s, x, y, w, h, on) => `<use href="#d-${s}" x="${x}" y="${y}" width="${w * k}" height="${h * k}"/>${on ? `<rect x="${x - 6}" y="${y - 6}" width="${w * k + 12}" height="${h * k + 12}" fill="none" stroke="#2f8cff" stroke-width="5" stroke-dasharray="14 8"/>` : ''}`;
+  return `<svg viewBox="0 0 1981 793" style="width:100%;height:100%;display:block"><image href="../../../assets/car-side.png" width="1981" height="793"/>${placed ? d('roundel', 830, 330, 18, 18, sel) + d('forge', 1215, 318, 34, 14) + d('driver', 960, 250, 25, 4) + `<use href="#d-stripe" x="640" y="585" width="${66 * k}" height="${3 * k}" preserveAspectRatio="none"/>` : ''}</svg>`;
+}
+const T = s => (s === 'stripe' ? 'stripe-t' : s);
+const LIB = [['roundel', 'Roundel 27', 'Number · used 8×'], ['forge', 'Forge Racing', 'Logo · used 4×'], ['dutch', 'Dutch Motorsport', 'Logo · used 4×'], ['stripe', 'Racing stripe', 'Stripe · used 2×'], ['driver', 'Driver name', 'Name · used 4×'], ['shield', 'SF Shield', 'Logo · used 4×']];
+const libHTML = LIB.map(([s, n, k]) => `<div class="lib-card"><div class="thumb"><svg><use href="#d-${T(s)}"/></svg></div><b>${n}</b><small>${k}</small></div>`).join('');
+
+// A
+document.getElementById('a-paper').innerHTML = sheet(470);
+document.getElementById('a-lib').innerHTML = libHTML;
+document.getElementById('a-car').innerHTML = car();
+const ctx = document.getElementById('a-ctx'), sc = 470 / 210;
+ctx.style.left = `calc(50% - 235px + ${96 * sc}px - 70px)`; ctx.style.top = `${34 + 16 * sc - 50}px`;
+const L = [
+  ['roundel', 'Roundel 27 · bonnet', 'Number', 0, 4], ['shield', 'SF Shield', 'Logo', 0, 4], ['stripe', 'Racing stripe', 'Stripe', 0, 2],
+  ['driver', 'Driver name', 'Text', 1, 4], ['dutch', 'Dutch Motorsport', 'Group · 3 parts', 0, 4], ['forge', 'Forge Racing', 'Vector', 0, 4], ['roundel', 'Roundel 27', 'Vector', 0, 4]];
+document.getElementById('a-layers').innerHTML = L.map(([s, n, k, lock, c], idx) => `<div class="layer ${idx === 6 ? 'on' : ''} ${k.startsWith('Group') ? 'grp' : ''}"><div class="thumb"><svg><use href="#d-${T(s)}"/></svg></div><div><div>${n} <span class="faint mono" style="font-size:10.5px">×${c}</span></div><div class="k">${k}</div></div><div class="acts"><svg class="i"><use href="#i-eye"/></svg>${lock ? '<svg class="i" style="color:var(--amber)"><use href="#i-lock"/></svg>' : ''}</div></div>`).join('')
+  + '<p class="faint" style="font-size:11.5px;margin:8px 2px">Copies of the same decal fold together. Drag to change the order.</p>';
+for (const tabs of ['a-tabs', 'a-rtabs']) {
+  const t = document.getElementById(tabs), box = t.parentElement;
+  t.onclick = e => { const b = e.target.closest('button'); if (!b) return; t.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); box.querySelectorAll(':scope > .pane').forEach(p => (p.hidden = p.dataset.pane !== b.dataset.pane)); };
+}
+document.getElementById('a-out').onclick = e => { e.stopPropagation(); const m = document.getElementById('a-menu'); m.hidden = !m.hidden; };
+document.addEventListener('click', e => { if (!e.target.closest('#a-menu')) document.getElementById('a-menu').hidden = true; });
+
+// B
+document.getElementById('b-paper').innerHTML = sheet(480);
+document.getElementById('b-lib').innerHTML = libHTML;
+document.getElementById('b-stack').innerHTML += ['roundel', 'shield', 'stripe', 'driver', 'dutch', 'forge', 'roundel'].map((s, n) => `<div class="s ${n === 6 ? 'on' : ''} ${s === 'dutch' ? 'grp' : ''}"><svg><use href="#d-${T(s)}"/></svg></div>`).join('');
+document.getElementById('b-fitsheet').innerHTML = sheet(330, { cut: false, margins: false });
+document.getElementById('b-car').innerHTML = car();
+document.getElementById('b-bodies').innerHTML = [['../../../assets/car-side.png', 'Modern GT', 1], ['../../../assets/cars/classic-gt-side.webp', 'Classic endurance GT'], ['../../../assets/cars/touring-side.webp', 'Touring saloon'], ['../../../assets/cars/rally-side.webp', 'Rally hatchback'], ['../../../assets/cars/group-c-side.webp', 'Group C prototype']].map(([src, n, on]) => `<div class="body-card ${on ? 'on' : ''}"><img src="${src}" alt=""><div>${n}</div></div>`).join('') + '<div class="body-card" style="display:grid;place-items:center;border-style:dashed;color:var(--muted)">+ My own car</div>';
+document.getElementById('b-papersheet').innerHTML = sheet(470, { sel: false });
+document.getElementById('b-pdf').innerHTML = sheet(470, { sel: false, cut: false, margins: false });
+const STAGES = ['design', 'fit', 'paper', 'print'], NAMES = { design: 'Design', fit: 'Fit on car', paper: 'Paper & ink', print: 'Print & cut' };
+const STATUS = { design: 'Design · 1 selected · Shift-click to add more', fit: 'Fit on car · drag decals on the car; their size changes on the sheet too', paper: 'Paper & ink · applies to every page of this sheet', print: 'Print & cut · 2 notes, nothing blocking' };
+function stage(s) {
+  document.querySelectorAll('#b-stages .stage').forEach(b => b.classList.toggle('on', b.dataset.stage === s));
+  document.querySelectorAll('#B .b-view').forEach(v => (v.hidden = v.dataset.stage !== s));
+  document.getElementById('b-status').textContent = STATUS[s];
+  const next = STAGES[STAGES.indexOf(s) + 1], btn = document.getElementById('b-next');
+  btn.hidden = !next; if (next) { btn.textContent = `Next: ${NAMES[next]} →`; btn.onclick = () => stage(next); }
+}
+document.getElementById('b-stages').onclick = e => { const b = e.target.closest('.stage'); if (b) stage(b.dataset.stage); };
+stage('design');
+
+// switches
+function pick(id, fn) { const s = document.getElementById(id); s.onclick = e => { const b = e.target.closest('button'); if (!b) return; s.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); fn(b); }; }
+pick('opt-switch', b => { document.getElementById('A').hidden = b.dataset.opt !== 'A'; document.getElementById('B').hidden = b.dataset.opt !== 'B'; document.getElementById('b-hint').hidden = b.dataset.opt !== 'B'; });
+pick('theme-switch', b => (document.documentElement.dataset.theme = b.dataset.theme));
+const q = new URLSearchParams(location.search);
+if (q.get('opt') === 'B') document.querySelector('[data-opt="B"]').click();
+if (q.get('theme') === 'light') document.querySelector('[data-theme="light"]').click();
+if (q.get('stage')) stage(q.get('stage'));
+if (q.get('tab')) document.querySelector(`#a-tabs [data-pane="${q.get('tab')}"], #a-rtabs [data-pane="${q.get('tab')}"]`)?.click();
+if (q.get('menu')) document.getElementById('a-menu').hidden = false;
+</script>
+</body>
+</html>

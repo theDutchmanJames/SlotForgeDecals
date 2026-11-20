@@ -86,7 +86,8 @@ async function main() {
     await page.locator('.collection-item').first().waitFor();
     await page.locator('#collection-all').click();
     await page.locator('#collection-confirm').click();
-    await page.locator('[data-action="export-sheet"]').first().click();
+    await page.locator('#print-menu-button').click();
+    await page.locator('#print-menu [data-action="export-sheet"]').click();
     await page.locator('#collection-confirm').click();
     await page.waitForFunction(() =>
       document.querySelector('#toast').textContent.startsWith('Editable sheet exported')

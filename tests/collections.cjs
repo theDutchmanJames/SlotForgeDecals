@@ -78,7 +78,8 @@ async function main() {
               : '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
       );
     await page.waitForFunction(() => Studio.project.fonts.length === 1);
-    await page.locator('.projectbar [data-action="save-sheet"]').click();
+    await page.locator('#sheet-menu-button').click();
+    await page.locator('#sheet-menu [data-action="save-sheet"]').click();
     await page.waitForFunction(() => !projectTask);
     await page.keyboard.press('Control+s');
     await page.waitForFunction(() => !projectTask);
@@ -182,7 +183,8 @@ async function main() {
     assert.equal(all.length, 6);
     assert.equal(new Set(all.map(e => e.id)).size, 6);
     // Legacy single-sheet export, page selection on import, and a blank template.
-    await page.locator('.projectbar [data-action="export-sheet"]').click();
+    await page.locator('#print-menu-button').click();
+    await page.locator('#print-menu [data-action="export-sheet"]').click();
     await confirm();
     const single = path.join(run, 'exports', 'Zulu Current.sfsheet');
     assert.deepEqual(JSON.parse(await fs.readFile(single, 'utf8')).project, original);
@@ -212,13 +214,15 @@ async function main() {
         blankEntry.file
       ),
       beforeFailure = await state();
-    await page.locator('.projectbar [data-action="new"]').click();
+    await page.locator('#sheet-menu-button').click();
+    await page.locator('#sheet-menu [data-action="new"]').click();
     await page.waitForFunction(
       () => !projectTask && document.querySelector('#toast').classList.contains('error')
     );
     assert.deepEqual(await state(), beforeFailure);
     corrupt.restore();
-    await page.locator('.projectbar [data-action="new"]').click();
+    await page.locator('#sheet-menu-button').click();
+    await page.locator('#sheet-menu [data-action="new"]').click();
     await page.waitForFunction(() => !projectTask);
     const refreshed = (await page.evaluate(() => desktop.listProjects())).entries.find(
       e => e.id === blankEntry.id
@@ -285,7 +289,8 @@ async function main() {
       ipcMain.removeHandler('library-export');
       ipcMain.handle('library-export', () => null);
     });
-    await page.locator('.projectbar [data-action="export-sheet"]').click();
+    await page.locator('#print-menu-button').click();
+    await page.locator('#print-menu [data-action="export-sheet"]').click();
     await page.locator('#collection-confirm').click();
     await page.waitForFunction(() =>
       document.querySelector('#toast').textContent.startsWith('Sheet export cancelled')
@@ -298,7 +303,8 @@ async function main() {
         throw Error('Simulated write failure');
       });
     });
-    await page.locator('.projectbar [data-action="export-sheet"]').click();
+    await page.locator('#print-menu-button').click();
+    await page.locator('#print-menu [data-action="export-sheet"]').click();
     await page.locator('#collection-confirm').click();
     await page.waitForFunction(() =>
       document.querySelector('#dialog-error').textContent.includes('Simulated write failure')

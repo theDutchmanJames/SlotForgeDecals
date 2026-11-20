@@ -39,6 +39,7 @@ async function main() {
     await page.waitForFunction(() => Studio.project.items.length > 0);
 
     // Paper: US Letter, then a custom size via the dialog, then change it, then cancel a change.
+    await page.locator('[data-right-tab="sheet"]').click();
     await page.locator('#sheet-size-select').selectOption('letter');
     assert.equal((await P()).pageSize, 'letter');
     assert.equal(await page.locator('#sheet-size').textContent(), '215.9 × 279.4 mm');
@@ -60,7 +61,7 @@ async function main() {
     await page.locator('#dialog [data-action="close"]').first().click();
     assert.equal((await P()).customPage.w, 160, 'cancel keeps the size');
     assert.equal(await page.locator('#sheet-size-select').inputValue(), 'custom');
-    await page.locator('.projectbar [data-action="pdf"]').click();
+    await page.locator('#export-pdf').click();
     await page.locator('#export-anyway').click();
     await page.waitForFunction(() => !busy, null, { timeout: 60000 });
     const pdf = (await fs.readdir(path.join(run, 'exports'))).find(f => f.endsWith('.pdf'));
@@ -107,6 +108,7 @@ async function main() {
     const before = (await P()).items.length,
       forge = (await P()).items.find(i => i.name === 'Forge Racing');
     await page.evaluate(id => Studio.select([id]), forge.id);
+    await page.locator('[data-right-tab="decal"]').click();
     await page.locator('#inspector [data-action="mirror-pair"]').click();
     p = await P();
     const mirrored = p.items.at(-1);

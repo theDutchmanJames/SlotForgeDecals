@@ -98,7 +98,7 @@ The supplied cars are illustrative. This is a **2D sizing aid**, not a measured 
 
 ### Arrange sheets without changing decal sizes
 
-Choose **Sheet size** beside the project name, then set portrait or landscape under **Paper & white ink**.
+Choose the paper size and portrait or landscape under **Sheet & paper** in the right-hand panel.
 
 | Paper | Portrait dimensions |
 | --- | --- |
@@ -116,13 +116,13 @@ Every page in a project uses the same paper size. Changing paper preserves decal
 - Repeat a decal or selection in rows and columns, with separate horizontal and vertical gaps.
 - Add a mirrored copy for the other side of the car: directional graphics flip, editable text stays readable (lettering inside imported logos is mirrored too).
 - Align edges or centres, distribute equal gaps, and move selections between pages.
-- Use **Auto-arrange** to fit artwork within the margins, adding pages when needed while preserving physical size.
+- Use **Arrange** in the tools to fit artwork within the margins, adding pages when needed while preserving physical size.
 
-Millimetre rulers, printable margins and cutting gaps help organise the sheet. **Print checks** flag artwork outside the margins, insufficient cutting space, low-resolution images and white-ink settings that need attention. Light and dark themes are available from the top-right controls.
+Millimetre rulers, printable margins and cutting gaps help organise the sheet. **Print notes** in the status bar and the Export menu flag artwork outside the margins, insufficient cutting space, low-resolution images and white-ink settings that need attention. The sun or moon button at the top right switches between the light and dark themes.
 
 ### Save or print part of a sheet
 
-Choose **Slice area…** above the canvas to draw a rectangle over the current page. Enter its left and top position, width and height in millimetres for precise control. Choose **Clip at boundary** to keep exactly that rectangle, or **Expand to include whole decals** to avoid cutting through artwork.
+Choose **Slice** in the tools to draw a rectangle over the current page. Enter its left and top position, width and height in millimetres for precise control. Choose **Clip at boundary** to keep exactly that rectangle, or **Expand to include whole decals** to avoid cutting through artwork.
 
 - **Save to library** keeps the slice as one reusable decal, including its transparent background, relative positions, text, vectors, embedded images, fonts and individual white-ink settings. Give it a name and optional tags, then share it through a normal .sfdecal pack.
 - **Print this area…** previews a PDF with the original A4, A5 or Photo 4×6 paper size. Only the selected area prints, in its original position.
@@ -134,7 +134,7 @@ Print the PDF at **Actual size / 100%**. Custom paper sizes and physical offcuts
 
 ### Print & cut with a cutting machine or by hand
 
-Under **Print & cut**, choose whether cut lines **follow each decal's shape** or form a **rectangle**, and set the offset around the artwork (default 1 mm). Nearby parts such as letters share one cut line, holes are not cut, and dashed lines on the sheet preview the result. Single decals can override the sheet setting.
+Under **Sheet & paper → Cut lines**, choose whether cut lines **follow each decal's shape** or form a **rectangle**, and set the offset around the artwork (default 1 mm). Nearby parts such as letters share one cut line, holes are not cut, and dashed lines on the sheet preview the result. Single decals can override the sheet setting.
 
 **Export for cutter…** saves a folder with step-by-step instructions for your machine:
 
@@ -152,7 +152,7 @@ Inkjet printers print white as no ink, so the white border stays invisible on th
 
 For a reliable printing workflow:
 
-1. Review **Print checks** and resolve sizing or spacing problems.
+1. Review the **print notes** and resolve sizing or spacing problems.
 2. Export a **sizing proof** and print it on ordinary paper.
 3. Choose matching paper in your printer settings and print at **Actual size / 100%**, with **Fit to page** disabled.
 4. Measure the proof's labelled reference bars and check the cut-out decals against your model.
@@ -162,7 +162,7 @@ Proofs use 100 mm reference bars, with a 50 mm bar on the short side of a Photo 
 
 ### Prepare artwork for white-ink printing
 
-For a printer or print shop that supports white ink, enable the option under **Paper & white ink**, enter the required spot-colour name, and choose **Colour + white backing** or **White ink only** for each decal.
+For a printer or print shop that supports white ink, enable the option under **Sheet & paper**, enter the required spot-colour name, and choose **Colour + white backing** or **White ink only** for each decal.
 
 The PDF includes a named white separation using a 600 PPI silhouette mask. Confirm the spot name, ink order and appearance with your print shop. This has passed PDF structure checks but has **not been validated on a physical white-ink printer**. Output preserves RGB artwork; it is not a certified PDF/X file or a managed CMYK proof.
 
@@ -172,13 +172,20 @@ Open **Shapes & Patterns** for rectangles, ellipses, triangles and lines, plus d
 
 Select one or more canvas items and choose **Save Decal to Library**; multiple items become one reusable grouped decal after you name and save it. Both full library windows use **two columns in List view**. The sidebar library folds closed, offers its own grid/list switch, and scrolls within a height limit as collections grow.
 
-The labelled **Sheet name** field opens renaming. **Portrait / Landscape** switches canvas orientation, **Scale Conversion** opens scale conversion, and **Add Sheet** saves the outgoing work before starting another sheet. The editor’s **Export sheet…** opens the same selection window as Import & Export.
+The editor is one screen (redesigned in November 2026):
+
+- **Top bar:** the sheet's name (click to rename) with its saved state and paper. The arrow next to it saves to Sheets, starts a **New sheet** (the outgoing work is saved first) or opens a saved one. **Export PDF** sits on the right; its arrow lists Export for cutter, the sizing proof, **Share this sheet…** (the same selection window as Import & Export) and the print notes. **Ctrl+K** finds any tool, decal on the sheet or setting.
+- **Tools** down the left edge: Select, Image, Text, Number, Shape, Path, Merge, Slice and Arrange, with Snap at the bottom. Single keys pick them: V, I, T, N, S, P and M.
+- **Left panel:** the decal **Library**, the **Layers** of the current page (top first, each with a thumbnail and a lock) and the **Pages**.
+- **Right panel:** **Decal** shows the selection's size and place, colour, ink and cut line, and its tools; **Sheet & paper** holds the paper size, orientation, model scale, margins, white ink and cut lines.
+- **Above the selection** a small bar shows its size with Duplicate, Other side, Repeat, Arrange…, Group and Delete.
+- **Fit check:** the car in the corner of the sheet shows the selection at its printed size; hide it with its arrow or enlarge it.
 
 ### Draw paths, merge shapes and cut holes
 
-Choose **Path Tool** directly in **Add artwork** to draw freehand strokes or place precise points on the main sheet canvas. Its drawing modes, colours, line width and point controls appear in the right-hand panel. Drag when placing a point to create a curve, close the path to make a filled shape, and adjust individual points and handles afterwards. The editor includes smooth/corner points, point insertion and deletion, line width, fill colours, zoom, panning and drawing undo. Select a saved path and choose **Edit Points & Curves** to continue editing.
+Choose **Path** in the tools to draw freehand strokes or place precise points on the main sheet canvas. Its drawing modes, colours, line width and point controls appear in the right-hand panel. Drag when placing a point to create a curve, close the path to make a filled shape, and adjust individual points and handles afterwards. The editor includes smooth/corner points, point insertion and deletion, line width, fill colours, zoom, panning and drawing undo. Select a saved path and choose **Edit Points & Curves** to continue editing.
 
-Choose **Merge & Cut** directly in **Add artwork**, then select **2–20 filled native shapes or closed paths** on the canvas. Set the operation in the right-hand panel: merge, cut from a chosen base, keep only the overlap or exclude overlapping areas. The result previews on the actual sheet; click **Apply** to keep it. Groups of supported shapes work too. Results retain Bézier curves and transparent holes, stay editable when shared, and remain vector in PDF output. You can keep the originals or replace them; Undo restores the selection. These operations use filled areas, omit outlines and take the base shape’s colour, opacity and ink treatment. For a group, the first child supplies the fill colour. Imported SVGs, images and text are not supported by the shape operations.
+Choose **Merge** in the tools, then select **2–20 filled native shapes or closed paths** on the canvas. Set the operation in the right-hand panel: merge, cut from a chosen base, keep only the overlap or exclude overlapping areas. The result previews on the actual sheet; click **Apply** to keep it. Groups of supported shapes work too. Results retain Bézier curves and transparent holes, stay editable when shared, and remain vector in PDF output. You can keep the originals or replace them; Undo restores the selection. These operations use filled areas, omit outlines and take the base shape’s colour, opacity and ink treatment. For a group, the first child supplies the fill colour. Imported SVGs, images and text are not supported by the shape operations.
 
 Files containing these editable paths need a Decals version with path support.
 
@@ -203,7 +210,7 @@ Sharing is currently file-based. Online galleries and direct Livery integration 
 
 ### Save, share and recover complete sheets
 
-The current workspace saves automatically. **Save sheet / Ctrl+S** saves locally to **Sheet Library**. Select one or more library entries and choose **Export Sheet(s)** to share an editable `.sfsheet` file. Each saved sheet keeps its own paper size, scale, artwork, imported fonts and pages. Use **Choose pages…** to share only part of a saved sheet. **Import Sheet(s)** lets you select which sheets and pages to add as independent copies; your current work stays open.
+The current workspace saves automatically. **Save to Sheets / Ctrl+S** (the arrow next to the sheet name) saves locally to your **Sheet Library**. Select one or more library entries and choose **Export Sheet(s)** to share an editable `.sfsheet` file. Each saved sheet keeps its own paper size, scale, artwork, imported fonts and pages. Use **Choose pages…** to share only part of a saved sheet. **Import Sheet(s)** lets you select which sheets and pages to add as independent copies; your current work stays open.
 
 Earlier saved project versions and recent workspace backups can be previewed and recovered as separate sheet copies. Opening another project or starting a new sheet preserves the outgoing project first.
 

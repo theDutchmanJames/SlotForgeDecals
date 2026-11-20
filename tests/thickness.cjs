@@ -29,7 +29,6 @@ const { _electron: electron } = require('playwright'),
     await page.locator('#dialog [data-action="close"]').last().click();
     await page.locator('[data-action="shapes"]').click();
     await page.locator('[data-create="line"]').click();
-    await page.locator('#inspector details.purple summary').click();
     assert.equal(await page.locator('#prop-strokeWidth').count(), 0);
     await page.locator('#prop-thickness').fill('4');
     await page.locator('#prop-thickness').press('Tab');
@@ -47,7 +46,6 @@ const { _electron: electron } = require('playwright'),
     await page.locator('[data-action="redo"]').click();
     await page.locator('[data-action="shapes"]').click();
     await page.locator('[data-create="stripe"]').click();
-    await page.locator('#inspector details.purple summary').click();
     await page.locator('#prop-thickness').fill('10');
     await page.locator('#prop-thickness').press('Tab');
     assert.deepEqual(
@@ -100,7 +98,6 @@ const { _electron: electron } = require('playwright'),
     assert.ok(Math.abs(sizes[2] - 4.2) < 0.01);
     await page.locator('[data-action="shapes"]').click();
     await page.locator('[data-create="rect"]').click();
-    await page.locator('#inspector details.purple summary').click();
     assert.equal(await page.locator('#prop-strokeWidth').count(), 1);
     assert.equal(await page.locator('#prop-thickness').count(), 0);
     await page.evaluate(() => Studio.flush());

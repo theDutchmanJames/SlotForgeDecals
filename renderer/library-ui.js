@@ -93,13 +93,12 @@ const Library = (() => {
     const panel = $('#sidebar-library'),
       container = $('#library-grid'),
       search = $('#library-search').value;
-    panel.open = settings.sidebarLibraryOpen !== false;
     $('#library-count').textContent = count.toLocaleString();
     const view = settings.sidebarLibraryView === 'list' ? 'list' : 'grid';
     container.dataset.libraryView = view;
     for (const b of $$('[data-sidebar-view]'))
       b.setAttribute('aria-pressed', String(b.dataset.sidebarView === view));
-    if (!panel.open) {
+    if (panel.hidden) {
       sidebarKey = '';
       sidebarRequest++;
       observer?.disconnect();
@@ -118,7 +117,7 @@ const Library = (() => {
     container.inert = true;
     query({ search, filter, offset: sidebarOffset, limit: 24, sort: 'added' })
       .then(result => {
-        if (request !== sidebarRequest || !panel.open) return;
+        if (request !== sidebarRequest || panel.hidden) return;
         if (sidebarOffset >= result.total && sidebarOffset) {
           sidebarOffset = Math.max(0, Math.floor((result.total - 1) / 24) * 24);
           sidebarKey = '';
@@ -155,7 +154,7 @@ const Library = (() => {
               if (!hit.isIntersecting) continue;
               observer.unobserve(hit.target);
               const e = result.entries.find(d => d.id === hit.target.dataset.decalThumb);
-              preview(e, () => request === sidebarRequest && hit.target.isConnected && panel.open)
+              preview(e, () => request === sidebarRequest && hit.target.isConnected && !panel.hidden)
                 .then(src => {
                   if (src && request === sidebarRequest && hit.target.isConnected) hit.target.src = src;
                 })

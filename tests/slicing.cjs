@@ -25,7 +25,7 @@ async function main() {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   const close = () => page.locator('#dialog [data-action="close"]').first().click();
-  const open = () => page.locator('.toolbar [data-action="slice"]').click();
+  const open = () => page.locator('.tool-rail [data-action="slice"]').click();
   const box = async b => {
     for (const k of ['w', 'h', 'x', 'y']) await page.locator('#slice-' + k).fill(String(b[k]));
   };

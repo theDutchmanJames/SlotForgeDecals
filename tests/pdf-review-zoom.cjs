@@ -95,7 +95,7 @@ async function main() {
       Studio.select([]);
     });
     const original = await page.evaluate(() => JSON.stringify(Studio.project));
-    const open = () => page.locator('.projectbar [data-action="pdf"]').click(),
+    const open = () => page.locator('#export-pdf').click(),
       close = () => page.locator('#dialog [data-action="close"]').first().click();
     await open();
     assert.equal(await page.locator('.pdf-artwork-list tbody tr').count(), 5);

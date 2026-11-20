@@ -58,7 +58,7 @@ async function main() {
     await page.mouse.up();
   };
   const newPath = async () => {
-    await page.locator('.creation-launchers [data-action="draw-path"]').click();
+    await page.locator('.tool-rail [data-action="draw-path"]').click();
     assert(!(await page.locator('#dialog').evaluate(d => d.open)));
     assert(await page.locator('#inspector #path-controls').isVisible());
   };
@@ -80,7 +80,8 @@ async function main() {
     await click(20, 20);
     await page.evaluate(() => Studio.flush());
     assert.equal(await page.evaluate(() => Studio.project.items.length), 0);
-    await page.locator('.projectbar [data-action="new"]').click();
+    await page.locator('#sheet-menu-button').click();
+    await page.locator('#sheet-menu [data-action="new"]').click();
     assert(await page.locator('#path-controls').isVisible());
     assert.equal(await page.evaluate(() => Studio.project.items.length), 0);
     await page.keyboard.press('Escape');
@@ -101,7 +102,7 @@ async function main() {
     assert(await page.locator('#path-apply').isDisabled());
     await page.locator('#redo').click();
     assert(!(await page.locator('#path-apply').isDisabled()));
-    await page.locator('.creation-launchers [data-create="text"]').click();
+    await page.locator('.tool-rail [data-create="text"]').click();
     assert.equal(await page.locator('#path-controls').count(), 0);
     assert.deepEqual(await page.evaluate(() => Studio.project.items.map(i => i.kind)), ['path', 'text']);
     await page.locator('#undo').click();
@@ -200,7 +201,7 @@ async function main() {
         selected = new Set();
       });
     });
-    await page.locator('.creation-launchers [data-action="combine-shapes"]').click();
+    await page.locator('.tool-rail [data-action="combine-shapes"]').click();
     assert(!(await page.locator('#dialog').evaluate(d => d.open)));
     assert(await page.locator('#combine-apply').isDisabled());
     await click(35, 35);
@@ -332,7 +333,7 @@ async function main() {
         selected = new Set([a.id, b.id]);
       });
     });
-    await page.locator('.creation-launchers [data-action="combine-shapes"]').click();
+    await page.locator('.tool-rail [data-action="combine-shapes"]').click();
     await page.locator('#combine-keep').check();
     assert(
       await page.evaluate(() => {

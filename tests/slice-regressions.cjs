@@ -97,7 +97,6 @@ async function main() {
         Studio.project.whiteInk = true;
         Studio.select([g.id]);
       });
-      await page.locator('#inspector details > summary').filter({ hasText: 'Text & appearance' }).click();
       await page.locator('#ink').selectOption(ink);
       const before = await page.evaluate(async () => ({
         mask: (await Art.masks(Studio.project))[0],
@@ -107,7 +106,7 @@ async function main() {
         Studio.project.name = name;
         await Studio.exportPDF(false, true);
       }, ink + ' before');
-      await page.locator('.toolbar [data-action="ungroup"]').click();
+      await page.locator('.ctx-bar [data-action="ungroup"]').click();
       const after = await page.evaluate(async () => ({
         mask: (await Art.masks(Studio.project))[0],
         slice: Studio.project.items.find(i => i.kind === 'slice'),
