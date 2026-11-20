@@ -49,6 +49,14 @@
   <symbol id="ic-brush" viewBox="0 0 24 24"><path d="M14 4l6 6-8 8H6v-6zM4 20h4"/></symbol>
   <symbol id="ic-outline" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 7.5l4 2.3v4.4L12 16.5l-4-2.3V9.8z"/></symbol>
   <symbol id="ic-trace" viewBox="0 0 24 24"><path d="M4 20c2-6 4-9 8-9s6 3 8 9M8 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0"/></symbol>
+  <symbol id="ic-align-left" viewBox="0 0 24 24"><path d="M4 3v18M8 6h12v4H8zM8 14h7v4H8z"/></symbol>
+  <symbol id="ic-align-hcenter" viewBox="0 0 24 24"><path d="M12 3v18M6 6h12v4H6zM8 14h8v4H8z"/></symbol>
+  <symbol id="ic-align-right" viewBox="0 0 24 24"><path d="M20 3v18M4 6h12v4H4zM9 14h7v4H9z"/></symbol>
+  <symbol id="ic-align-top" viewBox="0 0 24 24"><path d="M3 4h18M6 8h4v12H6zM14 8h4v7h-4z"/></symbol>
+  <symbol id="ic-align-vcenter" viewBox="0 0 24 24"><path d="M3 12h18M6 6h4v12H6zM14 8h4v8h-4z"/></symbol>
+  <symbol id="ic-align-bottom" viewBox="0 0 24 24"><path d="M3 20h18M6 4h4v12H6zM14 9h4v7h-4z"/></symbol>
+  <symbol id="ic-distribute-x" viewBox="0 0 24 24"><path d="M3 4v16M21 4v16M8 8h3v8H8zM13 8h3v8h-3z"/></symbol>
+  <symbol id="ic-distribute-y" viewBox="0 0 24 24"><path d="M4 3h16M4 21h16M8 8h8v3H8zM8 13h8v3H8z"/></symbol>
   <symbol id="ic-arrange" viewBox="0 0 24 24"><path d="M4 3v18M8 7h11v4H8zM8 14h6v4H8z"/></symbol>
   <symbol id="ic-move" viewBox="0 0 24 24"><path d="M5 3h9l4 4v6M5 3v18h8M15 18h7M19 15l3 3-3 3"/></symbol>
   <symbol id="ic-crop" viewBox="0 0 24 24"><path d="M6 2v16h16M2 6h16v16"/></symbol>
@@ -99,7 +107,7 @@
    <button data-action="combine-shapes" data-tool="combine" aria-pressed="false" title="Merge &amp; cut shapes (M)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-merge"/></svg><span>Merge</span></button>
    <hr>
    <button data-action="slice" title="Save or print a rectangular part of this page"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-slice"/></svg><span>Slice</span></button>
-   <button data-action="arrange" title="Auto-arrange: pack every decal of this sheet at its size"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-grid"/></svg><span>Arrange</span></button>
+   <button data-action="arrange" title="Arrange: align, repeat, pages and auto-arrange in the Layout tab"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-grid"/></svg><span>Arrange</span></button>
    <span class="spacer"></span>
    <label class="rail-snap" title="Snap to whole millimetres (hold Alt to move freely)"><input id="snap" type="checkbox" checked><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-magnet"/></svg><span>Snap</span></label>
   </nav>
@@ -140,8 +148,9 @@
    <div class="canvas-footer"><div id="pages" class="pages"></div><button class="ghost icon-only page-add" data-action="add-page" title="Add page" aria-label="Add page"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-plus"/></svg></button><span class="spacer"></span><span id="sheet-size" class="sheet-size">210 × 297 mm</span><div class="zoom-ctl"><button class="ghost icon-only" data-action="zoom-out" title="Zoom out" aria-label="Zoom out"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-minus"/></svg></button><button id="zoom" class="ghost" data-action="fit" title="Fit page · Ctrl + mousewheel to zoom">Fit</button><button class="ghost icon-only" data-action="zoom-in" title="Zoom in" aria-label="Zoom in"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-plus"/></svg></button><button class="ghost" data-action="zoom-actual" title="Show at actual size">100%</button></div></div>
   </section>
   <aside class="wb-right">
-   <div class="wb-tabs" role="tablist" aria-label="Decal and sheet settings"><button role="tab" data-right-tab="decal">Decal</button><button role="tab" data-right-tab="sheet">Sheet &amp; paper</button></div>
+   <div class="wb-tabs" role="tablist" aria-label="Decal and sheet settings"><button role="tab" data-right-tab="decal">Decal</button><button role="tab" data-right-tab="layout">Layout</button><button role="tab" data-right-tab="sheet">Sheet &amp; paper</button></div>
    <div class="wb-pane flush" data-right-pane="decal"><div id="inspector"></div></div>
+   <div class="wb-pane flush" data-right-pane="layout" hidden><div id="layout-tab" class="layout-tab" aria-label="Layout tools"></div></div>
    <div class="wb-pane flush" data-right-pane="sheet" hidden>
     <section class="ins-sec" id="paper-folder"><h3>Paper</h3>
      <div class="field"><label for="sheet-size-select">Paper size</label><select id="sheet-size-select" title="Choose the paper size for every page"><option value="a4">A4 · 210 × 297 mm</option><option value="a5">A5 · 148 × 210 mm</option><option value="photo4x6">Photo 4×6 in · 101.6 × 152.4 mm</option><option value="letter">US Letter · 215.9 × 279.4 mm</option><option value="custom">Custom size…</option><option value="custom-edit" hidden>Change custom size…</option></select></div>

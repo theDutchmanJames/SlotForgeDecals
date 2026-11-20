@@ -121,8 +121,10 @@ async function main() {
     assert.ok((await page.locator('#dialog h2').textContent()).includes('Review before'));
     await done();
     await page.locator('[data-action="arrange"]').click();
+    await page.locator('#pack-apply').click();
     assert.deepEqual(await page.evaluate(() => DM.warnings(Studio.project)), []);
     assert.equal(await page.evaluate(() => DM.bounds(Studio.project.items[0]).x), 5);
+    await page.locator('[data-right-tab="decal"]').click();
     await page.evaluate(() => {
       const g = DM.group([DM.item('rect', { x: 20, y: 20, w: 10, h: 10, opacity: 0.8 })]);
       g.opacity = 0.5;

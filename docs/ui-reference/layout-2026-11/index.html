@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Layout tools redesign</title>
+<!-- Preview only: made-up decals, nothing is wired up. Two concepts for aligning, spacing, repeating, moving between pages and auto-arranging decals on a sheet. -->
+<style>
+@font-face{font-family:'SF Barlow Condensed';src:url('../../../renderer/fonts/barlowcondensed/BarlowCondensed-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic}
+@font-face{font-family:'SF Roboto Mono';src:url('../../../renderer/fonts/robotomono/RobotoMono[wght].ttf') format('truetype');font-weight:100 700}
+:root{--bg:#14181e;--canvas:#101318;--panel:#1d232b;--raised:#252c36;--ink:#e8e6e1;--ink2:#c4c8ce;--muted:#98a0ab;--faint:#6b7380;--line:#323946;--line2:#272d37;--accent:#e5484d;--ok:#3ecf8e;--blue:#2f8cff;--gold:#f0b429;
+  --cond:'SF Barlow Condensed','Bahnschrift',sans-serif;--mono:'SF Roboto Mono',Consolas,monospace;--ui:'Segoe UI',system-ui,sans-serif;color-scheme:dark}
+[data-theme=light]{--bg:#f1efea;--canvas:#e4e1da;--panel:#fff;--raised:#f3f1ec;--ink:#1d2229;--ink2:#3a414c;--muted:#656c76;--faint:#8a929d;--line:#d9d6cf;--line2:#e6e3dd;--accent:#c92424;--ok:#1f9a62;--blue:#1f6fd6;--gold:#b7820a;color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--ui);overflow:hidden}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+h1,h2,h3,h4{font-family:var(--cond);font-style:italic;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0}
+.muted{color:var(--muted)}.faint{color:var(--faint)}.grow{flex:1}.mono{font-family:var(--mono);font-weight:500}
+.row{display:flex;align-items:center;gap:8px}
+.switch{position:relative;z-index:50;display:flex;align-items:center;gap:14px;height:46px;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--line2)}
+.switch b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.switch p{margin:0 0 0 auto;font-size:12px;color:var(--faint);max-width:520px;line-height:1.3}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+.seg button{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:26px;padding:0 11px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.seg button.on{background:color-mix(in srgb,var(--ink) 12%,var(--panel));color:var(--ink);font-weight:600}
+.seg.sm button{height:22px;padding:0 8px;font-size:12px}
+.seg.full{display:flex}.seg.full button{flex:1}
+.opt{position:absolute;inset:46px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 13px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);font-size:13px;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+.btn.sm{height:27px;padding:0 9px;font-size:12px}
+.btn.icon{width:32px;padding:0}.btn.sm.icon{width:27px}
+.inp{display:flex;align-items:center;gap:6px;min-width:0;height:30px;padding:0 9px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--bg) 70%,var(--panel))}
+.inp input,.inp select{flex:1;min-width:0;width:100%;border:0;background:none;outline:0}
+.inp span{color:var(--faint);font-size:11.5px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:11px;color:var(--muted)}
+.check{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.check i{width:16px;height:16px;border-radius:4px;background:var(--accent);display:grid;place-items:center;color:#fff;font-style:normal;font-size:11px}
+.check i.off{background:none;border:1.5px solid var(--line)}
+/* editor shell */
+.app{position:absolute;inset:0;display:flex;flex-direction:column}
+.top{height:56px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 14px;flex:none}
+.logo{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;font:700 italic 17px var(--cond)}
+.brand{font:700 italic 21px var(--cond)}
+.sheetname{font:700 italic 19px var(--cond);text-transform:uppercase;margin-left:14px}
+.nav{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:10px;margin-left:60px}
+.nav span{padding:5px 12px;border-radius:7px;color:var(--muted)}
+.nav span.on{background:color-mix(in srgb,var(--ink) 11%,var(--panel));color:var(--ink);font-weight:600}
+.body{flex:1;display:flex;min-height:0}
+.rail{width:60px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:10px;flex:none}
+.rail button{display:flex;flex-direction:column;align-items:center;gap:3px;width:48px;padding:6px 0 4px;border:0;border-radius:9px;background:none;color:var(--muted);font-size:10px}
+.rail button svg{width:19px;height:19px}
+.rail button.on{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.lp{width:250px;background:var(--panel);border-right:1px solid var(--line);flex:none;padding:12px}
+.tabs{display:flex;gap:14px;border-bottom:1px solid var(--line);margin:-12px -12px 12px;padding:0 14px}
+.tabs span{padding:12px 0 10px;color:var(--muted);font-weight:500}
+.tabs span.on{color:var(--ink);box-shadow:inset 0 -2px var(--accent);font-weight:600}
+.layer{display:flex;align-items:center;gap:9px;padding:6px 6px;border-radius:7px;font-size:12.5px}
+.layer i{width:30px;height:20px;border-radius:4px;background:#fff;display:grid;place-items:center;overflow:hidden;flex:none}
+.layer i svg{max-width:26px;max-height:16px}
+.layer.on{background:color-mix(in srgb,var(--blue) 16%,transparent)}
+.cv{flex:1;position:relative;background:var(--canvas);overflow:hidden}
+.rp{width:330px;background:var(--panel);border-left:1px solid var(--line);flex:none;display:flex;flex-direction:column;overflow:hidden}
+.ph{height:12px;margin:16px;border-radius:5px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.paper{position:absolute;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.paper .margin{position:absolute;border:1px dashed rgba(47,140,255,.35);pointer-events:none}
+.dc{position:absolute}
+.dc svg{display:block;width:100%;height:100%}
+.dc.sel{outline:1.5px solid var(--blue);outline-offset:2px}
+.dc.ghost{opacity:.55;outline:1.5px dashed var(--accent);outline-offset:1px}
+.dc.was{opacity:.18;outline:1px dashed #888}
+.dims{position:absolute;padding:1px 6px;border-radius:5px;background:var(--blue);color:#fff;font:500 10.5px var(--mono);white-space:nowrap;transform:translate(-50%,-50%)}
+.dims.red{background:#e5484d}
+.guide{position:absolute;background:#ff3fa4}
+.handle{position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--blue);box-shadow:0 2px 6px rgba(0,0,0,.35);transform:translate(-50%,-50%)}
+.handle.big{width:22px;height:22px;border-color:#e5484d;display:grid;place-items:center}
+.pill{position:absolute;display:flex;align-items:center;gap:8px;padding:6px 11px;border-radius:9px;background:#11151b;color:#fff;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.4);white-space:nowrap}
+.pill b{font-family:var(--mono);font-weight:600}
+.cursor{position:absolute;width:18px;height:18px;z-index:9}
+.hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);padding:7px 14px;border-radius:10px;background:var(--raised);border:1px solid var(--line);color:var(--ink2);font-size:12.5px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.arrow{position:absolute;height:2px;opacity:.55;background:color-mix(in srgb,var(--blue) 70%,transparent);transform-origin:0 50%}
+.arrow::after{content:'';position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left:7px solid color-mix(in srgb,var(--blue) 70%,transparent);border-right:0}
+
+/* ===== A · on the sheet ===== */
+.dock{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:4px;padding:6px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 12px 34px rgba(0,0,0,.4);white-space:nowrap}
+.dock .grp{display:flex;align-items:center;gap:2px;padding:0 4px}
+.dock .grp+.grp{border-left:1px solid var(--line);padding-left:8px;margin-left:4px}
+.dock .lbl{font:600 9.5px var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-right:6px}
+.dock .ib{width:32px;height:30px;display:grid;place-items:center;border:0;border-radius:8px;background:none;color:var(--ink2)}
+.dock .ib:hover,.dock .ib.on{background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.dock .ib.on{color:var(--accent)}
+.dock .num{width:62px}
+.pages{position:absolute;left:0;right:0;bottom:0;height:118px;z-index:5;display:flex;align-items:center;gap:14px;padding:0 22px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(4px)}
+.pg{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.pg .th{width:56px;height:78px;background:#fff;border-radius:3px;border:2px solid transparent;box-shadow:0 2px 8px rgba(0,0,0,.25);position:relative;overflow:hidden}
+.pg .th i{position:absolute;background:#c8ccd2;border-radius:1px}
+.pg.on .th{border-color:var(--accent)}
+.pg.drop .th{border-color:var(--blue);box-shadow:0 0 0 4px color-mix(in srgb,var(--blue) 30%,transparent)}
+.pg.new .th{background:none;border:2px dashed var(--line);display:grid;place-items:center;color:var(--muted);box-shadow:none}
+.chain{position:absolute;display:flex;gap:6px}
+/* ===== B · layout tab ===== */
+.rtabs{display:flex;gap:16px;padding:0 16px;border-bottom:1px solid var(--line);flex:none}
+.rtabs span{padding:13px 0 11px;color:var(--muted);font-weight:500}
+.rtabs span.on{color:var(--ink);font-weight:600;box-shadow:inset 0 -2px var(--accent)}
+.lay{flex:1;overflow:auto}
+.sec{border-bottom:1px solid var(--line2)}
+.sec>header{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer}
+.sec>header h3{font-size:15px;flex:1}
+.sec>header small{color:var(--faint);font-size:11.5px}
+.sec>header .chev{color:var(--faint);transition:transform .15s}
+.sec.open>header .chev{transform:rotate(90deg)}
+.sec .bd{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
+.pad{display:grid;grid-template-columns:repeat(3,38px);gap:4px;padding:6px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--bg) 50%,var(--panel))}
+.pad button{height:34px;border:0;border-radius:7px;background:none;display:grid;place-items:center;color:var(--muted)}
+.pad button.on{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+.pad button:hover{background:color-mix(in srgb,var(--ink) 9%,transparent)}
+.alignrow{display:flex;gap:14px;align-items:flex-start}
+.mini{display:flex;flex-direction:column;gap:6px;flex:1}
+.ibtns{display:flex;gap:4px;flex-wrap:wrap}
+.ibtns .btn{height:30px;padding:0 9px;font-size:12px}
+.step{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;height:32px}
+.step button{width:30px;height:100%;border:0;background:color-mix(in srgb,var(--ink) 6%,transparent);font-size:15px}
+.step b{flex:1;text-align:center;font:600 14px var(--mono)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sum{padding:9px 11px;border-radius:9px;background:color-mix(in srgb,var(--ok) 12%,transparent);color:var(--ink);font-size:12px}
+.sum.warn{background:color-mix(in srgb,var(--gold) 16%,transparent)}
+.pcard{display:flex;align-items:center;gap:11px;padding:8px;border:1px solid var(--line);border-radius:10px}
+.pcard .th{width:38px;height:53px;background:#fff;border-radius:2px;position:relative;overflow:hidden;flex:none;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.pcard .th i{position:absolute;background:#c8ccd2}
+.pcard.cur{border-color:color-mix(in srgb,var(--accent) 60%,var(--line))}
+.ba{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.ba .th{aspect-ratio:210/297;background:#fff;border-radius:3px;position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.ba .th i{position:absolute;border-radius:1px}
+.ba small{display:block;text-align:center;color:var(--muted);font-size:11px;margin-top:4px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:12px}
+.kv span:nth-child(odd){color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="switch">
+  <b>Option</b><div class="seg" id="opt"><button data-v="A">A · On the sheet</button><button data-v="B">B · Layout tab</button></div>
+  <b>State</b><div class="seg" id="state"></div>
+  <b>Theme</b><div class="seg" id="theme"><button data-v="dark">Dark</button><button data-v="light">Light</button></div>
+  <p id="blurb"></p>
+</div>
+<div class="opt" id="stage"></div>
+<svg width="0" height="0" style="position:absolute"><defs>
+ <symbol id="i-sel" viewBox="0 0 24 24"><path d="m5 3 14 8-6 2-3 6z"/></symbol>
+ <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 8"/></symbol>
+ <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+ <symbol id="i-hash" viewBox="0 0 24 24"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></symbol>
+ <symbol id="i-shape" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><rect x="11" y="11" width="9" height="9" rx="1"/></symbol>
+ <symbol id="i-arr" viewBox="0 0 24 24"><path d="M4 3v18M8 7h11v4H8zM8 14h6v4H8z"/></symbol>
+ <symbol id="i-al" viewBox="0 0 24 24"><path d="M4 3v18M8 6h12v4H8zM8 14h7v4H8z"/></symbol>
+ <symbol id="i-ac" viewBox="0 0 24 24"><path d="M12 3v18M6 6h12v4H6zM8 14h8v4H8z"/></symbol>
+ <symbol id="i-ar" viewBox="0 0 24 24"><path d="M20 3v18M4 6h12v4H4zM9 14h7v4H9z"/></symbol>
+ <symbol id="i-at" viewBox="0 0 24 24"><path d="M3 4h18M6 8h4v12H6zM14 8h4v7h-4z"/></symbol>
+ <symbol id="i-am" viewBox="0 0 24 24"><path d="M3 12h18M6 6h4v12H6zM14 8h4v8h-4z"/></symbol>
+ <symbol id="i-ab" viewBox="0 0 24 24"><path d="M3 20h18M6 4h4v12H6zM14 9h4v7h-4z"/></symbol>
+ <symbol id="i-dh" viewBox="0 0 24 24"><path d="M3 4v16M21 4v16M8 8h3v8H8zM13 8h3v8h-3z"/></symbol>
+ <symbol id="i-dv" viewBox="0 0 24 24"><path d="M4 3h16M4 21h16M8 8h8v3H8zM8 13h8v3H8z"/></symbol>
+ <symbol id="i-mir" viewBox="0 0 24 24"><path d="M12 3v18M9 6 3 18h6zM15 6l6 12h-6z"/></symbol>
+ <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></symbol>
+ <symbol id="i-page" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/></symbol>
+ <symbol id="i-pack" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></symbol>
+ <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+ <symbol id="i-gap" viewBox="0 0 24 24"><path d="M4 5v14M20 5v14M8 12h8M8 12l2-2M8 12l2 2M16 12l-2-2M16 12l-2 2"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-fill" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></symbol>
+</defs></svg>
+<script>
+const I = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const F = "font-family:'SF Barlow Condensed',Bahnschrift,sans-serif;font-style:italic;font-weight:700";
+const ART = {
+  r27: [`<circle cx="50" cy="50" r="46" fill="#fff" stroke="#e11d2e" stroke-width="8"/><text x="50" y="68" text-anchor="middle" font-size="52" fill="#111" style="${F}">27</text>`, 100, 100],
+  r44: [`<circle cx="50" cy="50" r="46" fill="#fff" stroke="#1d4ed8" stroke-width="8"/><text x="50" y="68" text-anchor="middle" font-size="52" fill="#111" style="${F}">44</text>`, 100, 100],
+  o7: [`<ellipse cx="60" cy="40" rx="56" ry="36" fill="#f5c400" stroke="#111" stroke-width="5"/><text x="60" y="58" text-anchor="middle" font-size="50" fill="#111" style="${F}">7</text>`, 120, 80],
+  p51: [`<rect x="3" y="3" width="134" height="94" rx="10" fill="#fff" stroke="#111" stroke-width="6"/><text x="70" y="78" text-anchor="middle" font-size="72" fill="#111" style="${F}">51</text>`, 140, 100],
+  forge: [`<text x="8" y="44" font-size="50" fill="#111" style="${F}">FORGE</text><path d="M4 52h180l-10 10H0z" fill="#e11d2e"/><text x="40" y="88" font-size="30" fill="#111" style="${F}">RACING</text>`, 190, 96],
+  dutch: [`<text x="4" y="40" font-size="44" fill="#111" style="${F}">DUTCH</text><path d="M118 18h70l-6 8h-70zM112 32h70l-6 8h-70z" fill="#ff6a13"/><text x="6" y="70" font-size="25" fill="#111" style="${F}">MOTORSPORT</text>`, 190, 78],
+  shield: [`<path d="M8 6h84v46c0 24-22 38-42 44C30 90 8 76 8 52z" fill="#1e2530"/><path d="M8 6h84v10H8z" fill="#e11d2e"/><text x="50" y="66" text-anchor="middle" font-size="42" fill="#fff" style="${F}">SF</text>`, 100, 100],
+  stripe: [`<rect x="0" y="0" width="300" height="9" fill="#e11d2e"/><rect x="0" y="14" width="300" height="9" fill="#1d4ed8"/>`, 300, 23],
+  name: [`<rect x="2" y="6" width="26" height="6" fill="#ae1c28"/><rect x="2" y="12" width="26" height="6" fill="#fff" stroke="#ddd" stroke-width=".5"/><rect x="2" y="18" width="26" height="6" fill="#21468b"/><text x="36" y="23" font-size="20" fill="#111" style="${F}">J. DE VRIES</text>`, 150, 30],
+  kestrel: [`<ellipse cx="80" cy="34" rx="78" ry="32" fill="#f5c400"/><ellipse cx="80" cy="34" rx="70" ry="25" fill="none" stroke="#111" stroke-width="3"/><text x="80" y="45" text-anchor="middle" font-size="30" fill="#111" style="${F}">KESTREL OIL</text>`, 160, 68],
+  apex: [`<rect width="170" height="44" rx="4" fill="#111"/><text x="85" y="33" text-anchor="middle" font-size="30" fill="#f5c400" style="${F}">APEX TYRES</text>`, 170, 44]
+};
+const svg = k => { const [b, w, h] = ART[k]; return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${b}</svg>`; };
+// sheet decals in mm: key, art, x, y, w, h
+const MESSY = [
+  ['a', 'r27', 22, 24, 18, 18], ['b', 'p51', 58, 27, 20, 14.3], ['c', 'o7', 96, 21, 21, 14],
+  ['d', 'forge', 132, 26, 36, 18.2], ['e', 'stripe', 24, 62, 80, 6.1], ['f', 'name', 124, 70, 30, 6],
+  ['g', 'kestrel', 34, 92, 28, 12], ['h', 'apex', 92, 100, 30, 7.8], ['i', 'shield', 150, 96, 12, 12],
+  ['j', 'r44', 24, 128, 18, 18], ['k', 'dutch', 70, 132, 34, 14]
+];
+const K = 2.25; // px per mm
+const PAPER = { w: 210, h: 297 };
+const paper = (x, y, inner, k = K) => `<div class="paper" style="left:${x}px;top:${y}px;width:${PAPER.w * k}px;height:${PAPER.h * k}px"><div class="margin" style="inset:${8 * k}px"></div>${inner}</div>`;
+const dc = (d, cls = '', k = K) => `<div class="dc ${cls}" style="left:${d[2] * k}px;top:${d[3] * k}px;width:${d[4] * k}px;height:${d[5] * k}px">${svg(d[1])}</div>`;
+const layersPanel = sel => `<div class="lp"><div class="tabs"><span>Library</span><span class="on">Layers</span><span>Pages</span></div>${MESSY.slice().reverse().map(d => `<div class="layer ${sel.includes(d[0]) ? 'on' : ''}"><i>${svg(d[1]).replace('preserveAspectRatio="none"', '')}</i>${{ r27: 'Roundel 27', p51: 'Number plate 51', o7: 'Oval 7', forge: 'Forge Racing', stripe: 'Double stripe', name: 'Driver name', kestrel: 'Kestrel Oil', apex: 'Apex Tyres', shield: 'SF Shield', r44: 'Roundel 44', dutch: 'Dutch Motorsport' }[d[1]]}</div>`).join('')}</div>`;
+const rail = on => `<div class="rail">${[['sel', 'Select'], ['img', 'Image'], ['text', 'Text'], ['hash', 'Number'], ['shape', 'Shape'], ['arr', 'Arrange']].map(([i, n]) => `<button class="${n === on ? 'on' : ''}">${I(i)}${n}</button>`).join('')}</div>`;
+const topbar = () => `<div class="top"><div class="logo">D</div><span class="brand">DECALS</span><span class="sheetname">Club racing · No. 27</span><div class="nav"><span>Workshop</span><span class="on">Editor</span><span>Decal Library</span><span>Import &amp; Export</span></div><span class="grow"></span><button class="btn primary">Export PDF</button></div>`;
+const cursor = (x, y) => `<svg class="cursor" style="left:${x}px;top:${y}px" viewBox="0 0 24 24"><path d="m5 3 14 8-6 2-3 6z" fill="#fff" stroke="#111" stroke-width="1.5"/></svg>`;
+const thumbs = (list, k, color = '#c8ccd2') => list.map(d => `<i style="left:${d[2] * k}px;top:${d[3] * k}px;width:${d[4] * k}px;height:${d[5] * k}px;background:${color}"></i>`).join('');
+
+const STATES = {
+  A: [['align', 'Align & space'], ['repeat', 'Repeat by dragging'], ['pages', 'Move to a page'], ['pack', 'Auto-arrange']],
+  B: [['align', 'Align & space'], ['repeat', 'Repeat'], ['pages', 'Pages'], ['pack', 'Auto-arrange']]
+};
+const BLURB = {
+  A: 'Arrange becomes a mode on the sheet: a dock of one-click tools, a corner handle you drag to repeat, a page strip you drop onto, and Auto-arrange shown as a preview first.',
+  B: 'A third tab next to Decal and Sheet: Layout. Every tool in one panel with exact numbers, alignment to the selection, the page or the margins, and live previews on the sheet.'
+};
+const q = new URLSearchParams(location.search);
+let opt = q.get('opt') || 'A', state = q.get('state'), theme = q.get('theme') || 'dark';
+const PX = 120, PY = 30; // paper position in the canvas
+
+/* ---------- A ---------- */
+function A(s) {
+  let decals = MESSY, sel = [], extra = '', dock = '', strip = '', hint = '';
+  const pos = (mmx, mmy) => [PX + mmx * K, PY + mmy * K];
+  if (s === 'align') {
+    // three number decals aligned on their tops with equal gaps
+    decals = MESSY.map(d => (d[0] === 'b' ? [...d.slice(0, 2), 54, 24, d[4], d[5]] : d[0] === 'c' ? [...d.slice(0, 2), 88, 24, d[4], d[5]] : d));
+    sel = ['a', 'b', 'c'];
+    extra = `<div class="guide" style="left:${18 * K}px;top:${24 * K}px;width:${100 * K}px;height:1px"></div>
+      <div class="dims" style="left:${47 * K}px;top:${50 * K}px">14.0 mm</div><div class="dims" style="left:${81 * K}px;top:${50 * K}px">14.0 mm</div>
+      <div class="pill" style="left:${18 * K}px;top:${-4 * K}px">Tops aligned · equal gaps</div>`;
+    dock = `<div class="dock"><span class="lbl">3 decals</span><div class="grp">${['al', 'ac', 'ar'].map(i => `<button class="ib" title="">${I(i)}</button>`).join('')}${['at', 'am', 'ab'].map(i => `<button class="ib ${i === 'at' ? 'on' : ''}">${I(i)}</button>`).join('')}</div><div class="grp"><button class="ib on">${I('dh')}</button><button class="ib">${I('dv')}</button><span class="inp num"><input value="14"><span>mm</span></span></div><div class="grp"><button class="ib">${I('mir')}</button><button class="btn sm ghost">Other side</button></div><div class="grp"><span class="lbl">To</span><div class="seg sm"><button class="on">Selection</button><button>Page</button><button>Margins</button></div></div></div>`;
+    hint = 'Gaps show while you drag too · type a gap to make them exact · Esc leaves Arrange';
+  }
+  if (s === 'repeat') {
+    sel = ['d'];
+    const d = MESSY.find(x => x[0] === 'd'), gap = 3;
+    const ghosts = [];
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 2; c++) if (r || c) ghosts.push(['g', 'forge', 96 + c * (d[4] + gap), 165 + r * (d[5] + gap), d[4], d[5]]);
+    decals = MESSY.map(x => (x[0] === 'd' ? [...x.slice(0, 2), 96, 165, x[4], x[5]] : x));
+    const base = decals.find(x => x[0] === 'd');
+    extra = ghosts.map(g => dc(g, 'ghost')).join('') +
+      `<div class="handle big" style="left:${(base[2] + 2 * base[4] + gap) * K}px;top:${(base[3] + 3 * base[5] + 2 * gap) * K}px"></div>` +
+      `<div class="pill" style="left:${(base[2] + 2 * base[4] + gap + 4) * K}px;top:${(base[3] + 3 * base[5] + 2 * gap - 2) * K}px">2 × 3 · <b>6 decals</b> · gaps 3 mm</div>` +
+      `<div class="dims red" style="left:${(base[2] + base[4] + gap / 2) * K}px;top:${(base[3] - 3) * K}px">3 mm</div>`;
+    dock = `<div class="dock"><span class="lbl">Forge Racing</span><div class="grp"><span class="lbl">Repeat</span><span class="inp num"><input value="2"><span>col</span></span><span class="inp num"><input value="3"><span>rows</span></span></div><div class="grp"><span class="lbl">Gap</span><span class="inp num"><input value="3"><span>mm</span></span></div><div class="grp"><button class="btn sm">${I('fill')} Fill the page · 24</button><button class="btn sm">Pair (other side)</button></div></div>`;
+    hint = 'Drag the red corner to repeat · release to add 5 copies · Ctrl+Z undoes';
+  }
+  if (s === 'pages') {
+    sel = ['g', 'h'];
+    decals = MESSY.map(x => (['g', 'h'].includes(x[0]) ? x : x));
+    extra = `<div style="position:absolute;z-index:7;left:110px;top:690px;display:flex;gap:6px;transform:rotate(-3deg);opacity:.92;filter:drop-shadow(0 8px 16px rgba(0,0,0,.4))">${['kestrel', 'apex'].map(k => `<div style="width:${(k === 'kestrel' ? 28 : 30) * K}px;height:${(k === 'kestrel' ? 12 : 7.8) * K}px;background:#fff;outline:1.5px solid var(--blue)">${svg(k)}</div>`).join('')}</div>`;
+    strip = `<div class="pages"><span class="muted" style="font-size:12px;width:120px">Drop on a page to move the selection there</span>
+      ${[[1, MESSY, 'on'], [2, MESSY.slice(0, 4), 'drop'], [3, MESSY.slice(5, 7), '']].map(([n, l, c]) => `<div class="pg ${c}"><div class="th">${thumbs(l, 56 / 210)}</div>${c === 'drop' ? '<b style="color:var(--ink)">Page 2 · move 2 here</b>' : 'Page ' + n}</div>`).join('')}
+      <div class="pg new"><div class="th">${I('plus')}</div>New page</div></div>`;
+    hint = '';
+    extra += cursor(168, 752);
+    dock = `<div class="dock"><span class="lbl">2 decals</span><div class="grp"><button class="ib">${I('at')}</button><button class="ib">${I('dh')}</button><button class="ib">${I('mir')}</button></div><div class="grp"><span class="muted" style="font-size:12px">Moving to page 2 · same positions</span></div></div>`;
+  }
+  if (s === 'pack') {
+    const packed = [['a', 'r27', 8, 8, 18, 18], ['b', 'p51', 29, 8, 20, 14.3], ['c', 'o7', 52, 8, 21, 14], ['d', 'forge', 76, 8, 36, 18.2], ['e', 'stripe', 115, 8, 80, 6.1], ['f', 'name', 115, 17, 30, 6], ['i', 'shield', 148, 17, 12, 12], ['g', 'kestrel', 8, 29, 28, 12], ['h', 'apex', 39, 29, 30, 7.8], ['j', 'r44', 163, 17, 18, 18], ['k', 'dutch', 72, 29, 34, 14]];
+    extra = MESSY.map(d => dc(d, 'was')).join('') + packed.map(p => {
+      const o = MESSY.find(m => m[0] === p[0]), x1 = (o[2] + o[4] / 2) * K, y1 = (o[3] + o[5] / 2) * K, x2 = (p[2] + p[4] / 2) * K, y2 = (p[3] + p[5] / 2) * K, len = Math.hypot(x2 - x1, y2 - y1), ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+      return `<div class="arrow" style="left:${x1}px;top:${y1}px;width:${len - 6}px;transform:rotate(${ang}deg)"></div>`;
+    }).join('');
+    decals = packed;
+    dock = `<div class="dock"><span class="lbl">Auto-arrange</span><div class="grp"><div class="seg sm"><button class="on">This page</button><button>All pages</button></div></div><div class="grp"><span class="lbl">Order</span><select class="inp" style="width:130px"><option>Largest first</option></select></div><div class="grp"><span class="check"><i>✓</i>Keep pairs together</span></div><div class="grp"><span class="muted mono" style="font-size:11.5px">gap 3 · margin 8 mm</span></div><div class="grp"><button class="btn sm ghost">Cancel</button><button class="btn sm primary">Arrange</button></div></div>`;
+    extra += `<div class="pill" style="left:${40 * K}px;top:${200 * K}px">Fits on page 1 · <b>79%</b> of the sheet stays free for more decals</div>`;
+  }
+  return `<div class="app">${topbar()}<div class="body">${rail('Arrange')}${layersPanel(sel)}<div class="cv">${dock}${paper(PX, PY + 40, decals.map(d => dc(d, sel.includes(d[0]) ? 'sel' : '')).join('') + extra)}${strip}${hint ? `<div class="hint">${hint}</div>` : ''}</div><div class="rp"><div class="rtabs"><span class="on">Decal</span><span>Sheet &amp; paper</span></div><div class="ph" style="width:50%"></div><div class="ph"></div><div class="ph" style="width:70%"></div><div class="ph"></div><div class="ph" style="width:40%"></div></div></div></div>`;
+}
+
+/* ---------- B ---------- */
+function B(s) {
+  let decals = MESSY, sel = [], extra = '';
+  const sec = (key, title, small, body) => `<section class="sec ${s === key ? 'open' : ''}"><header><h3>${title}</h3><small>${small}</small><svg class="i chev"><use href="#i-chev"/></svg></header>${s === key ? `<div class="bd">${body}</div>` : ''}</section>`;
+  if (s === 'align') {
+    sel = ['a', 'b', 'c', 'j'];
+    decals = MESSY.map(d => (d[0] === 'b' ? [...d.slice(0, 2), 22, 52, d[4], d[5]] : d[0] === 'c' ? [...d.slice(0, 2), 22, 76, d[4], d[5]] : d[0] === 'j' ? [...d.slice(0, 2), 22, 100, d[4], d[5]] : d[0] === 'e' ? [...d.slice(0, 2), 60, 62, d[4], d[5]] : d[0] === 'g' ? [...d.slice(0, 2), 60, 92, d[4], d[5]] : d));
+    extra = `<div class="guide" style="left:${22 * K}px;top:${18 * K}px;width:1px;height:${108 * K}px"></div>`;
+  }
+  if (s === 'repeat') {
+    sel = ['a'];
+    const ghosts = [];
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) if (r || c) ghosts.push(['x', 'r27', 22 + c * 21, 24 + r * 21, 18, 18]);
+    decals = MESSY.map(d => (d[0] === 'a' ? d : d[0] === 'b' ? [...d.slice(0, 2), 120, 128, d[4], d[5]] : d[0] === 'c' ? [...d.slice(0, 2), 150, 128, d[4], d[5]] : d[0] === 'g' || d[0] === 'e' ? [...d.slice(0, 2), d[2], d[3] + 6, d[4], d[5]] : d));
+    extra = ghosts.map(g => dc(g, 'ghost')).join('') + `<div class="dims red" style="left:${41.5 * K}px;top:${21 * K}px">3 mm</div>`;
+  }
+  if (s === 'pages') sel = ['g', 'h'];
+  if (s === 'pack') {
+    extra = '';
+  }
+  const panel = `<div class="rtabs"><span>Decal</span><span class="on">Layout</span><span>Sheet &amp; paper</span></div><div class="lay">
+    ${sec('align', 'Align & space', '4 selected', `
+      <div class="field"><label>Align to</label><div class="seg full sm"><button class="on">Selection</button><button>Page</button><button>Margins</button></div></div>
+      <div class="alignrow"><div class="pad">${['al', 'ac', 'ar', 'at', 'am', 'ab', 'dh', 'dv', 'mir'].map((i, n) => `<button class="${n === 0 ? 'on' : ''}" title="">${I(i)}</button>`).join('')}</div>
+        <div class="mini"><div class="kv"><span>Left edges</span><span class="mono">22.0 mm</span><span>Span</span><span class="mono">22.0 → 46.3</span></div><p class="faint" style="margin:0;font-size:11.5px">Row 1 aligns, row 2 centres, row 3: distribute across, distribute down, mirror.</p></div></div>
+      <div class="field"><label>Equal spacing between them</label><div class="row"><div class="seg sm"><button>Across</button><button class="on">Down</button></div><span class="inp" style="width:90px"><input value="6.0"><span>mm</span></span><button class="btn sm">Apply</button></div></div>
+      <div class="sum">Stacked down the left edge, 6.0 mm apart. The cutting gap is 3 mm, so this is safe to cut.</div>
+      <div class="field"><label>Other side of the car</label><div class="row"><button class="btn sm">${I('mir')} Add mirrored copies</button><span class="faint" style="font-size:11.5px">text stays readable</span></div></div>`)}
+    ${sec('repeat', 'Repeat', 'rows & columns', `
+      <div class="g2"><div class="field"><label>Columns</label><div class="step"><button>−</button><b>4</b><button>+</button></div></div><div class="field"><label>Rows</label><div class="step"><button>−</button><b>2</b><button>+</button></div></div>
+      <div class="field"><label>Gap across</label><span class="inp"><input value="3"><span>mm</span></span></div><div class="field"><label>Gap down</label><span class="inp"><input value="3"><span>mm</span></span></div></div>
+      <div class="row"><button class="btn sm">${I('fill')} Fill the free space · 31</button><button class="btn sm">Fill a page</button></div>
+      <div class="sum">8 cells · adds 7 decals · 81 × 39 mm · ghosts on the sheet show where they go</div>
+      <div class="row"><span class="grow"></span><button class="btn sm ghost">Reset</button><button class="btn sm primary">Add 7 copies</button></div>`)}
+    ${sec('pages', 'Pages', '3 pages', `
+      ${[[1, MESSY, true, '11 decals'], [2, MESSY.slice(0, 4), false, '4 decals · 62% free'], [3, MESSY.slice(5, 7), false, '2 decals · 88% free']].map(([n, l, cur, info]) => `<div class="pcard ${cur ? 'cur' : ''}"><div class="th">${thumbs(l, 38 / 210)}</div><div class="grow"><b>Page ${n}${cur ? ' · this page' : ''}</b><div class="muted" style="font-size:11.5px">${info}</div></div>${cur ? '' : '<button class="btn sm">Move 2 here</button>'}</div>`).join('')}
+      <div class="row"><button class="btn sm">${I('plus')} Move 2 to a new page</button><span class="grow"></span></div>
+      <p class="faint" style="margin:0;font-size:11.5px">Decals keep their positions and sizes; you follow them to that page.</p>`)}
+    ${sec('pack', 'Auto-arrange', 'pack at original sizes', `
+      <div class="field"><label>Arrange</label><div class="seg full sm"><button class="on">This page</button><button>All pages</button><button>Selection</button></div></div>
+      <div class="g2"><div class="field"><label>Order</label><select class="inp"><option>Largest first</option><option>Keep layer order</option><option>By name</option></select></div><div class="field"><label>Gap · margin</label><span class="inp"><input value="3 · 8"><span>mm</span></span></div></div>
+      <span class="check"><i>✓</i>Keep pairs and mirrored copies together</span><span class="check"><i class="off"></i>Leave locked decals where they are <span class="faint">(always)</span></span>
+      <div class="ba"><div><div class="th">${thumbs(MESSY, 0.36, '#9aa3ad')}</div><small>Now</small></div><svg class="i" style="color:var(--muted)"><use href="#i-chev"/></svg><div><div class="th">${thumbs([['a', 0, 8, 8, 18, 18], ['b', 0, 29, 8, 20, 14.3], ['c', 0, 52, 8, 21, 14], ['d', 0, 76, 8, 36, 18.2], ['e', 0, 115, 8, 80, 6.1], ['f', 0, 115, 17, 30, 6], ['i', 0, 148, 17, 12, 12], ['g', 0, 8, 29, 28, 12], ['h', 0, 39, 29, 30, 7.8], ['j', 0, 163, 17, 18, 18], ['k', 0, 72, 29, 34, 14]], 0.36, '#e5484d')}</div><small>After · fits on page 1</small></div></div>
+      <div class="sum">79% of the page stays free · nothing is resized</div>
+      <div class="row"><span class="grow"></span><button class="btn sm primary">${I('pack')} Arrange this page</button></div>`)}
+    </div>`;
+  return `<div class="app">${topbar()}<div class="body">${rail('Select')}${layersPanel(sel)}<div class="cv">${paper(PX + 60, PY, decals.map(d => dc(d, sel.includes(d[0]) ? 'sel' : '')).join('') + extra)}</div><div class="rp">${panel}</div></div></div>`;
+}
+
+function draw() {
+  document.documentElement.dataset.theme = theme;
+  const st = STATES[opt];
+  if (!st.some(x => x[0] === state)) state = st[0][0];
+  document.getElementById('state').innerHTML = st.map(([v, l]) => `<button data-v="${v}">${l}</button>`).join('');
+  for (const [id, v] of [['opt', opt], ['state', state], ['theme', theme]])
+    for (const b of document.querySelectorAll(`#${id} button`)) b.classList.toggle('on', b.dataset.v === v);
+  document.getElementById('blurb').textContent = BLURB[opt];
+  document.getElementById('stage').innerHTML = opt === 'A' ? A(state) : B(state);
+}
+document.querySelector('.switch').addEventListener('click', e => {
+  const b = e.target.closest('button[data-v]');
+  if (!b) return;
+  const g = b.parentElement.id;
+  if (g === 'opt') { opt = b.dataset.v; state = null; }
+  if (g === 'state') state = b.dataset.v;
+  if (g === 'theme') theme = b.dataset.v;
+  draw();
+});
+draw();
+</script>
+</body>
+</html>

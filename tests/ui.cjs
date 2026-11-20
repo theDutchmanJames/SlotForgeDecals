@@ -82,7 +82,9 @@ async function main() {
     assert.equal(await page.evaluate(() => Studio.libraryCount), 7);
     await page.locator('[data-action="undo"]').click();
     await page.locator('[data-action="redo"]').click();
+    // Arrange opens Auto-arrange in the Layout tab; its button packs every page.
     await page.locator('[data-action="arrange"]').click();
+    await page.locator('#pack-apply').click();
     await page.evaluate(() => Studio.flush());
     await page.evaluate(() => Studio.exportPDF(false, true));
     await page.evaluate(() => Studio.exportPDF(true));

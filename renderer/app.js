@@ -376,6 +376,7 @@ function render() {
   renderLibrary();
   renderPaper();
   renderInspector();
+  LayoutTab.render();
   renderCar();
   renderLayers();
   $('#orientation').value = project.orientation;
@@ -434,7 +435,7 @@ function renderPages() {
 // Side panels: Library, Layers and Pages on the left; Decal and Sheet & paper on the right.
 function renderTabs() {
   const left = ['library', 'layers', 'pages'].includes(settings.leftTab) ? settings.leftTab : 'library',
-    right = settings.rightTab === 'sheet' ? 'sheet' : 'decal';
+    right = ['sheet', 'layout'].includes(settings.rightTab) ? settings.rightTab : 'decal';
   for (const b of $$('[data-left-tab]')) b.setAttribute('aria-selected', String(b.dataset.leftTab === left));
   for (const p of $$('[data-left-pane]')) p.hidden = p.dataset.leftPane !== left;
   for (const b of $$('[data-right-tab]'))
@@ -453,6 +454,7 @@ function showTab(side, tab, remember = true) {
     scheduleSave();
   }
   renderTabs();
+  if (side === 'right') LayoutTab.render();
   if (side === 'left') {
     if (tab === 'library') renderLibrary();
     if (tab === 'pages') renderPages();
@@ -527,6 +529,7 @@ $('#sheet-scroll').addEventListener('scroll', () => placeContextBar(), { passive
 function renderSelection() {
   renderPaper();
   renderInspector();
+  LayoutTab.render();
   renderCar();
   renderLayers();
   selectionStatus();
@@ -677,6 +680,7 @@ function renderPaper() {
   drawCutPreview();
   placeContextBar();
   MakeTools.position();
+  LayoutTab.drawGhosts();
 }
 // Dashed cut lines drawn over the sheet. Contours are traced asynchronously and cached,
 // so a newer render simply replaces an older, unfinished one.
@@ -1770,7 +1774,7 @@ const HELP_TOPICS = [
   ],
   [
     'Arrange the sheet',
-    '<p>Under <strong>Sheet &amp; paper</strong>, choose A4, A5, US Letter, Photo 4×6 in or a <strong>custom size</strong> (50–600 mm) for odd decal paper, and the orientation. All pages share that size; changing paper never rescales decals.</p><p>Drag across empty canvas to select decals; Ctrl/Shift-click toggles individual decals. Drag the selection to move it together. In the bar above the selection, <strong>Repeat</strong> makes rows and columns of copies and <strong>Arrange…</strong> aligns, spaces, mirrors and moves to another page. <strong>Arrange</strong> in the tools packs the whole sheet while keeping sizes. Group a finished design and Lock its placement.</p><p><strong>Add mirrored copy (other side)</strong> makes a horizontally mirrored copy for directional graphics such as arrows, stripes and slanted shapes; editable text stays readable, but lettering inside imported logos is mirrored too. <strong>Recolour…</strong> lists every colour in the selected decals, including inside SVG artwork, and replaces the ones you change — handy for team variants.</p><p>Margins, cutting gap, decal paper and white ink are under <strong>Sheet &amp; paper</strong>. The print notes (status bar and Export menu) flag artwork outside the margins, too little cutting space and low-resolution images.</p>'
+    '<p>Under <strong>Sheet &amp; paper</strong>, choose A4, A5, US Letter, Photo 4×6 in or a <strong>custom size</strong> (50–600 mm) for odd decal paper, and the orientation. All pages share that size; changing paper never rescales decals.</p><p>Drag across empty canvas to select decals; Ctrl/Shift-click toggles individual decals. Drag the selection to move it together. Group a finished design and Lock its placement.</p><p>The <strong>Layout</strong> tab in the right panel holds the layout tools. <strong>Align &amp; space</strong> aligns to the selection, the page or the margins, distributes, and sets an exact space between decals (with a note when it is less than the cutting gap). <strong>Repeat</strong> makes rows and columns of copies, shown as ghosts on the sheet first; <strong>Most that fit</strong> fills up to the margins and <strong>Fill the free space</strong> puts copies everywhere they fit. <strong>Pages</strong> shows how full each page is and moves the selection to another page. <strong>Auto-arrange</strong> packs this page, all pages or the selection at original sizes, with a before/after preview; locked decals stay put. Arrange in the tools, and Repeat and Arrange… above the selection, open these sections.</p><p><strong>Add mirrored copy (other side)</strong> makes a horizontally mirrored copy for directional graphics such as arrows, stripes and slanted shapes; editable text stays readable, but lettering inside imported logos is mirrored too. <strong>Recolour…</strong> lists every colour in the selected decals, including inside SVG artwork, and replaces the ones you change — handy for team variants.</p><p>Margins, cutting gap, decal paper and white ink are under <strong>Sheet &amp; paper</strong>. The print notes (status bar and Export menu) flag artwork outside the margins, too little cutting space and low-resolution images.</p>'
   ],
   [
     'Slice area',
@@ -2440,9 +2444,9 @@ const actions = {
     Workshop.show({ recover: true });
   },
   'open-sheet-file': () => $('#project-file').click(),
-  'arrange-selection': arrangeSelectionDialog,
-  'grid-copies': gridCopiesDialog,
-  'move-page': moveSelectionDialog,
+  'arrange-selection': () => LayoutTab.show('align'),
+  'grid-copies': () => LayoutTab.show('repeat'),
+  'move-page': () => LayoutTab.show('pages'),
   'theme-light': () => setTheme('light'),
   'theme-dark': () => setTheme('dark'),
   'edit-vector': editVectorArtwork,
@@ -2631,14 +2635,7 @@ const actions = {
       selected = new Set(children.map(x => x.id));
     });
   },
-  arrange: () => {
-    mutate(() => {
-      project = DM.arrange(project);
-      page = 0;
-      selected.clear();
-    });
-    toast('Arranged at original sizes. Locked decals kept in place.');
-  },
+  arrange: () => LayoutTab.show('pack'),
   'align-left': () => {
     const list = items();
     if (list.length < 2) throw Error('Select two or more decals.');

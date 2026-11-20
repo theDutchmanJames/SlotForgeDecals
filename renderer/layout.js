@@ -62,12 +62,22 @@
       }
     return { project: out, ids: selected, added: plan.added };
   }
-  function align(p, ids, axis, edge) {
+  // The box decals align to: the selection itself, the whole page, or the printable area inside
+  // the margins. Aligning to the page or margins works for a single decal too.
+  function alignBox(p, list, to) {
+    const s = DM.size(p),
+      m = p.margin;
+    if (to === 'page') return { x: 0, y: 0, w: s.w, h: s.h };
+    if (to === 'margins') return { x: m, y: m, w: s.w - 2 * m, h: s.h - 2 * m };
+    if (to !== 'selection') throw Error('Invalid alignment target.');
+    return DM.union(list);
+  }
+  function align(p, ids, axis, edge, to = 'selection') {
     if (!['x', 'y'].includes(axis) || !['start', 'center', 'end'].includes(edge))
       throw Error('Invalid alignment.');
     const out = DM.clone(p),
-      list = selection(out, ids, 2, true),
-      b = DM.union(list),
+      list = selection(out, ids, to === 'selection' ? 2 : 1, true),
+      b = alignBox(out, list, to),
       size = axis === 'x' ? 'w' : 'h',
       factor = { start: 0, center: 0.5, end: 1 }[edge],
       target = b[axis] + b[size] * factor;
@@ -95,6 +105,163 @@
       position += boxes[n][size] + Math.max(0, gap);
     }
     return out;
+  }
+  // Exact spacing: the first decal (left-most or top-most) stays; the others follow it in order,
+  // each the given gap after the previous one, measured between their outlines.
+  function space(p, ids, axis, gapValue) {
+    if (!['x', 'y'].includes(axis)) throw Error('Invalid spacing direction.');
+    const gap = DM.number(gapValue, 0, 200, 'Spacing'),
+      out = DM.clone(p),
+      list = selection(out, ids, 2, true).sort((a, b) => DM.bounds(a)[axis] - DM.bounds(b)[axis]),
+      size = axis === 'x' ? 'w' : 'h';
+    let position = DM.bounds(list[0])[axis] + DM.bounds(list[0])[size] + gap;
+    for (const i of list.slice(1)) {
+      const b = DM.bounds(i);
+      i[axis] += position - b[axis];
+      position += b[size] + gap;
+    }
+    const s = DM.size(p),
+      end = position - gap;
+    if (end > (axis === 'x' ? s.w : s.h) - p.margin + 0.00001)
+      throw Error('At this spacing the decals run past the margin. Use a smaller gap or move the first one.');
+    return out;
+  }
+  // The most columns and rows of the selection that fit between it and the margins.
+  function maxGrid(p, ids, gapXValue, gapYValue) {
+    const sources = selection(p, ids),
+      b = DM.union(sources),
+      s = DM.size(p),
+      m = p.margin,
+      gapX = DM.number(gapXValue, 0, 100, 'Horizontal gap'),
+      gapY = DM.number(gapYValue, 0, 100, 'Vertical gap'),
+      fit = (room, cell, gap) =>
+        Math.max(1, Math.min(100, Math.floor((room + gap + 0.00001) / (cell + gap))));
+    return { columns: fit(s.w - m - b.x, b.w, gapX), rows: fit(s.h - m - b.y, b.h, gapY) };
+  }
+  // Fill the free space of the selection's page with copies of the selection, keeping the
+  // cutting gap from everything already there. Copies keep the selection's internal layout.
+  function fill(p, ids, limit = 400) {
+    const out = DM.clone(p),
+      sources = selection(out, ids),
+      page = sources[0].page,
+      b = DM.union(sources),
+      block = DM.item('rect', { x: b.x, y: b.y, w: b.w, h: b.h }),
+      others = out.items.filter(i => i.page === page),
+      added = [];
+    while (out.items.length + sources.length <= 2000 && added.length < limit * sources.length) {
+      const spot = DM.freeSpot(block, out, others);
+      if (!spot) break;
+      const box = DM.item('rect', { x: spot.x, y: spot.y, w: b.w, h: b.h, page });
+      for (const source of sources) {
+        const i = DM.clone(source);
+        i.id = DM.uid();
+        i.x += spot.x - b.x;
+        i.y += spot.y - b.y;
+        i.locked = false;
+        delete i.carPositions;
+        out.items.push(i);
+        added.push(i.id);
+      }
+      others.push(box);
+    }
+    return { project: out, ids: added, copies: added.length / sources.length, added: added.length };
+  }
+  // Auto-arrange with choices: which decals move (this page, all pages or the selection), in which
+  // order, and whether a decal and its mirrored copy stay side by side. Locked decals and decals
+  // outside the scope stay where they are. Nothing is resized.
+  function pack(p, options = {}) {
+    const scope = options.scope || 'all',
+      order = options.order || 'largest',
+      current = options.page || 0;
+    if (!['all', 'page', 'selection'].includes(scope)) throw Error('Invalid arrange scope.');
+    if (!['largest', 'layers', 'name'].includes(order)) throw Error('Invalid arrange order.');
+    const out = DM.clone(p),
+      s = DM.size(out),
+      m = out.margin,
+      g = out.gap,
+      wanted = new Set(options.ids || []);
+    const moves = i =>
+      !i.locked &&
+      (scope === 'all' || (scope === 'page' ? i.page === current : wanted.has(i.id) && i.page === current));
+    let movable = out.items.filter(moves);
+    if (!movable.length)
+      throw Error(
+        scope === 'selection'
+          ? 'Select unlocked decals to arrange.'
+          : 'There are no unlocked decals to arrange.'
+      );
+    const area = i => DM.bounds(i).w * DM.bounds(i).h;
+    if (order === 'largest')
+      movable.sort((a, b) => area(b) - area(a) || out.items.indexOf(a) - out.items.indexOf(b));
+    if (order === 'name')
+      movable.sort((a, b) =>
+        String(a.name || '').localeCompare(String(b.name || ''), undefined, {
+          numeric: true,
+          sensitivity: 'base'
+        })
+      );
+    if (options.pairs) {
+      // A mirrored copy ("Name (mirrored)") follows its original directly.
+      const copies = movable.filter(i => / \(mirrored\)$/.test(i.name || ''));
+      for (const c of copies) {
+        const original = movable.find(i => i !== c && i.name === c.name.replace(/ \(mirrored\)$/, ''));
+        if (!original) continue;
+        movable.splice(movable.indexOf(c), 1);
+        movable.splice(movable.indexOf(original) + 1, 0, c);
+      }
+    }
+    const fixed = out.items.filter(i => !movable.includes(i)).map(i => ({ ...DM.bounds(i), page: i.page })),
+      placed = [...fixed],
+      pages = scope === 'all' ? Array.from({ length: 50 }, (_, n) => n) : [current];
+    for (const i of movable) {
+      const b = DM.bounds(i);
+      if (b.w > s.w - 2 * m + 0.0001 || b.h > s.h - 2 * m + 0.0001)
+        throw Error(`“${i.name}” is larger than the printable area. Resize it first.`);
+      let found = false;
+      for (const page of pages) {
+        const obstacles = placed.filter(o => o.page === page),
+          xs = [m, ...obstacles.map(o => o.x + o.w + g)].sort((a, b) => a - b),
+          ys = [m, ...obstacles.map(o => o.y + o.h + g)].sort((a, b) => a - b);
+        for (const y of ys) {
+          for (const x of xs) {
+            const c = { x, y, w: b.w, h: b.h };
+            if (
+              x + b.w > s.w - m + 0.0001 ||
+              y + b.h > s.h - m + 0.0001 ||
+              obstacles.some(o => DM.overlaps(c, o, g))
+            )
+              continue;
+            i.x += x - b.x;
+            i.y += y - b.y;
+            i.page = page;
+            placed.push({ ...c, page });
+            found = true;
+            break;
+          }
+          if (found) break;
+        }
+        if (found) break;
+      }
+      if (!found)
+        throw Error(
+          scope === 'all'
+            ? 'These decals need more than 50 pages.'
+            : 'Not everything fits on this page. Choose All pages, or make room first.'
+        );
+    }
+    // Arranging everything drops pages left empty at the end.
+    if (scope === 'all') out.pages = Math.max(1, ...out.items.map(i => i.page + 1));
+    return { project: out, moved: movable.length, pages: out.pages };
+  }
+  // How much of a page's printable area is still free, from 0 to 1.
+  function freeShare(p, page) {
+    const s = DM.size(p),
+      m = p.margin,
+      printable = (s.w - 2 * m) * (s.h - 2 * m),
+      used = p.items
+        .filter(i => i.page === page)
+        .reduce((sum, i) => sum + DM.bounds(i).w * DM.bounds(i).h, 0);
+    return Math.max(0, Math.min(1, 1 - used / printable));
   }
   function mirror(p, ids, axis) {
     if (!['x', 'y'].includes(axis)) throw Error('Invalid mirror direction.');
@@ -165,5 +332,19 @@
     }
     return { project: out, ids: copies.map(c => c.id), placed: !!spot };
   }
-  return { selection, gridPlan, grid, align, distribute, mirror, movePage, mirroredPair };
+  return {
+    selection,
+    gridPlan,
+    grid,
+    align,
+    distribute,
+    space,
+    maxGrid,
+    fill,
+    pack,
+    freeShare,
+    mirror,
+    movePage,
+    mirroredPair
+  };
 });

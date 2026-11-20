@@ -23,8 +23,13 @@ async function main() {
     page = await app.firstWindow();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  const arrange = () => page.locator('[data-action="arrange-selection"]').first().click();
-  const done = () => page.locator('#dialog [data-action="close"]').last().click();
+  // The Layout tab: open one of its sections (Align & space, Repeat, Pages, Auto-arrange).
+  const section = async key => {
+    await page.locator('[data-right-tab="layout"]').click();
+    if ((await page.locator(`[data-layout-open="${key}"]`).getAttribute('aria-expanded')) !== 'true')
+      await page.locator(`[data-layout-open="${key}"]`).click();
+  };
+  const arrange = () => section('align');
   const state = () => page.evaluate(() => JSON.parse(JSON.stringify(Studio.project)));
   const selectAll = () =>
     page.evaluate(() => Studio.select(Studio.project.items.filter(i => i.page === 0).map(i => i.id)));
@@ -52,21 +57,24 @@ async function main() {
       Studio.select(['a', 'b']);
     });
     const original = await state();
-    await arrange();
-    await page.locator('[data-action="grid-copies"]').click();
+    // The selection toolbar's Repeat opens the Repeat section; ghosts show the copies first.
+    await page.locator('.ctx-bar [data-alias="grid-copies"]').click();
+    assert.equal(await page.locator('[data-layout-open="repeat"]').getAttribute('aria-expanded'), 'true');
     await page.locator('#grid-rows').fill('3');
     await page.locator('#grid-columns').fill('2');
     await page.locator('#grid-gap-x').fill('4');
     await page.locator('#grid-gap-y').fill('6');
     assert.ok((await page.locator('#grid-summary').textContent()).includes('adds 10 decals'));
-    assert.equal(await page.locator('#grid-preview use').count(), 6);
+    assert.equal(await page.locator('#layout-ghosts > rect').count(), 5);
     await page.screenshot({ path: path.join(run, 'grid-preview.png') });
     await page.locator('#grid-rows').fill('100');
     assert.ok(await page.locator('#grid-apply').isDisabled());
-    assert.ok((await page.locator('#dialog-error').textContent()).includes('margins'));
+    assert.ok((await page.locator('#grid-summary').textContent()).includes('margins'));
     assert.deepEqual(await state(), original);
     await page.locator('#grid-rows').fill('3');
+    assert.equal(await page.locator('#grid-apply').textContent(), 'Add 10 copies');
     await page.locator('#grid-apply').click();
+    assert.equal(await page.locator('#layout-ghosts').count(), 0, 'no ghosts once added');
     let p = await state();
     assert.equal(p.items.length, 12);
     assert.deepEqual(p.items.slice(0, 2), original.items);
@@ -77,9 +85,8 @@ async function main() {
     await page.keyboard.press('Control+Shift+z');
     assert.equal((await state()).items.length, 12);
     await selectAll();
-    await arrange();
-    await page.locator('[data-action="move-page"]').click();
-    await page.locator('#move-apply').click();
+    await section('pages');
+    await page.locator('#move-new').click();
     p = await state();
     assert.equal(p.pages, 2);
     assert.ok(p.items.every(i => i.page === 1));
@@ -93,10 +100,8 @@ async function main() {
     await page.evaluate(() => Studio.select(Studio.project.items.map(i => i.id))); // render filters to the current page after undo/redo
     await page.locator('[data-page="1"]').click();
     await page.evaluate(() => Studio.select(Studio.project.items.map(i => i.id)));
-    await arrange();
-    await page.locator('[data-action="move-page"]').click();
-    await page.locator('#move-target').selectOption('0');
-    await page.locator('#move-apply').click();
+    await section('pages');
+    await page.locator('[data-move-to="0"]').click();
     assert.ok((await state()).items.every(i => i.page === 0));
     await page.evaluate(() => {
       Studio.project.items = [
@@ -122,9 +127,11 @@ async function main() {
     });
     await arrange();
     assert.ok(await page.locator('[data-layout-operation="mirror-x"]').isDisabled());
-    assert.ok(await page.locator('[data-action="move-page"]').isDisabled());
-    assert.ok(await page.locator('[data-action="grid-copies"]').isEnabled());
-    await done();
+    assert.ok(await page.locator('#space-apply').isDisabled());
+    await section('repeat');
+    await page.locator('#grid-columns').fill('1');
+    await page.locator('#grid-rows').fill('2');
+    assert.ok(await page.locator('#grid-apply').isEnabled(), 'locked decals can still be repeated');
     // An asymmetric imported vector confirms the actual print transform.
     await page.evaluate(() => {
       Studio.project.name = 'Mirrored vector';

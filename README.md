@@ -121,10 +121,16 @@ Every page in a project uses the same paper size. Changing paper preserves decal
 - Drag a selection rectangle or use Ctrl/Command/Shift-click to select several decals.
 - Move, resize, rotate, mirror, group and layer artwork. Lock finished placements and use up to 200 undo/redo steps while editing.
 - Copy, cut and paste decals with Ctrl+C / Ctrl+X / Ctrl+V, also between sheets. Paste a copied image, screenshot or SVG code to import it. New artwork is placed in free space on the page.
-- Repeat a decal or selection in rows and columns, with separate horizontal and vertical gaps.
 - Add a mirrored copy for the other side of the car: directional graphics flip, editable text stays readable (lettering inside imported logos is mirrored too).
-- Align edges or centres, distribute equal gaps, and move selections between pages.
-- Use **Arrange** in the tools to fit artwork within the margins, adding pages when needed while preserving physical size.
+
+The **Layout** tab in the right panel (redesigned in November 2026) holds every layout tool, each with exact numbers and a preview before anything changes:
+
+- **Align & space:** align edges or centres to the selection, the page or the margins; distribute equal gaps; or set an exact space between decals, with a note whether it is enough for the sheet's cutting gap.
+- **Repeat:** rows and columns of copies with separate gaps, shown as ghosts on the sheet and flagged when a copy would land on another decal. **Most that fit** fills up to the margins; **Fill the free space** puts copies everywhere they fit on the page.
+- **Pages:** every page with how full it is; move the selection to another page or a new one.
+- **Auto-arrange:** pack this page, all pages or just the selection at original sizes, largest first, in layer order or by name, with mirrored copies kept next to their original. A before/after preview shows the result first; locked decals stay where they are.
+
+**Arrange** in the tools, and Repeat and Arrange… above the selection, open the matching section.
 
 Millimetre rulers, printable margins and cutting gaps help organise the sheet. **Print notes** in the status bar and the Export menu flag artwork outside the margins, insufficient cutting space, low-resolution images and white-ink settings that need attention. The sun or moon button at the top right switches between the light and dark themes.
 
@@ -185,7 +191,7 @@ The editor is one screen (redesigned in November 2026):
 - **Top bar:** the sheet's name (click to rename) with its saved state and paper. The arrow next to it saves to Sheets, starts a **New sheet** (the outgoing work is saved first) or opens a saved one. **Export PDF** sits on the right; its arrow lists Export for cutter, the sizing proof, **Share this sheet…** (the same selection window as Import & Export) and the print notes. **Ctrl+K** finds any tool, decal on the sheet or setting.
 - **Tools** down the left edge: Select, Image, Text, Number, Shape, Path, Merge, Slice and Arrange, with Snap at the bottom. Single keys pick them: V, I, T, N, S, P and M.
 - **Left panel:** the decal **Library**, the **Layers** of the current page (top first, each with a thumbnail and a lock) and the **Pages**.
-- **Right panel:** **Decal** shows the selection's size and place, colour, ink and cut line, and its tools; **Sheet & paper** holds the paper size, orientation, model scale, margins, white ink and cut lines.
+- **Right panel:** **Decal** shows the selection's size and place, colour, ink and cut line, and its tools; **Layout** aligns, spaces, repeats, moves between pages and auto-arranges; **Sheet & paper** holds the paper size, orientation, model scale, margins, white ink and cut lines.
 - **Above the selection** a small bar shows its size with Duplicate, Other side, Repeat, Arrange…, Group and Delete.
 - **Fit check:** the car in the corner of the sheet shows the selection at its printed size; hide it with its arrow or enlarge it.
 

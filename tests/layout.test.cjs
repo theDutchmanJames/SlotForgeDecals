@@ -156,3 +156,72 @@ test('mirrored pairs flip the layout and artwork for the other side but keep tex
     for (const o of orig)
       assert.ok(!(c.x < o.x + o.w && c.x + c.w > o.x && c.y < o.y + o.h && c.y + c.h > o.y));
 });
+test('align to the page or margins, exact spacing and the largest grid that fits', () => {
+  const p = M.project();
+  p.margin = 8;
+  p.items = [
+    M.item('rect', { x: 30, y: 40, w: 20, h: 10 }),
+    M.item('rect', { x: 70, y: 44, w: 10, h: 10 }),
+    M.item('rect', { x: 95, y: 41, w: 15, h: 10 })
+  ];
+  const ids = p.items.map(i => i.id),
+    s = M.size(p);
+  const one = L.align(p, [ids[0]], 'x', 'end', 'margins');
+  near(one.items[0].x + 20, s.w - 8);
+  const centred = L.align(p, [ids[1]], 'y', 'center', 'page');
+  near(centred.items[1].y + 5, s.h / 2);
+  assert.throws(() => L.align(p, [ids[0]], 'x', 'start'), /at least 2/);
+  const spaced = L.space(p, ids, 'x', 6);
+  assert.equal(spaced.items[0].x, 30);
+  near(spaced.items[1].x, 56);
+  near(spaced.items[2].x, 72);
+  assert.throws(() => L.space(p, ids, 'x', 150), /margin/);
+  const max = L.maxGrid(p, [ids[0]], 2, 2);
+  assert.equal(max.columns, Math.floor((s.w - 8 - 30 + 2) / 22));
+  assert.equal(max.rows, Math.floor((s.h - 8 - 40 + 2) / 12));
+  L.gridPlan(p, [ids[0]], { ...max, gapX: 2, gapY: 2 });
+});
+test('fill adds copies into free space only, keeping the cutting gap', () => {
+  const p = M.project();
+  p.gap = 3;
+  p.items = [
+    M.item('rect', { x: 10, y: 10, w: 40, h: 30 }),
+    M.item('rect', { x: 60, y: 10, w: 100, h: 200 })
+  ];
+  const r = L.fill(p, [p.items[0].id]);
+  assert(r.copies > 5);
+  const boxes = r.project.items.map(M.bounds);
+  for (let a = 0; a < boxes.length; a++)
+    for (let b = a + 1; b < boxes.length; b++)
+      assert(!M.overlaps(boxes[a], boxes[b], 2.999), `${a} overlaps ${b}`);
+  assert.equal(L.fill(p, [p.items[0].id], 2).copies, 2);
+});
+test('pack arranges by scope and order, keeps locked decals and mirrored pairs together', () => {
+  const p = M.project();
+  p.pages = 2;
+  p.items = [
+    M.item('rect', { name: 'Small', x: 150, y: 200, w: 10, h: 10 }),
+    M.item('rect', { name: 'Big', x: 100, y: 150, w: 60, h: 40 }),
+    M.item('rect', { name: 'Small (mirrored)', x: 20, y: 250, w: 10, h: 10 }),
+    M.item('rect', { name: 'Locked', x: 8, y: 8, w: 20, h: 20, locked: true }),
+    M.item('rect', { name: 'Other page', x: 100, y: 100, w: 10, h: 10, page: 1 })
+  ];
+  const byName = (out, n) => out.items.find(i => i.name === n);
+  const page = L.pack(p, { scope: 'page', order: 'largest', pairs: true, page: 0 }).project;
+  assert.deepEqual(byName(page, 'Locked'), p.items[3]);
+  assert.deepEqual(byName(page, 'Other page'), p.items[4]);
+  assert.equal(page.pages, 2, 'pages outside the scope stay');
+  const big = M.bounds(byName(page, 'Big')),
+    small = M.bounds(byName(page, 'Small')),
+    copy = M.bounds(byName(page, 'Small (mirrored)'));
+  assert(big.x < small.x, 'largest first');
+  near(copy.x, small.x + small.w + p.gap);
+  near(copy.y, small.y);
+  const all = L.pack(p, { scope: 'all', order: 'name' });
+  assert.equal(all.project.pages, 1, 'empty trailing pages go');
+  assert.equal(all.moved, 4);
+  const sel = L.pack(p, { scope: 'selection', ids: [p.items[0].id], page: 0 }).project;
+  assert.deepEqual(byName(sel, 'Big'), p.items[1]);
+  assert.throws(() => L.pack(p, { scope: 'selection', ids: [] }), /Select/);
+  assert(L.freeShare(p, 0) > 0.8 && L.freeShare(p, 0) < 1);
+});

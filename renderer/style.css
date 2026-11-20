@@ -973,67 +973,6 @@ dialog::backdrop {
   touch-action: none;
   user-select: none;
 }
-/* Selection arrangement tools */
-.layout-sections {
-  display: grid;
-  gap: 16px;
-}
-.layout-sections section {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 14px;
-}
-.layout-sections h3 {
-  font-size: 13px;
-  margin: 0 0 12px;
-}
-.layout-buttons {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.layout-buttons button {
-  white-space: normal;
-}
-.layout-shortcuts {
-  display: flex;
-  gap: 10px;
-  margin-top: 18px;
-}
-.grid-layout {
-  display: grid;
-  grid-template-columns: minmax(250px, 1fr) minmax(210px, 0.8fr);
-  gap: 24px;
-}
-.grid-preview {
-  height: 340px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px;
-}
-.grid-preview svg {
-  height: 100%;
-  max-width: 100%;
-  filter: drop-shadow(0 2px 4px #0003);
-}
-.grid-layout .fields2 {
-  margin-bottom: 14px;
-}
-@media (max-width: 700px) {
-  .grid-layout {
-    grid-template-columns: 1fr;
-  }
-  .grid-preview {
-    height: 220px;
-  }
-  .layout-buttons {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 /* Local project browser */
 .project-browser-tools {
   display: flex;
@@ -2513,7 +2452,6 @@ dialog:has(.vector-view) .dialog-foot {
 }
 .project-card h3,
 .collection-name h3,
-.layout-sections h3,
 .pdf-artwork-review h3 {
   font-size: 16px;
 }
@@ -6790,4 +6728,288 @@ body.shelf-mode .wb-split {
 }
 .sh-error:empty {
   display: none;
+}
+/* The Layout tab (remake option B, docs/ui-reference/layout-2026-11): Align & space, Repeat, Pages
+   and Auto-arrange as folding sections in the right panel. */
+.layout-tab {
+  display: flex;
+  flex-direction: column;
+}
+.lt-sec {
+  border-bottom: 1px solid var(--line);
+}
+.lt-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+}
+.lt-head:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+.lt-head h3 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+}
+.lt-head small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.lt-head .icon {
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+  transform: rotate(-90deg);
+  transition: transform 0.15s;
+}
+.lt-head[aria-expanded='true'] .icon {
+  transform: none;
+}
+.lt-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 16px 16px;
+}
+.lt-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+.lt-seg {
+  display: flex;
+}
+.lt-seg button {
+  flex: 1;
+}
+.lt-seg button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--ink) 12%, var(--panel));
+  color: var(--ink);
+  font-weight: 600;
+}
+.lt-alignrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.lt-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 38px);
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 50%, var(--panel));
+}
+.lt-pad button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink);
+}
+.lt-pad button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent-text);
+}
+.lt-pad button:disabled {
+  opacity: 0.35;
+}
+.lt-read {
+  flex: 1;
+  min-width: 0;
+}
+.lt-read p,
+.lt-note,
+.lt-empty {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.lt-empty {
+  margin: 0;
+}
+.lt-kv {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 8px;
+  font-size: 12px;
+}
+.lt-kv span {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.lt-kv b {
+  font:
+    500 12px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.lt-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.lt-line.end {
+  justify-content: flex-end;
+}
+.lt-line button,
+.lt-page button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lt-num {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 84px;
+  padding-right: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.lt-num input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: none;
+}
+.lt-num span {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.lt-sum {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--green) 13%, transparent);
+  font-size: 12px;
+}
+.lt-sum.warn {
+  background: color-mix(in srgb, #f0b429 18%, transparent);
+}
+.lt-step {
+  display: flex;
+  align-items: stretch;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.lt-step button {
+  width: 32px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  font-size: 15px;
+}
+.lt-step input::-webkit-inner-spin-button,
+.lt-step input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.lt-step input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  text-align: center;
+  font:
+    600 14px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.lt-page {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.lt-page.current {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
+}
+.lt-page small {
+  display: block;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.lt-page .grow {
+  flex: 1;
+  min-width: 0;
+}
+.lt-thumb {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  line-height: 0;
+  box-shadow: 0 1px 4px #0004;
+}
+.lt-link {
+  min-height: 34px;
+  justify-content: flex-start;
+  font:
+    500 12px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.lt-ba {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.lt-ba figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+.lt-ba svg {
+  width: 100%;
+  height: auto;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px #0004;
+}
+.lt-ba figcaption {
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+.lt-ba > .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  transform: rotate(-90deg);
+}
+.lt-ba figure {
+  width: 100%;
+}
+.lt-none {
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  border: 1.5px dashed var(--line);
+  border-radius: 3px;
 }
