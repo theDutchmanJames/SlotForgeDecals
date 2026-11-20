@@ -106,12 +106,10 @@ async function main() {
     await page.locator('[data-layer="a"]').click({ modifiers: ['Shift'] });
     assert.deepEqual(await selected(), ['b']);
     await page.evaluate(() => Studio.select(['a', 'b']));
-    await page.locator('[data-action="expand-car"]').click();
-    assert.equal(await page.locator('#expanded-car [data-car-id]').count(), 2);
-    assert.ok(await page.locator('#preview-w').isDisabled());
-    assert.equal(await page.locator('#preview-selected-name').textContent(), '2 decals selected');
+    // The fit check shows the selection on the car at its printed sizes.
+    assert.equal(await page.locator('#car-stage [data-car-id]').count(), 2);
     // Two selected decals preserve their relative spacing and their actual dimensions.
-    const rects = await page.locator('#expanded-car [data-car-id] > rect').evaluateAll(es =>
+    const rects = await page.locator('#car-stage [data-car-id] > rect').evaluateAll(es =>
       es.map(e => ({
         x: +e.getAttribute('x'),
         y: +e.getAttribute('y'),
@@ -128,9 +126,9 @@ async function main() {
       ]
     );
     // Raw mouse coordinates need a stable, visible preview target before dragging.
-    await page.locator('#expanded-car [data-car-id]').first().hover();
-    const p = await point(rects[0].x + 5, rects[0].y + 5, '#expanded-car > svg'),
-      q = await point(rects[0].x + 13, rects[0].y + 8, '#expanded-car > svg');
+    await page.locator('#car-stage [data-car-id]').first().hover();
+    const p = await point(rects[0].x + 5, rects[0].y + 5, '#car-stage > svg'),
+      q = await point(rects[0].x + 13, rects[0].y + 8, '#car-stage > svg');
     await page.mouse.move(p.x, p.y);
     await page.mouse.down();
     await page.mouse.move(q.x, q.y, { steps: 6 });
@@ -158,11 +156,11 @@ async function main() {
     assert.equal(art[0].y, 25);
     assert.deepEqual(await selected(), ['a', 'b']);
     const saved = JSON.parse(JSON.stringify(art));
-    // Escape rolls back a car drag without closing the enlarged preview.
+    // Escape rolls back a car drag.
     const p2 = await point(
       art[0].carPositions.side.x + 5,
       art[0].carPositions.side.y + 5,
-      '#expanded-car > svg'
+      '#car-stage > svg'
     );
     await page.mouse.move(p2.x, p2.y);
     await page.mouse.down();
@@ -179,17 +177,15 @@ async function main() {
     await page.keyboard.press('Escape');
     await page.mouse.up();
     assert.deepEqual(await state(), saved);
-    assert.ok(await page.locator('#dialog').evaluate(d => d.open));
     await page.screenshot({ path: path.join(run, 'multi-car-preview.png') });
-    await done();
     await page.keyboard.press('Control+z');
     assert.deepEqual(await state(), original);
     await page.keyboard.press('Control+Shift+z');
     assert.deepEqual(await state(), saved);
     await page.evaluate(() => Studio.select(['a']));
     await page.locator('[data-action="expand-car"]').click();
-    assert.ok(await page.locator('#preview-w').isEnabled());
-    await done();
+    assert.ok(await page.locator('#cp-w').isEnabled());
+    await page.locator('nav [data-action="editor"]').click();
     // Start selection outside the paper, and test zoomed coordinates. Nothing is selected first, so
     // the bar above a selection does not cover the starting point.
     await page.evaluate(() => Studio.select([]));

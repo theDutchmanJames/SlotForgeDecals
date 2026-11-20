@@ -98,9 +98,14 @@ A scale such as 1:32 cannot determine a logo's size on its own: you still need a
 
 ### Check the fit on your car
 
-All selected decals appear in the **side or top car preview** at their printed dimensions. Choose one of five built-in cars — modern GT, classic endurance GT, touring saloon, rally hatchback or Group C prototype — which are sized from the real car's length at your model scale. Enter your model's length, width and height, or import your own straight-on reference pictures for a closer comparison.
+The **Car** page (redesigned in November 2026, next to the Editor in the top bar) shows the whole livery on the side and top views at once, every decal at its printed size:
 
-Drag decals on the car to try different placements without moving them on the print sheet. Open the enlarged preview to adjust a selected decal's width and height; the sheet and car views update together. Side and top placements are saved with the project.
+- **Every decal of the sheet** is listed with SIDE / TOP marks for where it sits. Drag one from the list onto the car, or choose it and press **Place**.
+- **On the car**, drag a decal to move it and drag a corner to resize it. Resizing changes the decal on the sheet too: one decal, one size. Each change is one undo step, and Esc cancels a drag. **Take off** (or Delete) removes a decal from the car, never from the sheet.
+- **Your car** picks one of five built-in cars — modern GT, classic endurance GT, touring saloon, rally hatchback or Group C prototype — sized from the real car's length at your model scale. Type your model's length and height straight onto the drawing, and its width.
+- **Your own model:** load a straight-on side or top photo, click its nose and its tail, and type how long your model is. The photo is cropped to the car and sized to that length.
+
+The **fit check** in the corner of the editor still shows the selection on the car while you work; its arrow opens the Car page and its gear opens Your car. Placements on the car are saved with the sheet.
 
 The supplied cars are illustrative. This is a **2D sizing aid**, not a measured template for every model, a 3D wrap or a simulation of stretching around curved bodywork. Print a plain-paper proof and check the final fit on the actual shell.
 
@@ -193,7 +198,7 @@ The editor is one screen (redesigned in November 2026):
 - **Left panel:** the decal **Library**, the **Layers** of the current page (top first, each with a thumbnail and a lock) and the **Pages**.
 - **Right panel:** **Decal** shows the selection's size and place, colour, ink and cut line, and its tools; **Layout** aligns, spaces, repeats, moves between pages and auto-arranges; **Sheet & paper** holds the paper size, orientation, model scale, margins, white ink and cut lines.
 - **Above the selection** a small bar shows its size with Duplicate, Other side, Repeat, Arrange…, Group and Delete.
-- **Fit check:** the car in the corner of the sheet shows the selection at its printed size; hide it with its arrow or enlarge it.
+- **Fit check:** the car in the corner of the sheet shows the selection at its printed size; hide it with its arrow, or open the **Car** page for the whole livery.
 
 ### Draw paths, merge shapes and cut holes
 

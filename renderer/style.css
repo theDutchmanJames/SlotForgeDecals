@@ -522,6 +522,11 @@ nav {
   width: 100%;
   overflow: visible;
 }
+/* The inner picture frame crops the car picture to the car itself; only decals may overhang. */
+.car-stage svg svg,
+.cp-svg svg {
+  overflow: hidden;
+}
 .car-dimension {
   border-top: 1px solid var(--muted);
   text-align: center;
@@ -902,40 +907,6 @@ dialog::backdrop {
   .trace-image {
     height: 180px;
   }
-}
-
-.preview-view-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.preview-view-controls > strong {
-  font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 70%;
-}
-.preview-size-controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 18px;
-  align-items: center;
-  padding: 16px;
-  margin: 15px 0 10px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-.preview-size-controls .field {
-  margin: 0;
-}
-.preview-size-controls input[aria-invalid='true'] {
-  border-color: var(--accent);
-}
-#preview-size-error:empty {
-  display: none;
 }
 
 [data-theme='light'] .editor-panel {
@@ -7012,4 +6983,604 @@ body.shelf-mode .wb-split {
   aspect-ratio: 210 / 297;
   border: 1.5px dashed var(--line);
   border-radius: 3px;
+}
+/* The Car page (remake option A, docs/ui-reference/car-2026-11): the whole livery on the side and
+   top views, every decal listed with where it sits, and Your car with its measurements. */
+body.carpage-mode .wb-body,
+body.carpage-mode .wb-status,
+body.carpage-mode .wb-sheet,
+body.carpage-mode #finder-open,
+body.carpage-mode .wb-top > div.wb-icons,
+body.carpage-mode .wb-split {
+  display: none;
+}
+.car-page {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  background: var(--bg);
+}
+.car-page[hidden] {
+  display: none;
+}
+.cp-list {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  flex-shrink: 0;
+  padding: 8px 0 16px;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  overflow-y: auto;
+}
+.cp-list h3,
+.cp-list h4 {
+  margin: 10px 16px 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.cp-list h4 {
+  font-size: 12px;
+}
+.cp-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 6px 14px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: grab;
+}
+.cp-item:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.cp-item.on {
+  border-left-color: var(--focus);
+  background: color-mix(in srgb, var(--focus) 13%, transparent);
+}
+.cp-item i {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 3px;
+  border-radius: 6px;
+  background: #fff;
+}
+.cp-item i svg {
+  width: 100%;
+  height: 100%;
+}
+.cp-name {
+  flex: 1;
+  min-width: 0;
+}
+.cp-name b {
+  display: block;
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cp-name small {
+  color: var(--muted);
+  font:
+    500 11px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.cp-st {
+  display: flex;
+  gap: 3px;
+}
+.cp-st span {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.cp-st span.on {
+  background: color-mix(in srgb, var(--green) 20%, transparent);
+  color: var(--green);
+}
+.cp-hint {
+  margin: 10px 16px 0;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.cp-hint.inline {
+  margin: 0;
+}
+.cp-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--ink) 3%, var(--bg));
+}
+.cp-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.cp-bar .seg button {
+  min-width: 64px;
+}
+.cp-bar .seg button[aria-pressed='true'],
+.cp-side .seg button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--ink) 12%, var(--panel));
+  color: var(--ink);
+  font-weight: 600;
+}
+.cp-car {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 12px 4px 5px;
+  text-align: left;
+}
+.cp-car img {
+  width: 66px;
+  height: 30px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.cp-car b {
+  display: block;
+  font-size: 13px;
+}
+.cp-car small {
+  color: var(--muted);
+  font:
+    500 11px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.cp-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  padding: 22px 40px 40px;
+  overflow: auto;
+}
+.cp-view {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cp-eye {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cp-svg {
+  display: block;
+  overflow: visible;
+  touch-action: none;
+  user-select: none;
+}
+.cp-decal {
+  cursor: move;
+}
+.cp-handle {
+  cursor: nwse-resize;
+}
+.cp-handle[data-cp-handle='ne'],
+.cp-handle[data-cp-handle='sw'] {
+  cursor: nesw-resize;
+}
+.cp-live {
+  position: absolute;
+  right: 0;
+  top: -2px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--focus);
+  color: #fff;
+  font:
+    500 11px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.cp-loading {
+  padding: 30px;
+  color: var(--muted);
+}
+.cp-insp {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  overflow-y: auto;
+}
+.cp-insp section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.cp-insp h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.cp-title {
+  margin: 0;
+  font-size: 22px;
+}
+.cp-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 30px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+.cp-empty b {
+  color: var(--ink);
+}
+.cp-share {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.cp-share span {
+  color: var(--muted);
+}
+.cp-share i {
+  position: relative;
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  overflow: hidden;
+}
+.cp-share i b {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: var(--accent);
+}
+.cp-share strong {
+  font:
+    600 12px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.cp-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.cp-error {
+  margin: 0;
+  color: var(--accent-text);
+  font-size: 12px;
+}
+.cp-error:empty {
+  display: none;
+}
+.cp-where {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.cp-where span {
+  width: 76px;
+  color: var(--muted);
+}
+.cp-where b {
+  flex: 1;
+  font:
+    500 12px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.cp-where b.faint {
+  color: var(--muted);
+}
+.cp-where button {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.cp-insp section > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+}
+.cp-garage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 22px 28px;
+  overflow: auto;
+}
+.cp-ghead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cp-ghead h2 {
+  margin: 0;
+  font-size: 26px;
+}
+.cp-ghead button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cp-bodies {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+.cp-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-height: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  text-align: center;
+  white-space: normal;
+}
+.cp-body img {
+  width: 100%;
+  height: 58px;
+  object-fit: contain;
+}
+.cp-body b {
+  font-size: 12.5px;
+}
+.cp-body small {
+  color: var(--muted);
+  font:
+    500 11px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.cp-body[aria-pressed='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.cp-grow {
+  display: flex;
+  align-items: stretch;
+  gap: 20px;
+}
+.cp-panel {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.cp-panel h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.cp-panel p.muted {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.cp-drawing {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.cp-draw {
+  position: relative;
+  margin-top: 18px;
+}
+.cp-dim {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.cp-dim.h {
+  left: 0;
+}
+.cp-dim.h::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1.5px solid var(--accent);
+  z-index: 0;
+}
+.cp-dim.v {
+  top: 0;
+  flex-direction: column;
+}
+.cp-dim.v::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-left: 1.5px solid var(--accent);
+}
+.cp-dim input {
+  position: relative;
+  z-index: 1;
+  width: 86px;
+  border-color: var(--accent);
+  font:
+    600 13px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.cp-dim span {
+  position: relative;
+  z-index: 1;
+  padding: 0 4px;
+  background: var(--panel);
+}
+.cp-dim.v input {
+  margin-left: 14px;
+}
+.cp-dim.v span {
+  margin-left: 14px;
+}
+.cp-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 340px;
+  flex-shrink: 0;
+}
+.cp-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+.cp-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cp-line button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cp-steps {
+  display: flex;
+  gap: 8px;
+}
+.cp-steps span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.cp-steps i {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+.cp-steps .done i {
+  background: var(--green);
+  color: #fff;
+}
+.cp-steps .now {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--ink);
+}
+.cp-steps .now i {
+  background: var(--accent);
+  color: #fff;
+}
+.cp-photo {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #3a4048;
+  overflow: hidden;
+  cursor: crosshair;
+}
+.cp-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+.cp-pin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px solid var(--accent);
+}
+.cp-pin b {
+  position: absolute;
+  top: 10px;
+  left: -12px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+}
+.cp-measure {
+  position: absolute;
+  bottom: 20px;
+  height: 0;
+  border-top: 2px dashed var(--accent);
+}
+.cp-big {
+  height: 42px;
+  font:
+    600 18px 'SF Roboto Mono',
+    Consolas,
+    monospace;
+}
+.cp-kv {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 10px;
+  font-size: 12px;
+}
+.cp-kv span {
+  color: var(--muted);
+}
+.cp-kv b {
+  font:
+    500 12px 'SF Roboto Mono',
+    Consolas,
+    monospace;
 }

@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Car preview redesign</title>
+<!-- Preview only: made-up decals, nothing is wired up. Two concepts for checking decals on the car and setting up the car reference. -->
+<style>
+@font-face{font-family:'SF Barlow Condensed';src:url('../../../renderer/fonts/barlowcondensed/BarlowCondensed-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic}
+@font-face{font-family:'SF Roboto Mono';src:url('../../../renderer/fonts/robotomono/RobotoMono[wght].ttf') format('truetype');font-weight:100 700}
+:root{--bg:#14181e;--canvas:#101318;--panel:#1d232b;--raised:#252c36;--ink:#e8e6e1;--ink2:#c4c8ce;--muted:#98a0ab;--faint:#6b7380;--line:#323946;--line2:#272d37;--accent:#e5484d;--ok:#3ecf8e;--blue:#2f8cff;--gold:#f0b429;--stage:#181d24;
+  --cond:'SF Barlow Condensed','Bahnschrift',sans-serif;--mono:'SF Roboto Mono',Consolas,monospace;--ui:'Segoe UI',system-ui,sans-serif;color-scheme:dark}
+[data-theme=light]{--bg:#f1efea;--canvas:#e4e1da;--panel:#fff;--raised:#f3f1ec;--ink:#1d2229;--ink2:#3a414c;--muted:#656c76;--faint:#8a929d;--line:#d9d6cf;--line2:#e6e3dd;--accent:#c92424;--ok:#1f9a62;--blue:#1f6fd6;--gold:#b7820a;--stage:#ebe8e2;color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--ui);overflow:hidden}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+h1,h2,h3,h4{font-family:var(--cond);font-style:italic;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0}
+.muted{color:var(--muted)}.faint{color:var(--faint)}.grow{flex:1}.mono{font-family:var(--mono);font-weight:500}
+.row{display:flex;align-items:center;gap:8px}
+.switch{position:relative;z-index:50;display:flex;align-items:center;gap:14px;height:46px;padding:0 20px;background:var(--bg);border-bottom:1px solid var(--line2)}
+.switch b{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.switch p{margin:0 0 0 auto;font-size:12px;color:var(--faint);max-width:520px;line-height:1.3}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+.seg button{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:26px;padding:0 11px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.seg button.on{background:color-mix(in srgb,var(--ink) 12%,var(--panel));color:var(--ink);font-weight:600}
+.seg.sm button{height:22px;padding:0 8px;font-size:12px}
+.opt{position:absolute;inset:46px 0 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 13px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--ink);font-size:13px;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+.btn.sm{height:27px;padding:0 9px;font-size:12px}
+.btn.icon{width:32px;padding:0}.btn.sm.icon{width:27px}
+.inp{display:flex;align-items:center;gap:6px;min-width:0;height:30px;padding:0 9px;border:1px solid var(--line);border-radius:8px;background:color-mix(in srgb,var(--bg) 70%,var(--panel))}
+.inp input,.inp select{flex:1;min-width:0;width:100%;border:0;background:none;outline:0}
+.inp span{color:var(--faint);font-size:11.5px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:11px;color:var(--muted)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid var(--line);border-radius:13px;background:none;color:var(--ink2);font-size:12px;white-space:nowrap}
+.chip.on{border-color:var(--accent);color:var(--ink);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.chip b{font-family:var(--mono);font-weight:600}
+.check{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.check i{width:16px;height:16px;border-radius:4px;background:var(--accent);display:grid;place-items:center;color:#fff;font-style:normal;font-size:11px}
+.check i.off{background:none;border:1.5px solid var(--line)}
+.app{position:absolute;inset:0;display:flex;flex-direction:column}
+.top{height:56px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 14px;flex:none}
+.logo{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;font:700 italic 17px var(--cond)}
+.brand{font:700 italic 21px var(--cond)}
+.sheetname{font:700 italic 19px var(--cond);text-transform:uppercase;margin-left:14px}
+.nav{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:10px;margin-left:60px}
+.nav span{padding:5px 12px;border-radius:7px;color:var(--muted)}
+.nav span.on{background:color-mix(in srgb,var(--ink) 11%,var(--panel));color:var(--ink);font-weight:600}
+.nav span.new::after{content:'new';margin-left:6px;padding:0 5px;border-radius:4px;background:var(--accent);color:#fff;font-size:9.5px;font-weight:700;text-transform:uppercase;vertical-align:1px}
+.body{flex:1;display:flex;min-height:0}
+.rail{width:60px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:10px;flex:none}
+.rail button{display:flex;flex-direction:column;align-items:center;gap:3px;width:48px;padding:6px 0 4px;border:0;border-radius:9px;background:none;color:var(--muted);font-size:10px}
+.rail button svg{width:19px;height:19px}
+.rail button.on{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
+/* car drawing */
+.car{position:absolute}
+.car img{display:block;width:100%;height:100%;user-select:none}
+.dc{position:absolute}
+.dc svg{display:block;width:100%;height:100%}
+.dc.sel{outline:1.5px solid var(--blue);outline-offset:2px}
+.dc.faint{opacity:.35}
+.hdl{position:absolute;width:9px;height:9px;background:#fff;border:1.5px solid var(--blue);border-radius:2px;transform:translate(-50%,-50%)}
+.tag{position:absolute;padding:2px 7px;border-radius:6px;background:var(--blue);color:#fff;font:500 11px var(--mono);white-space:nowrap;transform:translateX(-50%)}
+.cursor{position:absolute;width:18px;height:18px;z-index:9}
+.ruler{position:absolute;height:16px;border-top:1px solid var(--faint);background:repeating-linear-gradient(90deg,var(--faint) 0 1px,transparent 1px var(--tick));opacity:.7}
+.ruler span{position:absolute;top:3px;font:500 10px var(--mono);color:var(--muted);transform:translateX(-50%)}
+.dim{position:absolute;display:flex;align-items:center;justify-content:center}
+.dim::before{content:'';position:absolute;inset:50% 0 auto;border-top:1.5px solid var(--accent)}
+.dim.v::before{inset:0 auto 0 50%;border-top:0;border-left:1.5px solid var(--accent)}
+.dim .inp{position:relative;z-index:1;height:28px;width:108px;background:var(--panel);border-color:var(--accent)}
+.dim .inp input{font:600 13px var(--mono)}
+/* ===== A · Car page ===== */
+.dlist{width:270px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:auto}
+.dlist h4{font-size:13px;color:var(--muted);padding:14px 16px 6px}
+.ditem{display:flex;align-items:center;gap:10px;padding:7px 14px;border-left:3px solid transparent}
+.ditem i{width:40px;height:26px;border-radius:5px;background:#fff;display:grid;place-items:center;flex:none;padding:2px}
+.ditem i svg{max-width:36px;max-height:22px}
+.ditem b{font-weight:500;font-size:12.5px;display:block}
+.ditem small{color:var(--faint);font-size:11px}
+.ditem .st{margin-left:auto;display:flex;gap:3px}
+.ditem .st span{font:600 9.5px var(--ui);letter-spacing:.06em;padding:1px 5px;border-radius:4px;background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.ditem .st span.no{background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--faint)}
+.ditem.on{background:color-mix(in srgb,var(--blue) 12%,transparent);border-left-color:var(--blue)}
+.ditem.drag{opacity:.4}
+.stagewrap{flex:1;position:relative;display:flex;flex-direction:column;background:var(--stage);min-width:0}
+.stagebar{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line2);background:var(--bg)}
+.carbtn{display:flex;align-items:center;gap:10px;padding:4px 12px 4px 5px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.carbtn img{width:64px;height:26px;object-fit:contain;background:color-mix(in srgb,var(--ink) 6%,transparent);border-radius:6px}
+.carbtn b{font-size:13px}.carbtn small{display:block;color:var(--muted);font:500 11px var(--mono)}
+.stage{flex:1;position:relative;overflow:hidden}
+.viewlbl{position:absolute;font:600 10px var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.insp{width:320px;flex:none;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:auto}
+.insp section{padding:15px 16px;border-bottom:1px solid var(--line2);display:flex;flex-direction:column;gap:10px}
+.insp h3{font-size:15px}
+.pct{display:flex;align-items:center;gap:10px}
+.pct .bar{flex:1;height:8px;border-radius:4px;background:color-mix(in srgb,var(--ink) 10%,transparent);position:relative;overflow:hidden}
+.pct .bar i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:4px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:12px}
+.kv span:nth-child(odd){color:var(--muted)}
+.kv b{font-family:var(--mono);font-weight:500}
+.bodies{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.bodycard{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:10px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
+.bodycard img{width:100%;height:60px;object-fit:contain}
+.bodycard b{font-size:12.5px}.bodycard small{color:var(--muted);font:500 11px var(--mono)}
+.bodycard.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.bodycard.own{border-style:dashed;justify-content:center;color:var(--muted)}
+.garage{position:absolute;inset:0;overflow:auto;padding:22px 28px;display:flex;flex-direction:column;gap:20px}
+.garage h2{font-size:26px}
+.panel{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:18px}
+.pin{position:absolute;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:translate(-50%,-100%) rotate(-45deg);background:var(--accent);border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.4)}
+.pin b{position:absolute;inset:0;display:grid;place-items:center;transform:rotate(45deg);color:#fff;font-size:11px}
+.measure{position:absolute;height:0;border-top:2px dashed var(--accent)}
+.steps{display:flex;gap:8px}
+.steps span{display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:9px;background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--muted);font-size:12.5px}
+.steps span i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--line);color:var(--ink);font-style:normal;font-size:11px;font-weight:700}
+.steps span.done i{background:var(--ok);color:#fff}
+.steps span.now{color:var(--ink);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.steps span.now i{background:var(--accent);color:#fff}
+.photo{position:relative;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#5d6670,#3a4048 60%,#2a2e33);}
+.photo img{filter:saturate(.8) contrast(.95) drop-shadow(0 12px 10px rgba(0,0,0,.5))}
+.photo::after{content:'';position:absolute;left:0;right:0;bottom:0;height:22%;background:linear-gradient(180deg,#4b5159,#2e3338)}
+/* ===== B · split ===== */
+.lp{width:240px;background:var(--panel);border-right:1px solid var(--line);flex:none;padding:12px}
+.tabs{display:flex;gap:14px;border-bottom:1px solid var(--line);margin:-12px -12px 12px;padding:0 14px}
+.tabs span{padding:12px 0 10px;color:var(--muted);font-weight:500}
+.tabs span.on{color:var(--ink);box-shadow:inset 0 -2px var(--accent);font-weight:600}
+.ph{height:12px;margin:12px 4px;border-radius:5px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.cv{position:relative;background:var(--canvas);overflow:hidden;flex:none}
+.paper{position:absolute;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.split{width:8px;flex:none;background:var(--line2);position:relative;cursor:col-resize}
+.split::after{content:'';position:absolute;left:2px;top:50%;width:4px;height:44px;margin-top:-22px;border-radius:2px;background:var(--faint)}
+.carpane{flex:1;position:relative;display:flex;flex-direction:column;background:var(--stage);min-width:0}
+.carhead{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line2);background:var(--bg)}
+.carfoot{display:flex;align-items:center;gap:6px;padding:10px 14px;border-top:1px solid var(--line2);background:var(--bg);flex-wrap:wrap}
+.tray{position:absolute;right:24px;top:440px;width:150px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:10px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.tray h4{font-size:12px;color:var(--muted)}
+.tray .t{height:38px;border-radius:7px;background:#fff;display:grid;place-items:center;padding:4px}
+.tray .t svg{max-height:30px;max-width:120px}
+.pop{position:absolute;z-index:8;width:390px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 20px 60px rgba(0,0,0,.5);padding:14px;display:flex;flex-direction:column;gap:12px}
+.blist{display:flex;flex-direction:column;gap:4px}
+.brow{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:9px}
+.brow img{width:70px;height:28px;object-fit:contain}
+.brow small{margin-left:auto;color:var(--muted);font:500 11px var(--mono)}
+.brow.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.diagram{position:relative;height:96px;border-radius:10px;background:color-mix(in srgb,var(--ink) 5%,transparent)}
+</style>
+</head>
+<body>
+<div class="switch">
+  <b>Option</b><div class="seg" id="opt"><button data-v="A">A · Car page</button><button data-v="B">B · Side by side</button></div>
+  <b>State</b><div class="seg" id="state"></div>
+  <b>Theme</b><div class="seg" id="theme"><button data-v="dark">Dark</button><button data-v="light">Light</button></div>
+  <p id="blurb"></p>
+</div>
+<div class="opt" id="stage"></div>
+<svg width="0" height="0" style="position:absolute"><defs>
+ <symbol id="i-sel" viewBox="0 0 24 24"><path d="m5 3 14 8-6 2-3 6z"/></symbol>
+ <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 8"/></symbol>
+ <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+ <symbol id="i-hash" viewBox="0 0 24 24"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16"/></symbol>
+ <symbol id="i-shape" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><rect x="11" y="11" width="9" height="9" rx="1"/></symbol>
+ <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 15v-3l3-5h10l4 5v3z"/><circle cx="7.5" cy="16" r="2"/><circle cx="16.5" cy="16" r="2"/></symbol>
+ <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+ <symbol id="i-mir" viewBox="0 0 24 24"><path d="M12 3v18M9 6 3 18h6zM15 6l6 12h-6z"/></symbol>
+ <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M4 20h16"/></symbol>
+ <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+ <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+ <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+</defs></svg>
+<script>
+const I = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const F = "font-family:'SF Barlow Condensed',Bahnschrift,sans-serif;font-style:italic;font-weight:700";
+const ART = {
+  r27: [`<circle cx="50" cy="50" r="46" fill="#fff" stroke="#e11d2e" stroke-width="8"/><text x="50" y="68" text-anchor="middle" font-size="52" fill="#111" style="${F}">27</text>`, 100, 100],
+  forge: [`<text x="8" y="44" font-size="50" fill="#111" style="${F}">FORGE</text><path d="M4 52h180l-10 10H0z" fill="#e11d2e"/><text x="40" y="88" font-size="30" fill="#111" style="${F}">RACING</text>`, 190, 96],
+  dutch: [`<text x="4" y="40" font-size="44" fill="#111" style="${F}">DUTCH</text><path d="M118 18h70l-6 8h-70zM112 32h70l-6 8h-70z" fill="#ff6a13"/><text x="6" y="70" font-size="25" fill="#111" style="${F}">MOTORSPORT</text>`, 190, 78],
+  stripe: [`<rect x="0" y="0" width="300" height="9" fill="#e11d2e"/><rect x="0" y="14" width="300" height="9" fill="#1d4ed8"/>`, 300, 23],
+  name: [`<rect x="2" y="6" width="26" height="6" fill="#ae1c28"/><rect x="2" y="12" width="26" height="6" fill="#fff" stroke="#ddd" stroke-width=".5"/><rect x="2" y="18" width="26" height="6" fill="#21468b"/><text x="36" y="23" font-size="20" fill="#111" style="${F}">J. DE VRIES</text>`, 150, 30],
+  kestrel: [`<ellipse cx="80" cy="34" rx="78" ry="32" fill="#f5c400"/><ellipse cx="80" cy="34" rx="70" ry="25" fill="none" stroke="#111" stroke-width="3"/><text x="80" y="45" text-anchor="middle" font-size="30" fill="#111" style="${F}">KESTREL OIL</text>`, 160, 68],
+  shield: [`<path d="M8 6h84v46c0 24-22 38-42 44C30 90 8 76 8 52z" fill="#1e2530"/><path d="M8 6h84v10H8z" fill="#e11d2e"/><text x="50" y="66" text-anchor="middle" font-size="42" fill="#fff" style="${F}">SF</text>`, 100, 100]
+};
+const svg = k => { const [b, w, h] = ART[k]; return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${b}</svg>`; };
+const thumb = k => { const [b, w, h] = ART[k]; return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">${b}</svg>`; };
+// sheet decals, printed sizes in mm at 1:32
+const DEC = { r27: ['Roundel 27', 18, 18], forge: ['Forge Racing', 36, 18.2], dutch: ['Dutch Motorsport', 34, 14], stripe: ['Double stripe', 80, 6.1], name: ['Driver name', 30, 6], kestrel: ['Kestrel Oil', 28, 12], shield: ['SF Shield', 12, 12] };
+const CAR = { len: 140, side: { w: 1981, h: 793, b: [6, 33, 1964, 649] }, top: { w: 1981, h: 793, b: [10, 8, 1962, 751] } };
+const SIDE = '../../../assets/car-side.png', TOP = '../../../assets/car-top.png';
+// a car drawn at a width in px; decals placed by mm from the car's nose (left) and top
+function carView(view, x, y, width, placed, opts = {}) {
+  const c = CAR[view], scale = width / c.w, px = (c.b[2] * scale) / CAR.len; // px per mm
+  const ox = x + c.b[0] * scale, oy = y + c.b[1] * scale;
+  const dec = placed.map(([k, mx, my, cls]) => {
+    const [, w, h] = DEC[k];
+    const l = ox + mx * px, t = oy + my * px, W = w * px, H = h * px;
+    let extra = '';
+    if (cls?.includes('sel') && opts.handles) extra = [[l, t], [l + W, t], [l, t + H], [l + W, t + H]].map(([hx, hy]) => `<div class="hdl" style="left:${hx - 3}px;top:${hy - 3}px"></div>`).join('');
+    if (cls?.includes('sel') && opts.label) extra += `<div class="tag" style="left:${l + W / 2}px;top:${t + H + 10}px">${opts.label}</div>`;
+    return `<div class="dc ${cls || ''}" style="left:${l}px;top:${t}px;width:${W}px;height:${H}px">${svg(k)}</div>${extra}`;
+  }).join('');
+  return { html: `<div class="car" style="left:${x}px;top:${y}px;width:${width}px;height:${c.h * scale}px"><img src="${view === 'side' ? SIDE : TOP}" alt=""></div>${dec}`, px, ox, oy, h: c.h * scale };
+}
+const topbar = (nav, extraNav = false) => `<div class="top"><div class="logo">D</div><span class="brand">DECALS</span><span class="sheetname">Club racing · No. 27</span><div class="nav">${['Workshop', 'Editor', ...(extraNav ? ['Car'] : []), 'Decal Library', 'Import & Export'].map(n => `<span class="${n === nav ? 'on' : ''} ${n === 'Car' ? 'new' : ''}">${n.replace('&', '&amp;')}</span>`).join('')}</div><span class="grow"></span><button class="btn primary">Export PDF</button></div>`;
+const cursor = (x, y) => `<svg class="cursor" style="left:${x}px;top:${y}px" viewBox="0 0 24 24"><path d="m5 3 14 8-6 2-3 6z" fill="#fff" stroke="#111" stroke-width="1.5"/></svg>`;
+
+const STATES = {
+  A: [['livery', 'The whole livery'], ['drag', 'Drag onto the car'], ['garage', 'Your car'], ['calibrate', 'Measure a photo']],
+  B: [['split', 'Car beside the sheet'], ['resize', 'Resize on the car'], ['all', 'Everything on the car'], ['garage', 'Change the car']]
+};
+const BLURB = {
+  A: 'A Car page next to the Editor: the whole livery on the side and top views at once, every decal of the sheet listed with where it sits, and a Your car page that measures your own photos.',
+  B: 'The car moves into the editor: a side-by-side pane you can resize, decals resized right on the car, quick sizes for that car, and the car picked from a small garage menu.'
+};
+const q = new URLSearchParams(location.search);
+let opt = q.get('opt') || 'A', state = q.get('state'), theme = q.get('theme') || 'dark';
+
+/* ---------- A ---------- */
+const PLACED_SIDE = [['forge', 52, 12, 'sel'], ['r27', 98, 6], ['name', 56, 4.5], ['shield', 122, 15]];
+const PLACED_TOP = [['r27', 14, 17], ['stripe', 34, 23.5], ['shield', 122, 21]];
+function A(s) {
+  const list = (sel, drag) => `<aside class="dlist"><h4>On this sheet · 7 decals</h4>${Object.entries(DEC).map(([k, [n, w]]) => {
+      const onS = PLACED_SIDE.some(p => p[0] === k), onT = PLACED_TOP.some(p => p[0] === k);
+      return `<div class="ditem ${k === sel ? 'on' : ''} ${k === drag ? 'drag' : ''}"><i>${thumb(k)}</i><div><b>${n}</b><small>${w} mm wide</small></div><span class="st"><span class="${onS ? '' : 'no'}">SIDE</span><span class="${onT ? '' : 'no'}">TOP</span></span></div>`;
+    }).join('')}<p class="faint" style="padding:10px 16px;font-size:11.5px;margin:0">Drag a decal onto the car. Its place there is saved with the sheet; its size is the size it prints.</p></aside>`;
+  const bar = `<div class="stagebar"><button class="carbtn"><img src="${SIDE}" alt=""><span><b>Modern GT</b><small>1:32 · 140 mm long</small></span>${I('chev')}</button><div class="seg"><button class="on">Side + top</button><button>Side</button><button>Top</button></div><span class="check"><i>✓</i>Both sides (mirrored copies on the right)</span><span class="grow"></span><span class="muted" style="font-size:12px">1 px on screen ≈ <b class="mono" style="color:var(--ink)">0.16 mm</b> on the model</span></div>`;
+  let main = '', side = '', insp = '';
+  if (s === 'livery' || s === 'drag') {
+    const sv = carView('side', 40, 30, 820, s === 'drag' ? PLACED_SIDE.map(p => [p[0], p[1], p[2], '']) : PLACED_SIDE, { handles: true, label: '36.0 × 18.2 mm · 26% of the car' });
+    const tv = carView('top', 40, 30 + sv.h + 36, 820, PLACED_TOP);
+    let extra = '';
+    if (s === 'drag') {
+      const w = 28 * sv.px, h = 12 * sv.px, l = sv.ox + 14 * sv.px, t = sv.oy + 14 * sv.px;
+      extra = `<div class="dc" style="left:${l}px;top:${t}px;width:${w}px;height:${h}px;opacity:.85;outline:2px dashed var(--blue);outline-offset:3px;transform:rotate(-2deg)">${svg('kestrel')}</div><div class="tag" style="left:${l + w / 2}px;top:${t - 26}px">Kestrel Oil · 28 × 12 mm · front wing</div>${cursor(l + w / 2, t + h / 2)}`;
+    }
+    main = `<div class="stage"><span class="viewlbl" style="left:40px;top:12px">Left side</span>${sv.html}<span class="viewlbl" style="left:40px;top:${30 + sv.h + 18}px">From above</span>${tv.html}${extra}</div>`;
+    insp = `<aside class="insp"><section><span class="muted" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:600">On the car</span><h3 style="font-size:22px">${s === 'drag' ? 'Kestrel Oil' : 'Forge Racing'}</h3>
+      <div class="g2"><div class="field"><label>Width</label><span class="inp"><input value="${s === 'drag' ? '28.0' : '36.0'}"><span>mm</span></span></div><div class="field"><label>Height</label><span class="inp"><input value="${s === 'drag' ? '12.0' : '18.2'}"><span>mm</span></span></div></div>
+      <div class="pct"><span class="muted" style="font-size:12px;width:92px">Of the length</span><div class="bar"><i style="width:${s === 'drag' ? 20 : 26}%"></i></div><b class="mono">${s === 'drag' ? 20 : 26}%</b></div>
+      <p class="faint" style="margin:0;font-size:11.5px">Resizing here changes the decal on the sheet too: one decal, one size.</p></section>
+      <section><h3>Where it sits</h3><div class="kv"><span>Left side</span><b>${s === 'drag' ? 'placing…' : '52 mm from the nose'}</b><span>Right side</span><b>${s === 'drag' ? '—' : 'mirrored copy'}</b><span>From above</span><b class="faint">not placed</b></div><div class="row"><button class="btn sm">${I('mir')} Place on the right side too</button></div><div class="row"><button class="btn sm ghost">${I('x')} Take off the car</button></div></section>
+      <section><h3>Check</h3><div class="kv"><span>Fits the door</span><b style="color:var(--ok)">yes · 3 mm to spare</b><span>Crosses a panel line</span><b>no</b></div></section></aside>`;
+    side = list(s === 'drag' ? 'kestrel' : 'forge', s === 'drag' ? 'kestrel' : '');
+  }
+  if (s === 'garage') {
+    const sv = carView('side', 40, 52, 560, []);
+    main = `<div class="stage"><div class="garage"><div class="row"><h2>Your car</h2><span class="grow"></span><span class="muted">Used for this sheet: the car preview and the size suggestions.</span></div>
+      <div class="bodies">${[['Modern GT', SIDE, '4480 mm', true], ['Classic endurance GT', '../../../assets/cars/classic-gt-side.webp', '4180 mm'], ['Touring saloon', '../../../assets/cars/touring-side.webp', '4800 mm'], ['Rally hatchback', '../../../assets/cars/rally-side.webp', '4100 mm'], ['Group C prototype', '../../../assets/cars/group-c-side.webp', '4800 mm']].map(([n, src, l, on]) => `<div class="bodycard ${on ? 'on' : ''}"><img src="${src}" alt=""><b>${n}</b><small>real car ${l}</small></div>`).join('')}</div>
+      <div class="row" style="gap:20px;align-items:stretch"><div class="panel" style="flex:1;position:relative;height:360px"><h3 style="font-size:15px">Your model's size</h3><p class="muted" style="margin:4px 0 0;font-size:12px">Type over the measurements, or pick a scale and Decals works them out from the real car.</p>
+        <div style="position:absolute;left:0;top:40px;width:640px;height:300px">${sv.html}
+          <div class="dim" style="left:${sv.ox}px;top:${52 + sv.h + 26}px;width:${CAR.side.b[2] * 560 / CAR.side.w}px;height:2px"><span class="inp"><input value="140.0"><span>mm</span></span></div>
+          <div class="dim v" style="left:${sv.ox + CAR.side.b[2] * 560 / CAR.side.w + 24}px;top:${sv.oy}px;width:2px;height:${CAR.side.b[3] * 560 / CAR.side.w}px"><span class="inp" style="position:absolute;left:12px;width:96px"><input value="40.3"><span>mm</span></span></div></div></div>
+        <div class="panel" style="width:330px;display:flex;flex-direction:column;gap:12px"><div class="field"><label>Model scale</label><div class="seg"><button>1:24</button><button class="on">1:32</button><button>1:43</button><button>1:64</button><button>Other</button></div></div>
+          <div class="kv"><span>Length</span><b>140.0 mm</b><span>Height (side)</span><b>40.3 mm</b><span>Width (top)</span><b>56.0 mm</b></div>
+          <div class="field"><label>Your own model</label><div class="row"><button class="btn sm">${I('up')} Side photo…</button><button class="btn sm">${I('up')} Top photo…</button></div><p class="faint" style="margin:0;font-size:11.5px">A photo straight from the side works best. You then mark its nose and tail and say how long it is.</p></div>
+          <span class="grow"></span><div class="row"><span class="grow"></span><button class="btn">Back to the car</button></div></div></div></div></div>`;
+    side = list('');
+  }
+  if (s === 'calibrate') {
+    const w = 640, scale = w / CAR.side.w, nose = 6 * scale + 40, tail = (6 + 1964) * scale + 40, yb = 52 + 520 * scale;
+    main = `<div class="stage"><div class="garage"><div class="row"><h2>Measure your photo</h2><span class="grow"></span><div class="steps"><span class="done"><i>✓</i>Photo</span><span class="done"><i>✓</i>Nose</span><span class="now"><i>3</i>Tail</span><span><i>4</i>Length</span></div></div>
+      <div class="row" style="gap:20px;align-items:stretch"><div class="photo" style="width:720px;height:420px;flex:none"><img src="${SIDE}" alt="" style="position:absolute;left:40px;top:52px;width:${w}px"><div class="measure" style="left:${nose}px;top:${yb}px;width:${tail - nose}px"></div><div class="pin" style="left:${nose}px;top:${yb}px"><b>1</b></div><div class="pin" style="left:${tail}px;top:${yb}px"><b>2</b></div>${cursor(tail + 6, yb + 6)}<div class="tag" style="left:${(nose + tail) / 2}px;top:${yb + 12}px;background:var(--accent)">1 954 px between the pins</div></div>
+        <div class="panel" style="flex:1;display:flex;flex-direction:column;gap:12px"><h3 style="font-size:15px">How long is it?</h3><p class="muted" style="margin:0;font-size:12.5px">Pin 1 on the very front, pin 2 on the very back. Then measure your model with a ruler from nose to tail.</p>
+          <div class="field"><label>Nose to tail on your model</label><span class="inp" style="height:40px"><input value="142" style="font:600 18px var(--mono)"><span>mm</span></span></div>
+          <div class="kv"><span>That makes it</span><b>1:31.5</b><span>Height (side)</span><b>40.9 mm</b><span>Photo</span><b>straight on · good</b></div>
+          <p class="faint" style="margin:0;font-size:11.5px">The photo is cropped to the car and sized to 142 mm. Decals on it then show at their real size.</p>
+          <span class="grow"></span><div class="row"><button class="btn ghost">Start over</button><span class="grow"></span><button class="btn primary">Use this car</button></div></div></div></div></div>`;
+    side = list('');
+  }
+  return `<div class="app">${topbar('Car', true)}<div class="body">${side}<div class="stagewrap">${bar}${main}</div>${insp}</div></div>`;
+}
+
+/* ---------- B ---------- */
+function B(s) {
+  const rail = `<div class="rail">${[['sel', 'Select'], ['img', 'Image'], ['text', 'Text'], ['hash', 'Number'], ['shape', 'Shape']].map(([i, n], k) => `<button class="${k === 0 ? 'on' : ''}">${I(i)}${n}</button>`).join('')}</div>`;
+  const K = 1.75; // paper px per mm
+  const sheet = [['r27', 14, 14], ['forge', 40, 16], ['dutch', 86, 18], ['stripe', 14, 44], ['name', 104, 48], ['kestrel', 14, 60], ['shield', 52, 60]];
+  const selK = s === 'resize' ? 'r27' : 'forge';
+  const paper = `<div class="paper" style="left:30px;top:40px;width:${210 * K}px;height:${297 * K}px">${sheet.map(([k, x, y]) => `<div class="dc ${k === selK ? 'sel' : ''}" style="left:${x * K}px;top:${y * K}px;width:${DEC[k][1] * K * (k === 'r27' && s === 'resize' ? 21.5 / 18 : 1)}px;height:${DEC[k][2] * K * (k === 'r27' && s === 'resize' ? 21.5 / 18 : 1)}px">${svg(k)}</div>`).join('')}</div>`;
+  const cvW = 430;
+  let car = '', foot = '', extra = '', head = '';
+  const placed = s === 'all' ? [['forge', 52, 12, 'sel'], ['r27', 98, 6, 'faint'], ['name', 56, 4.5, 'faint'], ['shield', 122, 15, 'faint'], ['stripe', 36, 33, 'faint']] : s === 'resize' ? [['r27', 54, 10, 'sel']] : [['forge', 52, 12, 'sel']];
+  if (s === 'resize') DEC.r27b = 1;
+  const sv = carView('side', 30, 90, 720, placed.map(p => (p[0] === 'r27' && s === 'resize' ? p : p)), { handles: s === 'resize', label: s === 'resize' ? '21.5 × 21.5 mm · 15% of the car · was 18.0' : '' });
+  if (s === 'resize') {
+    // enlarge the roundel a bit to show the drag
+    car = sv.html.replace(/(<div class="dc sel" style="left:[\d.]+px;top:[\d.]+px;width:)([\d.]+)(px;height:)([\d.]+)/, (m, a, w, b, h) => `${a}${(w * 21.5 / 18).toFixed(1)}${b}${(h * 21.5 / 18).toFixed(1)}`);
+    extra = cursor(sv.ox + (54 + 21.5) * sv.px, sv.oy + (10 + 21.5) * sv.px);
+  } else car = sv.html;
+  const tick = sv.px * 10;
+  const ruler = `<div class="ruler" style="--tick:${tick}px;left:${sv.ox}px;top:${90 + sv.h + 8}px;width:${140 * sv.px}px">${[0, 20, 40, 60, 80, 100, 120, 140].map(v => `<span style="left:${v * sv.px}px">${v}</span>`).join('')}</div>`;
+  head = `<div class="carhead"><button class="carbtn" style="padding:3px 10px 3px 4px"><img src="${SIDE}" alt="" style="width:52px;height:22px"><span><b>Modern GT</b><small>1:32 · 140 mm</small></span>${I('chev')}</button><div class="seg sm"><button class="on">Side</button><button>Top</button><button>Both</button></div><span class="grow"></span><button class="btn sm ${s === 'all' ? 'primary' : ''}">${I('eye')} ${s === 'all' ? 'Showing all decals' : 'Selection only'}</button><button class="btn sm icon ghost" title="Car on its own window">${I('up')}</button></div>`;
+  foot = s === 'resize'
+    ? `<div class="carfoot"><span class="muted" style="font-size:12px">Roundel 27</span><span class="inp" style="width:96px"><input value="21.5"><span>mm</span></span>×<span class="inp" style="width:96px"><input value="21.5"><span>mm</span></span><button class="btn sm icon ghost">${I('link')}</button><span class="grow"></span><span class="muted" style="font-size:12px">Drag a corner on the car · Shift: free proportions</span></div>`
+    : `<div class="carfoot"><span class="muted" style="font-size:12px;margin-right:4px">Sizes for this car:</span>${[['Door number', '18'], ['Bonnet logo', '30'], ['Side sponsor', '36', true], ['Windscreen', '64'], ['Full-length stripe', '120']].map(([n, v, on]) => `<button class="chip ${on ? 'on' : ''}">${n} <b>${v}</b></button>`).join('')}</div>`;
+  if (s === 'all') extra = `<div class="tray"><h4>Not on the car yet · 2</h4><div class="t">${thumb('kestrel')}</div><div class="t">${thumb('dutch')}</div><p class="faint" style="margin:0;font-size:11px">Drag them onto the car</p></div>`;
+  let pop = '';
+  if (s === 'garage') pop = `<div class="pop" style="left:${240 + 60 + cvW + 8 + 14}px;top:${56 + 50}px"><div class="blist">${[['Modern GT', SIDE, '1:32 · 140 mm', true], ['Classic endurance GT', '../../../assets/cars/classic-gt-side.webp', '130.6 mm'], ['Touring saloon', '../../../assets/cars/touring-side.webp', '150.0 mm'], ['Rally hatchback', '../../../assets/cars/rally-side.webp', '128.1 mm'], ['Group C prototype', '../../../assets/cars/group-c-side.webp', '150.0 mm']].map(([n, src, l, on]) => `<div class="brow ${on ? 'on' : ''}"><img src="${src}" alt=""><b style="font-size:12.5px">${n}</b><small>${l}</small></div>`).join('')}</div>
+      <div class="field"><label>Scale</label><div class="seg sm"><button>1:24</button><button class="on">1:32</button><button>1:43</button><button>1:64</button><button>Other</button></div></div>
+      <div class="field"><label>Your model, measured (mm)</label><div class="diagram"><img src="${SIDE}" alt="" style="position:absolute;left:30px;top:10px;width:220px;opacity:.85"></div><div class="g2" style="grid-template-columns:1fr 1fr 1fr"><span class="inp"><input value="140.0"><span>long</span></span><span class="inp"><input value="40.3"><span>high</span></span><span class="inp"><input value="56.0"><span>wide</span></span></div></div>
+      <div class="row"><button class="btn sm">${I('up')} My own side picture…</button><button class="btn sm">Top…</button><span class="grow"></span><button class="btn sm ghost">Reset</button></div></div>`;
+  return `<div class="app">${topbar('Editor')}<div class="body">${rail}<div class="lp"><div class="tabs"><span class="on">Library</span><span>Layers</span><span>Pages</span></div><div class="ph"></div><div class="ph" style="width:60%"></div><div class="ph"></div></div>
+    <div class="cv" style="width:${cvW}px">${paper}</div><div class="split"></div>
+    <div class="carpane">${head}<div class="stage">${car}${ruler}${extra}<span class="viewlbl" style="left:30px;top:16px">Left side · ${s === 'resize' ? 'Roundel 27' : s === 'all' ? '5 decals on the car' : 'Forge Racing'}</span></div>${foot}</div></div>${pop}</div>`;
+}
+
+function draw() {
+  document.documentElement.dataset.theme = theme;
+  const st = STATES[opt];
+  if (!st.some(x => x[0] === state)) state = st[0][0];
+  document.getElementById('state').innerHTML = st.map(([v, l]) => `<button data-v="${v}">${l}</button>`).join('');
+  for (const [id, v] of [['opt', opt], ['state', state], ['theme', theme]])
+    for (const b of document.querySelectorAll(`#${id} button`)) b.classList.toggle('on', b.dataset.v === v);
+  document.getElementById('blurb').textContent = BLURB[opt];
+  document.getElementById('stage').innerHTML = opt === 'A' ? A(state) : B(state);
+}
+document.querySelector('.switch').addEventListener('click', e => {
+  const b = e.target.closest('button[data-v]');
+  if (!b) return;
+  const g = b.parentElement.id;
+  if (g === 'opt') { opt = b.dataset.v; state = null; }
+  if (g === 'state') state = b.dataset.v;
+  if (g === 'theme') theme = b.dataset.v;
+  draw();
+});
+draw();
+</script>
+</body>
+</html>

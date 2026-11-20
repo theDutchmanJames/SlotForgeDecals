@@ -23,7 +23,8 @@ async function main() {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   const open = () => page.locator('[data-action="expand-car"]').click();
-  const done = () => page.locator('#dialog [data-action="close"]').last().click();
+  // Back to the editor from the Car page.
+  const done = () => page.locator('nav [data-action="editor"]').click();
   const state = () => page.evaluate(() => JSON.parse(JSON.stringify(Studio.project.items)));
   try {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
@@ -55,27 +56,29 @@ async function main() {
       Studio.select([i.id]);
     });
     const original = await state();
+    // The fit check's enlarge button opens the Car page with the selected decal chosen.
     await open();
-    assert.equal(await page.locator('#preview-w').inputValue(), '20');
-    assert.equal(await page.locator('#preview-h').inputValue(), '10');
-    await page.locator('#preview-w').fill('3');
-    await page.locator('#preview-w').fill('30');
+    assert(await page.locator('#car-page').isVisible());
+    assert.equal(await page.locator('#cp-w').inputValue(), '20');
+    assert.equal(await page.locator('#cp-h').inputValue(), '10');
+    await page.locator('#cp-w').fill('3');
+    await page.locator('#cp-w').fill('30');
     let items = await state();
     assert.equal(items[0].w, 30);
     assert.equal(items[0].h, 15);
     assert.equal(items[0].x, 25);
     assert.equal(items[0].y, 35);
     assert.equal(items[0].rotation, 25);
-    assert.deepEqual(items[0].carPositions, { side: { x: 45, y: 17.5 }, top: { x: 55, y: 22.5 } });
+    assert.deepEqual(items[0].carPositions, { side: { x: 45, y: 17.5 }, top: { x: 60 - 5, y: 25 - 2.5 } });
     assert.deepEqual(items[1], original[1]);
+    assert.equal(await page.locator('[data-cp-svg="side"] [data-cp-id] image').getAttribute('width'), '30');
+    await page.locator('#cp-w').press('Enter');
+    await done();
     assert.equal(await page.locator('#prop-w').inputValue(), '30');
     assert.equal(
       await page.locator('#paper .sheet-item').first().locator('image').getAttribute('width'),
       '30'
     );
-    assert.equal(await page.locator('#expanded-car .car-decal image').getAttribute('width'), '30');
-    await page.locator('#preview-w').press('Enter');
-    await done();
     await page.locator('[data-action="undo"]').click();
     items = await state();
     assert.equal(items[0].w, 20, 'One undo reverts the whole typing session');
@@ -83,53 +86,51 @@ async function main() {
     await page.locator('[data-action="redo"]').click();
     await page.evaluate(() => Studio.select([Studio.project.items[0].id]));
     await open();
-    await page.locator('#preview-aspect').uncheck();
-    await page.locator('#preview-h').fill('12');
-    await page.locator('#preview-h').press('Enter');
+    await page.locator('#cp-aspect').uncheck();
+    await page.locator('#cp-h').fill('12');
+    await page.locator('#cp-h').press('Enter');
     items = await state();
     assert.equal(items[0].w, 30);
     assert.equal(items[0].h, 12);
-    assert.equal(await page.locator('#prop-h').inputValue(), '12');
-    await page.locator('#preview-view-top').click();
-    assert.equal(await page.evaluate(() => Studio.project.preview.view), 'top');
-    assert.equal(await page.locator('#expanded-car .car-decal image').getAttribute('height'), '12');
-    await page.locator('#preview-h').fill('0');
-    assert.ok(await page.locator('#preview-h').getAttribute('aria-invalid'));
+    await page.locator('[data-cp-view="top"]').click();
+    assert.equal(await page.locator('[data-cp-svg]').count(), 1);
+    assert.equal(await page.locator('[data-cp-svg="top"] [data-cp-id] image').getAttribute('height'), '12');
+    await page.locator('#cp-h').fill('0');
+    assert.ok(await page.locator('#cp-h').getAttribute('aria-invalid'));
     assert.equal((await state())[0].h, 12);
-    await page.locator('#preview-h').press('Enter');
-    assert.equal(await page.locator('#preview-h').inputValue(), '12');
-    await page.locator('#preview-view-side').click();
+    await page.locator('#cp-h').press('Enter');
+    assert.equal(await page.locator('#cp-h').inputValue(), '12');
+    await page.locator('[data-cp-view="both"]').click();
     await page.screenshot({ path: path.join(run, 'resize-preview.png') });
     await done();
+    assert.equal(await page.locator('#prop-h').inputValue(), '12');
     await page.locator('[data-action="lock"]').click();
     await open();
-    assert.ok(await page.locator('#preview-w').isDisabled());
-    assert.ok(await page.locator('#preview-h').isDisabled());
+    assert.ok(await page.locator('#cp-w').isDisabled());
+    assert.ok(await page.locator('#cp-h').isDisabled());
     await done();
     await page.locator('[data-action="lock"]').click();
-    await page.evaluate(() => Studio.select([]));
-    await open();
-    assert.ok(await page.locator('#preview-w').isDisabled());
-    assert.ok((await page.locator('#preview-size-note').textContent()).includes('Select one decal'));
-    await done();
     await page.evaluate(() => Studio.flush());
     await app.close();
     app = await launch();
     page = await app.firstWindow();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
     await page.waitForFunction(() => window.Studio?.ready);
-    await page.evaluate(() => Studio.select([Studio.project.items[0].id]));
+    // Nothing chosen yet after a restart: the details ask for a decal.
+    await page.evaluate(() => Studio.select([]));
     await open();
-    assert.equal(await page.locator('#preview-w').inputValue(), '30');
-    assert.equal(await page.locator('#preview-h').inputValue(), '12');
-    assert.equal(await page.locator('#preview-aspect').isChecked(), false);
+    assert.match(await page.locator('#cp-insp').textContent(), /Pick a decal/);
+    await page.locator('#cp-list [data-cp-item]').first().click();
+    assert.equal(await page.locator('#cp-w').inputValue(), '30');
+    assert.equal(await page.locator('#cp-h').inputValue(), '12');
+    assert.equal(await page.locator('#cp-aspect').isChecked(), false);
     assert.deepEqual(errors, []);
     console.log(
       JSON.stringify(
         {
           run,
           checks:
-            'live PNG sizing on car and A4, proportions, stable sheet placement, centred car position, one undo per edit, independent dimensions, side/top views, invalid values, locks, no selection, persistence',
+            'live PNG sizing on the Car page and A4, proportions, stable sheet placement, centred car positions, one undo per edit, independent dimensions, side/top views, invalid values, locks, nothing chosen, persistence',
           errors
         },
         null,

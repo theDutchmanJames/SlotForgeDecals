@@ -961,105 +961,7 @@ function renderCar() {
     ? `${one.name} is ${fmt(one.w)} mm wide; the car is ${fmt(project.preview.length)} mm long`
     : `The car is ${fmt(project.preview.length)} mm long`;
   bindCar($('#car-stage'));
-  const expanded = $('#expanded-car');
-  if (expanded) {
-    expanded.innerHTML = carMarkup('expanded-car');
-    bindCar(expanded);
-    syncPreviewSize();
-  }
-}
-function syncPreviewSize() {
-  const panel = $('#preview-size-controls');
-  if (!panel) return;
-  const i = current(),
-    disabled = !i || i.locked;
-  for (const key of ['w', 'h']) {
-    const input = $('#preview-' + key);
-    input.disabled = disabled;
-    if (document.activeElement !== input) input.value = i ? Number(i[key].toFixed(2)) : '';
-  }
-  $('#preview-aspect').checked = settings.aspectLock !== false;
-  $('#preview-aspect').disabled = disabled;
-  $('#preview-size-note').textContent = !i
-    ? selected.size > 1
-      ? 'Drag each decal to check placement. Select one decal on the sheet to adjust its size.'
-      : 'Select one decal on the sheet to adjust its size.'
-    : i.locked
-      ? 'This decal is locked. Unlock it in the editor to change its size.'
-      : 'Changes apply directly to the selected decal on your sheet. Drag it on the car to check placement.';
-  $('#preview-selected-name').textContent = i
-    ? i.name
-    : selected.size
-      ? `${selected.size} decals selected`
-      : 'No decal selected';
-  for (const view of ['side', 'top'])
-    $('#preview-view-' + view).classList.toggle('active', project.preview.view === view);
-}
-function openCarPreview() {
-  showDialog(
-    'Car preview',
-    `1:${project.scale} · selected decals at their printed sizes`,
-    '<div class="preview-view-controls"><strong id="preview-selected-name"></strong><div class="spacer"></div><button id="preview-view-side" data-action="car-side">Side</button><button id="preview-view-top" data-action="car-top">Top</button></div><div id="expanded-car" class="car-stage"></div><section id="preview-size-controls" class="preview-size-controls" aria-label="Decal size"><div class="field"><label for="preview-w">Decal width (mm)</label><input id="preview-w" type="number" min="0.1" max="1000" step="0.1"></div><div class="field"><label for="preview-h">Decal height (mm)</label><input id="preview-h" type="number" min="0.1" max="1000" step="0.1"></div><label class="check"><input id="preview-aspect" type="checkbox">Keep proportions</label></section><p id="preview-size-error" class="dialog-error" role="alert"></p><p id="preview-size-note" class="hint"></p>',
-    '<button data-action="car-settings">Reference measurements</button><button class="primary" data-action="close">Done</button>',
-    true
-  );
-  for (const key of ['w', 'h']) {
-    const input = $('#preview-' + key);
-    let editing = false;
-    input.onfocus = () => {
-      editing = false;
-    };
-    input.oninput = () => {
-      const i = current();
-      if (!i || i.locked) return;
-      try {
-        const value = DM.number(input.value, 0.1, 1000, key === 'w' ? 'Width' : 'Height');
-        if (value === i[key]) return;
-        mutate(() => {
-          const w = i.w,
-            h = i.h,
-            k = value / i[key];
-          if (settings.aspectLock !== false) {
-            i[key === 'w' ? 'h' : 'w'] *= k;
-            i.strokeWidth *= k;
-          }
-          i[key] = value;
-          for (const position of Object.values(i.carPositions || {})) {
-            position.x += (w - i.w) / 2;
-            position.y += (h - i.h) / 2;
-          }
-        }, editing);
-        editing = true;
-        input.removeAttribute('aria-invalid');
-        $('#preview-size-error').textContent = '';
-      } catch (error) {
-        input.setAttribute('aria-invalid', 'true');
-        $('#preview-size-error').textContent = error.message;
-      }
-    };
-    input.onblur = () => {
-      editing = false;
-      input.removeAttribute('aria-invalid');
-      $('#preview-size-error').textContent = '';
-      const i = current();
-      input.value = i ? Number(i[key].toFixed(2)) : '';
-      syncPreviewSize();
-    };
-    input.onkeydown = e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        input.blur();
-      }
-    };
-  }
-  $('#preview-aspect').onchange = e => {
-    settings.aspectLock = e.target.checked;
-    revision++;
-    scheduleSave();
-    const editorLock = $('#aspect-lock');
-    if (editorLock) editorLock.checked = settings.aspectLock;
-  };
-  renderCar();
+  CarPage.render();
 }
 function finishCarDrag(cancel = false) {
   if (!carDrag) return;
@@ -1470,39 +1372,6 @@ function scaleDialog(value) {
     }
   };
 }
-function carSettings() {
-  showDialog(
-    'Car reference',
-    'Use measurements from your actual model for the closest size comparison.',
-    `<div class="fields2"><div class="field"><label>Model length, nose to tail (mm)</label><input id="model-length" type="number" min="5" max="1000" value="${project.preview.length}"></div><div class="field"><label>Model width, top view (mm)</label><input id="model-width" type="number" min="5" max="1000" value="${project.preview.width}"></div></div><div class="field"><label>Model height, side view (mm)</label><input id="model-height" type="number" min="5" max="1000" value="${project.preview.height}"></div><div class="notice">The included car is an illustrative GT reference. For your own model, import a tightly cropped, straight-on side or top image and enter the dimensions represented by that image. A perspective photograph cannot establish an exact fit around curved bodywork.</div><div class="row"><button id="import-side-reference">Import side reference</button><button id="import-top-reference">Import top reference</button><button id="reset-car-reference">Use included car</button></div>`,
-    '<button data-action="close">Cancel</button><button class="primary" id="save-car-reference">Save measurements</button>'
-  );
-  $('#save-car-reference').onclick = () => {
-    try {
-      const values = {
-        length: DM.number($('#model-length').value, 5, 1000, 'Length'),
-        width: DM.number($('#model-width').value, 5, 1000, 'Width'),
-        height: DM.number($('#model-height').value, 5, 1000, 'Height')
-      };
-      mutate(() => Object.assign(project.preview, values));
-      closeDialog();
-    } catch (e) {
-      $('#dialog-error').textContent = e.message;
-    }
-  };
-  for (const view of ['side', 'top'])
-    $('#import-' + view + '-reference').onclick = () => {
-      carImportView = view;
-      $('#car-file').click();
-    };
-  $('#reset-car-reference').onclick = () => {
-    mutate(() => {
-      project.preview.side = null;
-      project.preview.top = null;
-    });
-    closeDialog();
-  };
-}
 function showChecks() {
   const warnings = DM.warnings(project);
   showDialog(
@@ -1770,7 +1639,7 @@ const HELP_TOPICS = [
   ],
   [
     'Size & car preview',
-    '<p>Width and height are the <strong>printed dimensions</strong> in millimetres. The link between them keeps proportions. <strong>Model scale</strong> under Sheet &amp; paper changes the scale for the sheet or selected artwork.</p><p>The <strong>Fit check</strong> in the corner of the sheet shows every selected decal on the car at its printed size. Drag a decal over the car to test placement without moving it on the sheet, or enlarge the preview to adjust its size. Pick a <strong>Car</strong> — modern GT, classic endurance GT, touring saloon, rally hatchback or Group C prototype — and the model is sized from the real car’s length at your scale. Use the gear in the Fit check to enter your model’s measurements or import your own side and top pictures. The car is illustrative, not a wrap calculation: confirm the fit with a paper proof.</p>'
+    '<p>Width and height are the <strong>printed dimensions</strong> in millimetres. The link between them keeps proportions. <strong>Model scale</strong> under Sheet &amp; paper changes the scale for the sheet or selected artwork.</p><p>The <strong>Fit check</strong> in the corner of the sheet shows every selected decal on the car at its printed size; drag one over the car to test placement without moving it on the sheet.</p><p>The <strong>Car</strong> page in the top bar shows the whole livery on the side and top views at once. Every decal of the sheet is listed with where it sits: drag one onto the car or press <strong>Place</strong>. On the car, drag a decal to move it and a corner to resize it (that is its printed size on the sheet too); Esc cancels and Ctrl+Z undoes. <strong>Take off</strong> or Delete removes it from the car only.</p><p><strong>Your car</strong> (the car button on the Car page, or the gear in the Fit check) picks the modern GT, classic endurance GT, touring saloon, rally hatchback or Group C prototype, sized from the real car’s length at your scale. Type your model’s length and height on the drawing. For your own model, load a straight-on photo, click its nose and tail, and type how long it is. The car is illustrative, not a wrap calculation: confirm the fit with a paper proof.</p>'
   ],
   [
     'Arrange the sheet',
@@ -2462,6 +2331,7 @@ const actions = {
     closeDialog();
     Workshop.hide();
     Shelf.hide();
+    CarPage.hide();
   },
   close: closeDialog,
   rename: () => nameDialog('Name your sheet', project.name, n => mutate(() => (project.name = n))),
@@ -2719,11 +2589,12 @@ const actions = {
     changed();
     renderCar();
   },
-  'car-settings': carSettings,
-  'expand-car': openCarPreview,
+  'car-settings': () => CarPage.show({ garage: true }),
+  'expand-car': () => CarPage.show(),
+  'car-page': () => CarPage.show(),
   'fitcheck-toggle': () => {
     // In a narrow canvas the fit check is only its title: it opens the large car preview instead.
-    if ($('.editor-panel').clientWidth <= 720) return openCarPreview();
+    if ($('.editor-panel').clientWidth <= 720) return CarPage.show();
     settings.fitCheckOpen = settings.fitCheckOpen === false;
     revision++;
     scheduleSave();
@@ -2824,8 +2695,8 @@ const Finder = (() => {
       'Sheet & paper tab',
       'margins gap paper size white ink spot cut line'
     ],
-    ['car-settings', 'Car reference size…', 'Fit check', 'car model length photo'],
-    ['expand-car', 'Enlarge car preview', 'Fit check', 'car preview'],
+    ['car-settings', 'Your car: body, scale, measurements', 'Car page', 'car model length photo reference'],
+    ['car-page', 'Car page: the whole livery', 'Page', 'car preview livery fit'],
     ['library', 'Decal Library', 'Window', 'decals collection'],
     ['sharing', 'Import & Export', 'Window', 'backup share'],
     ['settings', 'App settings', 'Window', 'preferences theme updates storage'],
@@ -2916,8 +2787,9 @@ for (const b of $$('[data-filter]'))
   };
 // Choosing a body sizes the model from the real car's length at the sheet's scale; width and
 // height follow that car's picture, so it is never stretched. One undoable change.
-$('#car-body').onchange = async e => {
-  const body = e.target.value;
+$('#car-body').onchange = e => chooseCarBody(e.target.value);
+// Choosing a body (fit check or the Car page) sizes the model from the real car.
+async function chooseCarBody(body) {
   try {
     await loadCar(body);
     const side = carData[body].side.bounds,
@@ -2940,7 +2812,7 @@ $('#car-body').onchange = async e => {
     fail(err);
     render();
   }
-};
+}
 $('#car-scale').onchange = e => scaleDialog(e.target.value === 'custom' ? null : Number(e.target.value));
 // Custom paper asks for its size first; cancelling leaves the sheet unchanged.
 function customPaperDialog() {
@@ -3084,12 +2956,9 @@ $('#car-file').onchange = async e => {
       img = new Image();
     img.src = src;
     await img.decode();
-    mutate(() => {
-      project.preview[carImportView] = { src, width: img.naturalWidth, height: img.naturalHeight };
-      project.preview.view = carImportView;
-    });
+    // The Car page measures the photo from two pins before it is used.
     closeDialog();
-    carSettings();
+    CarPage.measurePhoto(carImportView, src, img.naturalWidth, img.naturalHeight);
   } catch (err) {
     fail(err);
   }
@@ -3100,7 +2969,8 @@ document.addEventListener('keydown', e => {
     e.key.toLowerCase() === 'k' &&
     !document.querySelector('dialog[open]') &&
     !Workshop.isOpen() &&
-    !Shelf.isOpen()
+    !Shelf.isOpen() &&
+    !CarPage.isOpen()
   ) {
     e.preventDefault();
     Finder.open();
@@ -3124,7 +2994,7 @@ document.addEventListener('keydown', e => {
     closeMenus();
     return;
   }
-  if (!$('#finder').hidden || Workshop.isOpen() || Shelf.isOpen()) return;
+  if (!$('#finder').hidden || Workshop.isOpen() || Shelf.isOpen() || CarPage.isOpen()) return;
   if (e.target.matches('input,textarea,select') || document.querySelector('dialog[open]')) return; // also the update window
   const ctrl = e.ctrlKey || e.metaKey;
   let action;
