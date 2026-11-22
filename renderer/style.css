@@ -5677,8 +5677,11 @@ dialog.bay-dialog .dialog-foot .hint {
 }
 .lens-bar {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -8168,6 +8171,10 @@ button.sp-font:disabled {
   max-width: 70vw;
   transform: translateX(-50%);
   pointer-events: none;
+}
+/* Keep notices clear of Edit vector's Cancel and Done. */
+body:has(#vector-lens) .notices {
+  bottom: 150px;
 }
 .notice {
   display: flex;

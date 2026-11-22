@@ -197,6 +197,8 @@ async function main() {
     await page.locator('#collection-confirm').click();
     await page.waitForFunction(() => !document.querySelector('#dialog').open);
     await workshop();
+    // Previews load as cards come near the screen; in a short window this one starts below it.
+    await card('Classic Stripes').scrollIntoViewIfNeeded();
     await card('Classic Stripes').locator('img[src]').waitFor();
     await page.locator('#ws-sort').selectOption('name');
     await grid();
