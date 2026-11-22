@@ -60,7 +60,10 @@ async function main() {
     assert.match(await page.locator('#dialog-error').textContent(), /between 50 and 600/);
     await page.locator('#dialog [data-action="close"]').first().click();
     assert.equal((await P()).customPage.w, 160, 'cancel keeps the size');
-    assert.equal(await page.locator('#sheet-size-select').inputValue(), 'custom');
+    // The menu goes back to the size when the window's close event arrives, a moment later.
+    await page.waitForFunction(() => document.querySelector('#sheet-size-select').value === 'custom', null, {
+      timeout: 5000
+    });
     await page.locator('#export-pdf').click();
     await page.locator('#pp-save').click();
     await page.waitForFunction(() => !busy, null, { timeout: 60000 });
