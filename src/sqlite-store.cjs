@@ -379,6 +379,42 @@ function migrate(root, file) {
   }
   return published;
 }
+// Half-written copies left when Decals was stopped in the middle of a backup, restore or first
+// start (a crash, a power cut). Their names hold a random id, so they never match real files.
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
+  escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function removeStale(dir, pattern) {
+  let names;
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return;
+  }
+  for (const name of names)
+    if (pattern.test(name))
+      try {
+        fs.unlinkSync(path.join(dir, name));
+      } catch {}
+}
+// Runs whenever the database is opened; storage calls run one at a time, so none of these files
+// can belong to a backup or restore that is still running.
+function tidy(root) {
+  removeStale(
+    root,
+    new RegExp(
+      '^(restore-' +
+        UUID +
+        '\\.sfdbbackup(\\.' +
+        UUID +
+        '\\.tmp)?|' +
+        escape(FILE) +
+        '\\.migration-' +
+        UUID +
+        ')$'
+    )
+  );
+  removeStale(path.join(root, 'Backups'), new RegExp('\\.sfdbbackup\\.' + UUID + '\\.tmp$'));
+}
 function initialize(root, migrateMissing = true) {
   fs.mkdirSync(root, { recursive: true });
   const real = fs.realpathSync(root);
@@ -389,6 +425,7 @@ function initialize(root, migrateMissing = true) {
       throw Error('Workspace folders must stay inside the workspace.');
   }
   const file = path.join(root, FILE);
+  tidy(root);
   if (migrateMissing && !fs.existsSync(file)) migrate(root, file);
   return file;
 }
@@ -646,6 +683,11 @@ function backup(db, file, destination) {
   )
     throw Error('Choose a regular backup file.');
   const temp = destination + '.' + crypto.randomUUID() + '.tmp';
+  // A copy left by an earlier backup to this same file that was interrupted.
+  removeStale(
+    path.dirname(destination),
+    new RegExp('^' + escape(path.basename(destination)) + '\\.' + UUID + '\\.tmp$')
+  );
   try {
     db.prepare('VACUUM INTO ?').run(temp);
     const copy = connection(temp);

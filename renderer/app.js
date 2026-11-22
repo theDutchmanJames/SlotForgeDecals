@@ -117,13 +117,24 @@ function mutate(fn, coalesce = false) {
   changed();
   render();
 }
+// Autosave waits for a short pause in your changes, but never longer than SAVE_AT_MOST after the
+// first unsaved one: holding an arrow key or dragging a slider for a while still saves as you go.
+const SAVE_PAUSE = 550,
+  SAVE_AT_MOST = 2500;
+let unsavedSince = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => flush().catch(fail), 550);
+  const now = Date.now();
+  unsavedSince ??= now;
+  saveTimer = setTimeout(
+    () => flush().catch(fail),
+    Math.max(0, Math.min(SAVE_PAUSE, unsavedSince + SAVE_AT_MOST - now))
+  );
 }
 async function flush() {
   if (!ready) return;
   clearTimeout(saveTimer);
+  unsavedSince = null;
   const data = assetsSnapshot(),
     target = revision;
   const job = saveSerial
@@ -2292,11 +2303,6 @@ const actions = {
   folder: () => desktop.folder(),
   library: () => Shelf.show(),
   duplicate: () => duplicate(),
-  copies: () => {
-    const n = DM.number($('#copies').value, 1, 100, 'Copies');
-    if (!Number.isInteger(n)) throw Error('Copies must be a whole number.');
-    duplicate(n);
-  },
   delete: () => {
     const n = project.items.filter(i => selected.has(i.id) && !i.locked).length;
     if (!n) return; // nothing to delete: no empty undo step

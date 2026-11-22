@@ -388,7 +388,8 @@ else {
       }
     });
     win.on('close', e => {
-      if (!allowClose && !process.env.SLOTFORGE_TEST_PROFILE) {
+      // Tests skip the save-before-closing step, unless they test that step itself.
+      if (!allowClose && (!process.env.SLOTFORGE_TEST_PROFILE || process.env.SLOTFORGE_TEST_CLOSE_GUARD)) {
         e.preventDefault();
         win.webContents.send('close-request');
       }

@@ -37,6 +37,9 @@ const suites = [
   'settings-page',
   'messages',
   'full-review',
+  'coverage-gaps',
+  'undo-fuzz',
+  'crash-desktop',
   'update-check'
 ];
 for (const suite of suites) {

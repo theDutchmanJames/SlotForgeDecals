@@ -482,7 +482,14 @@
       } else fresh.set(f.family, f);
     }
     const faces = await Promise.all(
-      [...fresh.values()].map(f => new FontFace(f.family, `url(${f.data})`).load())
+      [...fresh.values()].map(f =>
+        // A damaged font file rejects with a bare "NetworkError"; say which font it is.
+        new FontFace(f.family, `url(${f.data})`).load().catch(() => {
+          throw Error(
+            `The font “${f.name || f.family}” could not be read. It may be damaged: import it again or choose another font.`
+          );
+        })
+      )
     );
     [...fresh.values()].forEach((f, n) => {
       const old = loadedFonts.get(f.family);

@@ -442,6 +442,8 @@ const Shelf = (() => {
     if (t.dataset.fav)
       return run(async () => {
         const e = entries.find(x => x.id === t.dataset.fav);
+        // A card still on screen while a new search loads: its list entry is already gone.
+        if (!e) return;
         await desktop.markDecal({ id: e.id, favourite: !e.favourite });
         e.favourite = !e.favourite;
         t.setAttribute('aria-pressed', String(e.favourite));
@@ -481,12 +483,9 @@ const Shelf = (() => {
       const id = card.dataset.decal;
       if (selecting || ev.ctrlKey || ev.metaKey || ev.shiftKey) {
         selecting = true;
+        const e = entries.find(x => x.id === id);
         if (picked.has(id)) picked.delete(id);
-        else
-          picked.set(
-            id,
-            entries.find(e => e.id === id)
-          );
+        else if (e) picked.set(id, e);
         return renderBody();
       }
       return inspect(id);
