@@ -53,7 +53,11 @@ async function main() {
     if (modifier) await page.keyboard.up(modifier);
   };
   try {
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
+    await app.evaluate(({ BrowserWindow }) => {
+      const w = BrowserWindow.getAllWindows()[0];
+      w.setSize(1500, 950);
+      w.showInactive();
+    });
     await page.waitForFunction(() => window.Studio?.ready);
     await page.locator('#workshop [data-ws="blank"]').click();
     await page.evaluate(() => {

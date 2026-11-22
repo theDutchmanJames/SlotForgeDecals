@@ -27,7 +27,11 @@ async function main() {
   const done = () => page.locator('nav [data-action="editor"]').click();
   const state = () => page.evaluate(() => JSON.parse(JSON.stringify(Studio.project.items)));
   try {
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
+    await app.evaluate(({ BrowserWindow }) => {
+      const w = BrowserWindow.getAllWindows()[0];
+      w.setSize(1500, 950);
+      w.showInactive();
+    });
     await page.waitForSelector('#workshop [data-action="demo"]');
     await page.locator('#workshop [data-ws="blank"]').click();
     await page.evaluate(() => {
@@ -114,7 +118,11 @@ async function main() {
     await app.close();
     app = await launch();
     page = await app.firstWindow();
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
+    await app.evaluate(({ BrowserWindow }) => {
+      const w = BrowserWindow.getAllWindows()[0];
+      w.setSize(1500, 950);
+      w.showInactive();
+    });
     await page.waitForFunction(() => window.Studio?.ready);
     // Nothing chosen yet after a restart: the details ask for a decal.
     await page.evaluate(() => Studio.select([]));

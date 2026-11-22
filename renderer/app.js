@@ -503,6 +503,7 @@ const fmt = n => String(Number(n.toFixed(1)));
 function placeContextBar() {
   const bar = $('#ctx-bar'),
     nodes = [...selected].map(id => $(`#paper .sheet-item[data-id="${CSS.escape(id)}"]`)).filter(Boolean);
+  if (!bar) return; // the workspace error screen has replaced the editor
   bar.hidden = !nodes.length || !!CanvasTools.active || drag?.kind === 'select' || MakeTools.isEditing();
   if (bar.hidden) return;
   const panel = $('.editor-panel').getBoundingClientRect(),
